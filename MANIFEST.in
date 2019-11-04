@@ -1,0 +1,3 @@
+include versioneer.py
+include perception/_version.py
+include perception/testing/images/*

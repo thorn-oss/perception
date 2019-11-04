@@ -1,0 +1,30 @@
+# MacOS stuff
+.DS_Store
+
+# Python artifacts
+*.egg-info
+
+# Cache
+.mypy_cache
+.pytest_cache
+__pycache__
+.ipynb_checkpoints
+dist
+
+# Any temporary images or CSV files
+notebooks
+
+# Local environment
+.venv
+
+# Coverage file
+.coverage
+
+# Versioneer artifacts
+/versioneer.pyc
+
+# Build artifacts
+/build
+
+# Docs build artifacts
+/docs/_build
