@@ -5,6 +5,7 @@ import json
 import base64
 import typing
 import warnings
+import urllib.parse
 import urllib.request
 
 try:
@@ -227,6 +228,10 @@ class SaferMatcher:
                 raise ValueError(
                     'You must provide either the url or the SAFER_MATCHING_SERVICE_URL env var.'
                 )
+        if urllib.parse.urlparse(url).scheme != 'https' and not os.environ.get(
+                'SAFER_MATCHING_SERVICE_DEV_ALLOW_HTTP'):
+            raise ValueError(
+                'You must provide an url that begins with `https://`.')
         self.api_key = api_key
         self.url = url
         if hasher is None:
