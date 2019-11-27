@@ -18,6 +18,7 @@ class PHash(Hasher):
         highfreq_factor: The multiple of the hash size to resize the input
             image to before computing the DCT.
         exclude_first_term: WHether to exclude the first term of the DCT
+        freq_shift: The number of DCT low frequency elements to skip.
     """
     distance_metric = 'hamming'
     dtype = 'bool'
@@ -25,12 +26,16 @@ class PHash(Hasher):
     def __init__(self,
                  hash_size=8,
                  highfreq_factor=4,
-                 exclude_first_term=False):
+                 exclude_first_term=False,
+                 freq_shift=0):
         assert hash_size >= 2, 'Hash size must be greater than or equal to 2'
+        assert freq_shift <= highfreq_factor * hash_size - hash_size, \
+            'Frequency shift is too large for this hash size / highfreq_factor combination.'
         self.hash_size = hash_size
         self.highfreq_factor = highfreq_factor
         self.exclude_first_term = exclude_first_term
         self.hash_length = hash_size * hash_size
+        self.freq_shift = freq_shift
         if exclude_first_term:
             self.hash_length -= 1
 
@@ -40,7 +45,8 @@ class PHash(Hasher):
         image = cv2.resize(
             image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA)
         dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=0), axis=1)
-        return dct[:self.hash_size, :self.hash_size]
+        return dct[self.freq_shift:self.hash_size + self.freq_shift, self.
+                   freq_shift:self.hash_size + self.freq_shift]
 
     # pylint: disable=no-self-use
     def _dct_to_hash(self, dct):
