@@ -39,6 +39,7 @@ See below for end-to-end examples for common use cases for perceptual hashes.
 - Marr-Hildreth (`perception.hashers.MarrHildreth`)
 - Color Moment (`perception.hashers.ColorMoment`)
 - Block Mean (`perception.hashers.BlockMean`)
+- wHash (wavelet hash) (`perception.hashers.WaveletHash`)
 
 ## Contributing
 
