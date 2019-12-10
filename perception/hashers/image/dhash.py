@@ -1,9 +1,9 @@
 import cv2
 
-from .hasher import Hasher
+from ..hasher import ImageHasher
 
 
-class DHash(Hasher):
+class DHash(ImageHasher):
     """A hash based on the differences between adjacent pixels.
     Implementation based on that of
     `ImageHash <https://github.com/JohannesBuchner/imagehash>`_.

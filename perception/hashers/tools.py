@@ -1,11 +1,15 @@
+# pylint: disable=too-many-locals
 import os
 import io
 import math
 import json
+import queue
 import base64
 import typing
 import hashlib
 import warnings
+import threading
+import functools
 import itertools
 import subprocess
 from urllib import request
@@ -145,6 +149,80 @@ def to_image_array(image: ImageInputType, require_color=True):
     return read(image)
 
 
+def get_common_framerates(id_rates: dict):
+    """Compute an optimal set of framerates for a list
+    of framerates. Optimal here means that reading the video
+    at each of the framerates will allow one to collect all
+    of the frames required with the smallest possible number of
+    frames decoded.
+
+    For example, consider if we need to read a video at
+    3 fps, 5 fps, 1 fps and 0.5 fps. We could read the video
+    4 times (once per framerate). But a more optimal approach
+    is to read the video only twice, once at 3 frames per second
+    and another time at 5 frames per second. For the 1 fps hasher,
+    we simply pass every 3rd frame of the 3 fps pass. For the
+    0.5 fps hasher, we pass every 6th frame of the 3 fps pass. So
+    if you pass this function {A: 3, B: 5, C: 1, D: 0.5}, you will
+    get back {3: [A, C, D], 5: C}.
+
+    Args:
+        id_rates: A dictionary with IDs as keys and frame rates as values.
+
+    Returns:
+        rate_ids: A dictionary with framerates as keys and a list of
+            ids as values.
+    """
+
+    def partition(collection):
+        """This function taken from
+        https://stackoverflow.com/questions/19368375/set-partitions-in-python/30134039#30134039
+        """
+        if len(collection) == 1:
+            yield [collection]
+            return
+
+        first = collection[0]
+        for smaller in partition(collection[1:]):
+            # insert `first` in each of the subpartition's subsets
+            for n, subset in enumerate(smaller):
+                yield smaller[:n] + [[first] + subset] + smaller[n + 1:]
+            # put `first` in its own subset
+            yield [[first]] + smaller
+
+    framerates = list(id_rates.values())
+    factor = 2 * 3 * 5 * 7 * 11 * 60 * 60
+    assert min(framerates
+               ) >= 1 / factor, 'Framerates must be at least 1 frame per hour.'
+    best_frame_count = np.inf
+    best_grouping: typing.Optional[typing.List] = None
+    best_frame_rates: typing.Optional[typing.List] = None
+
+    # We try every possible grouping of framerates to minimize the number
+    # of frames we decode. There is likely a better way to do this,
+    # but this seems to do the job for now.
+    for grouping in partition(list(set(framerates))):
+        current_frame_rates = [
+            # pylint: disable=no-member
+            functools.reduce(np.lcm,
+                             (np.array(group) * factor).round().astype(int)) /
+            factor for group in grouping
+        ]
+        current_frame_count = sum(current_frame_rates)
+        if current_frame_count < best_frame_count:
+            best_frame_count = current_frame_count
+            best_frame_rates = current_frame_rates
+            best_grouping = grouping
+
+    assert best_frame_rates is not None
+    assert best_grouping is not None
+    return {
+        framerate:
+        tuple(name for name, rate in id_rates.items() if rate in group)
+        for framerate, group in zip(best_frame_rates, best_grouping)
+    }
+
+
 def get_isometric_transforms(image: ImageInputType, require_color=True):
     image = to_image_array(image, require_color=require_color)
     return dict(
@@ -198,11 +276,12 @@ def read(filepath_or_buffer: ImageInputType):
           and validators.url(filepath_or_buffer)):
         return read(request.urlopen(filepath_or_buffer))
     else:
-        assert os.path.isfile(filepath_or_buffer), \
-            'Could not find image at path: ' + filepath_or_buffer
+        if not os.path.isfile(filepath_or_buffer):
+            raise FileNotFoundError('Could not find image at path: ' +
+                                    filepath_or_buffer)
         image = cv2.imread(filepath_or_buffer)
     if image is None:
-        raise ValueError(f'An error occurred reading {image}.')
+        raise ValueError(f'An error occurred reading {filepath_or_buffer}.')
     # We use cvtColor here instead of just ret[..., ::-1]
     # in order to ensure that we provide a contiguous
     # array for later processing. Some hashers use ctypes
@@ -260,9 +339,89 @@ def _get_keyframes(filepath):
     return frames
 
 
+# pylint: disable=too-many-branches
+def read_video_to_generator(
+        filepath,
+        frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+        errors='raise'):
+    # pylint: disable=no-member
+    if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
+        warnings.warn(
+            message=
+            'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
+        )
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(f'Could not find {filepath}.')
+    cap = cv2.VideoCapture(filename=filepath, apiPreference=cv2.CAP_FFMPEG)
+    try:
+        video_frames_per_second = cap.get(cv2.CAP_PROP_FPS)
+        if frames_per_second is None:
+            frames_per_second = video_frames_per_second
+        seconds_between_desired_frames = None if (
+            frames_per_second is not None
+            and isinstance(frames_per_second,
+                           str)) else 1 / frames_per_second  # type: ignore
+        seconds_between_grabbed_frames = 1 / video_frames_per_second
+        grabbed_frame_count = 0
+        returned_frame_count = 0
+        if frames_per_second == 'keyframes':
+            frame_indexes: typing.Union[range, typing.List[int], typing.
+                                        Iterator[int]] = _get_keyframes(
+                                            filepath)
+            repeat = False
+        else:
+            frame_indexes = itertools.count(
+                0, video_frames_per_second / frames_per_second)
+            repeat = video_frames_per_second < frames_per_second
+        for frame_index in frame_indexes:
+            while grabbed_frame_count < frame_index:
+                # We need to skip this frame.
+                success = cap.grab()
+                if not success:
+                    break
+                grabbed_frame_count += 1
+            success, frame = cap.read()
+            grabbed_frame_count += 1
+            if not success:
+                # The video is over or an error has occurred.
+                break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            current_timestamp = frame_index / video_frames_per_second
+            yield frame, returned_frame_count, current_timestamp
+            returned_frame_count += 1
+            if repeat:
+                next_desired_timestamp = current_timestamp + seconds_between_desired_frames
+                next_timestamp = current_timestamp + seconds_between_grabbed_frames
+                while next_desired_timestamp < next_timestamp:
+                    yield (frame, returned_frame_count, next_desired_timestamp)
+                    next_desired_timestamp += seconds_between_desired_frames
+                    returned_frame_count += 1
+    # pylint: disable=broad-except
+    except Exception as e:
+        if errors not in ['warn', 'ignore']:
+            raise e
+        if errors == 'warn':
+            warnings.warn(
+                message=
+                f'An error occurred while reading {filepath}. Processing may be truncated.'
+            )
+    finally:
+        cap.release()
+
+
+def read_video_into_queue(*args, video_queue, **kwargs):
+    # We're inside a thread now and the queue is being read elsewhere.
+    for frame, frame_index, timestamp in read_video_to_generator(
+            *args, **kwargs):
+        video_queue.put((frame, frame_index, timestamp))
+    video_queue.put((None, None, None))
+
+
 def read_video(
         filepath,
-        frames_per_second: typing.Optional[typing.Union[str, int]] = None,
+        frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+        max_queue_size=128,
+        use_queue=True,
         errors='raise'):
     """Provides a generator of RGB frames, frame indexes, and timestamps from a
     video. This function requires you to have installed ffmpeg.
@@ -273,52 +432,117 @@ def read_video(
             each second of video. If None, all frames
             are provided. If frames_per_second is "keyframes",
             we use ffmpeg to select I frames from the video.
+        max_queue_size: The maximum number of frames to load in the queue
+        use_queue: Whether to use a queue of frames during processing
+        errors: Whether to 'raise', 'warn', or 'ignore' errors
 
     Yields:
         (frame, frame_index, timestamp) tuples
     """
-    # pylint: disable=no-member
-    if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
-        warnings.warn(
-            message=
-            'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
-        )
-    cap = cv2.VideoCapture(filepath)
-    try:
-        n_frames, video_frames_per_second = cap.get(
-            cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
-        if frames_per_second is None:
-            frames_per_second = video_frames_per_second
-        if frames_per_second == 'keyframes':
-            frame_indexes: typing.Union[range, typing.List[int], typing.
-                                        Iterator[int]] = _get_keyframes(
-                                            filepath)
-        else:
-            if n_frames < 1:
-                frame_indexes = itertools.count(
-                    0, int(video_frames_per_second // frames_per_second))
-            else:
-                frame_indexes = range(
-                    0, int(n_frames),
-                    max(1, int(video_frames_per_second // frames_per_second)))
-
-        for frame_index in frame_indexes:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-            success, frame = cap.read()
-            if not success:
-                # The video is over or an error has occurred.
+    if use_queue:
+        video_queue = queue.Queue(
+            maxsize=max_queue_size
+        )  # type: queue.Queue[typing.Tuple[np.ndarray, int, float]]
+        thread = threading.Thread(
+            target=read_video_into_queue,
+            kwargs={
+                'frames_per_second': frames_per_second,
+                'video_queue': video_queue,
+                'filepath': filepath,
+                'errors': errors
+            })
+        thread.start()
+        while True:
+            frame, frame_index, timestamp = video_queue.get()
+            if frame is None:
                 break
-            yield cv2.cvtColor(
-                frame, cv2.COLOR_BGR2RGB
-            ), frame_index, frame_index / video_frames_per_second
-    # pylint: disable=broad-except
-    except Exception as e:
-        if errors == 'raise':
-            cap.release()
-            raise e
-        if errors == 'warn':
-            warnings.warn(
-                message=
-                f'An error occurred while reading {filepath}. Processing may be truncated.'
-            )
-    cap.release()
+            yield (frame, frame_index, timestamp)
+        thread.join()
+    else:
+        for frame, frame_index, timestamp in read_video_to_generator(
+                filepath=filepath,
+                frames_per_second=frames_per_second,
+                errors=errors):
+            yield (frame, frame_index, timestamp)
+
+
+def compute_synchronized_video_hashes(filepath: str,
+                                      hashers: dict,
+                                      framerates=None,
+                                      hash_format='base64',
+                                      use_queue=True):
+    """Compute the video hashes for a group of hashers with synchronized
+    frame processing wherever possible.
+
+    Args:
+        filepath: Path to video file.
+        hashers: A dictionary mapping hasher names to video hasher objects
+        hash_format: The format in which to return the hashes
+        use_queue: Whether to use queued video frames
+    """
+    if framerates is None:
+        framerates = get_common_framerates({
+            k: h.frames_per_second
+            for k, h in hashers.items() if h.frames_per_second is not None
+        })
+    else:
+        assert all(
+            any(hasher_name in hasher_names
+                for hasher_names in framerates.values())
+            for hasher_name, hasher in hashers.items()
+            if hasher.frames_per_second is not None
+        ), 'Provided framerates do not have an entry for all required hashers.'
+
+    results = {
+        hasher_name: {
+            'state':
+            None,
+            'hash':
+            None,
+            'relative_framerate':
+            next(framerate / hasher.frames_per_second
+                 for framerate, hasher_names in framerates.items()
+                 if hasher_name in hasher_names)
+        }
+        for hasher_name, hasher in hashers.items()
+        if hasher.frames_per_second is not None
+    }
+    for current_framerate, current_hasher_names in framerates.items():
+        for frame, frame_index, frame_timestamp in read_video(
+                filepath=filepath,
+                frames_per_second=current_framerate,
+                use_queue=use_queue):
+            for hasher_name in current_hasher_names:
+                config = results[hasher_name]
+                hasher = hashers[hasher_name]
+                if frame_index % config['relative_framerate'] == 0:
+                    config['state'] = hasher.process_frame(
+                        frame=frame,
+                        frame_index=frame_index,
+                        frame_timestamp=frame_timestamp,
+                        state=config['state'])
+        for hasher_name in current_hasher_names:
+            config = results[hasher_name]
+            hasher = hashers[hasher_name]
+            current_hash = hasher.hash_from_final_state(state=config['state'])
+            if hash_format == 'vector':
+                config['hash'] = current_hash
+            else:
+                if not hasher.returns_multiple:
+                    config['hash'] = hasher.vector_to_string(
+                        current_hash, hash_format=hash_format)
+                else:
+                    config['hash'] = [
+                        hasher.vector_to_string(h, hash_format=hash_format)
+                        for h in current_hash
+                    ]
+            config['state'] = None
+    hashes = {
+        hasher_name: config['hash']
+        for hasher_name, config in results.items()
+    }
+    for hasher_name, hasher in hashers.items():
+        if hasher.frames_per_second is None:
+            # This is a custom hasher that we just pass a video path to.
+            hashes[hasher_name] = hasher.compute(filepath)
+    return hashes

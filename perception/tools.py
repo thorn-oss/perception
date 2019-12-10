@@ -18,7 +18,7 @@ import numpy as np
 from . import hashers as perception_hashers
 
 
-def _flatten(list_of_lists):
+def flatten(list_of_lists):
     return [item for sublist in list_of_lists for item in sublist]
 
 
@@ -26,7 +26,7 @@ def deduplicate_hashes(
         hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
         threshold: float,
         hash_format: str = 'base64',
-        hasher: perception_hashers.Hasher = None,
+        hasher: perception_hashers.ImageHasher = None,
         hash_length: int = None,
         hash_dtype: str = None,
         distance_metric: str = None,
@@ -100,7 +100,8 @@ def deduplicate_hashes(
 # pylint: disable=too-many-locals
 def deduplicate(
         files: typing.List[str],
-        hashers: typing.List[typing.Tuple[perception_hashers.Hasher, float]],
+        hashers: typing.List[typing.Tuple[perception_hashers.
+                                          ImageHasher, float]],
         isometric: bool = False,
         progress: 'tqdm.tqdm' = None) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates in a list of files.
@@ -126,20 +127,26 @@ def deduplicate(
     pairs: typing.List[typing.Tuple[str, str]] = []
     for hasher_idx, (hasher, threshold) in enumerate(hashers):
         hash_dicts = hasher.compute_parallel(
-            images=files,
+            filepaths=files,
             progress=progress,
             progress_desc=
             f"Computing hashes for hash {hasher_idx+1} of {len(hashers)}.",
             isometric=isometric)
         hash_list = sorted(hash_dicts, key=lambda h: h['filepath'])
         if isometric:
-            hash_list = _flatten([
+            hash_list = flatten([
                 list(row['hash'].values()) for row in hash_dicts
                 if row['error'] is None
             ])
-            files_for_hashes = _flatten([[row['filepath']] * 8
-                                         for row in hash_dicts
-                                         if row['error'] is None])
+            files_for_hashes = flatten([[row['filepath']] * 8
+                                        for row in hash_dicts
+                                        if row['error'] is None])
+        elif hasher.returns_multiple:
+            hash_list = flatten(
+                [row['hash'] for row in hash_dicts if row['error'] is None])
+            files_for_hashes = flatten([[row['filepath']] * 8
+                                        for row in hash_dicts
+                                        if row['error'] is None])
         else:
             hash_list = [
                 row['hash'] for row in hash_dicts if row['error'] is None
@@ -201,7 +208,7 @@ class SaferMatcher:
                  username: str = None,
                  password: str = None,
                  url: str = None,
-                 hasher: perception_hashers.Hasher = None,
+                 hasher: perception_hashers.ImageHasher = None,
                  hasher_api_id: str = None,
                  quality_threshold: int = 90):
         if (username is None and password is None and api_key is None and

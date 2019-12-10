@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image  # pylint: disable=import-error
 
-from .. import hashers
+from .. import hashers, tools
 
 SIZES = {'float32': 32, 'uint8': 8, 'bool': 1}
 
@@ -33,10 +33,15 @@ DEFAULT_TEST_IMAGES = [
         'perception', os.path.join('testing', 'images', f'image{n}.jpg'))
     for n in range(1, 11)
 ]
+DEFAULT_TEST_VIDEOS = [
+    pkg_resources.resource_filename(
+        'perception', os.path.join('testing', 'videos', f'v{n}.m4v'))
+    for n in range(1, 3)
+]
 
 
 @typing.no_type_check
-def test_opencv_hasher(hasher: hashers.Hasher, image1: str, image2: str):
+def test_opencv_hasher(hasher: hashers.ImageHasher, image1: str, image2: str):
     # For OpenCV hashers we make sure the distance we compute
     # is the same as inside OpenCV
     f1 = image1
@@ -52,11 +57,61 @@ def test_opencv_hasher(hasher: hashers.Hasher, image1: str, image2: str):
         significant=4)
 
 
-def test_hasher_integrity(hasher: hashers.Hasher,
-                          pil_opencv_threshold: float,
-                          transform_threshold: float,
-                          test_images: typing.List[str] = None,
-                          opencv_hasher: bool = False):
+# pylint: disable=protected-access
+def hash_dicts_to_df(hash_dicts, returns_multiple):
+    assert all(
+        h['error'] is None
+        for h in hash_dicts), 'An error was found in the hash dictionaries'
+    if returns_multiple:
+        return pd.DataFrame({
+            'filepath':
+            tools.flatten(
+                [[h['filepath']] * len(h['hash']) for h in hash_dicts]),
+            'hash':
+            tools.flatten([h['hash'] for h in hash_dicts])
+        }).assign(error=None)
+    return pd.DataFrame.from_records(hash_dicts).assign(error=None)
+
+
+def test_hasher_parallelization(hasher, test_filepaths):
+    filepaths_10x = test_filepaths * 10
+    if not hasher.allow_parallel:
+        with pytest.warns(UserWarning, match='cannot be used in parallel'):
+            hashes_parallel_dicts = hasher.compute_parallel(
+                filepaths=filepaths_10x)
+    else:
+        hashes_parallel_dicts = hasher.compute_parallel(
+            filepaths=filepaths_10x)
+    hashes_sequential_dicts = [{
+        'filepath': filepath,
+        'hash': hasher.compute(filepath),
+        'error': None
+    } for filepath in filepaths_10x]
+    hashes_parallel = hash_dicts_to_df(
+        hashes_parallel_dicts,
+        returns_multiple=hasher.returns_multiple).sort_values(
+            ['filepath', 'hash'])
+    hashes_sequential = hash_dicts_to_df(
+        hashes_sequential_dicts,
+        returns_multiple=hasher.returns_multiple).sort_values(
+            ['filepath', 'hash'])
+    assert (hashes_sequential.hash.values == hashes_parallel.hash.values).all()
+    assert (hashes_sequential.filepath.values == hashes_parallel.filepath.
+            values).all()
+
+
+def test_video_hasher_integrity(hasher: hashers.VideoHasher,
+                                test_videos: typing.List[str] = None):
+    if test_videos is None:
+        test_videos = DEFAULT_TEST_VIDEOS
+    test_hasher_parallelization(hasher, test_videos)
+
+
+def test_image_hasher_integrity(hasher: hashers.ImageHasher,
+                                pil_opencv_threshold: float,
+                                transform_threshold: float,
+                                test_images: typing.List[str] = None,
+                                opencv_hasher: bool = False):
     """Test to ensure a hasher works correctly.
 
     Args:
@@ -96,30 +151,10 @@ def test_hasher_integrity(hasher: hashers.Hasher,
             hash_format='hex')) == hash2_1
 
     # Ensure parallelization works properly.
-    images_1x = test_images
-    images_10x = images_1x * 10
-    if not hasher.allow_parallel:
-        with pytest.warns(UserWarning, match='cannot be used in parallel'):
-            hashes_parallel = pd.DataFrame.from_records(
-                hasher.compute_parallel(images_10x, max_workers=5))
-    else:
-        hashes_parallel = pd.DataFrame.from_records(
-            hasher.compute_parallel(images_10x, max_workers=5))
-
-    hashes_sequential = pd.DataFrame.from_records([{
-        'hash':
-        hasher.compute(image),
-        'filepath':
-        image,
-        'error':
-        None
-    } for image in images_10x])
-    merged = hashes_sequential.merge(hashes_parallel, on='filepath')
-    assert hashes_parallel['error'].isnull().all()
-    assert (merged['hash_x'] == merged['hash_y']).all()
+    test_hasher_parallelization(hasher=hasher, test_filepaths=test_images)
 
     # Ensure the isometric hashes computation work properly
-    for image in images_1x:
+    for image in test_images:
         transforms = hashers.tools.get_isometric_transforms(image)
         hashes_exp = {
             key: hasher.compute(value)
@@ -156,7 +191,7 @@ def test_hasher_integrity(hasher: hashers.Hasher,
     # scores.
     assert min(
         hasher.compute_with_quality(filepath)[1]
-        for filepath in images_1x) == 100
+        for filepath in test_images) == 100
 
     # Verify that medium quality images yield medium quality
     _, quality = hasher.compute_with_quality(LOW_DETAIL_IMAGE)

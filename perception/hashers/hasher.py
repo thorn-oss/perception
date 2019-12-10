@@ -18,7 +18,7 @@ try:
 except ImportError:  # pragma: no cover
     PIL = None
 
-from . import tools
+from perception.hashers import tools
 
 
 class Hasher(ABC):
@@ -26,34 +26,86 @@ class Hasher(ABC):
     the Hasher base class.
     """
 
-    #: The numpy type to use when converting from string to array form.
-    #: All hashers must supply this parameter.
-    dtype: str
-
     #: The metric to use when computing distance between two hashes. All hashers
     #: must supply this parameter.
     distance_metric: str
 
-    #: Indicates whether the hashes can be computed in parallel
-    allow_parallel: bool = True
+    #: The numpy type to use when converting from string to array form.
+    #: All hashers must supply this parameter.
+    dtype: str
 
     #: Indicates the length of the hash vector
     hash_length: int
 
-    @abstractmethod
-    def _compute(self, image: np.ndarray):
-        """Compute hash from an image.
+    #: Whether or not this hash returns multiple values
+    returns_multiple: bool = False
+
+    #: Indicates whether the hashes can be computed in parallel
+    allow_parallel: bool = True
+
+    def string_to_vector(self, hash_string: str, hash_format: str = 'base64'):
+        """Convert hash string to vector.
 
         Args:
-            image: A numpy array representing an image as
-                of shape (H, W, 3) where channels are ordered
-                as RGB or a filepath to an image.
+            hash_string: The input hash string
+            hash_format: One of 'base64' or 'hex'
         """
+        return tools.string_to_vector(
+            hash_string,
+            dtype=self.dtype,
+            hash_length=self.hash_length,
+            hash_format=hash_format)
+
+    def vector_to_string(self, vector: np.ndarray,
+                         hash_format: str = 'base64'):
+        """Convert vector to hash string.
+
+        Args:
+            vector: Input vector
+            hash_format: One of 'base64' or 'hex'
+        """
+        return tools.vector_to_string(
+            vector, dtype=self.dtype, hash_format=hash_format)
+
+    def compute_distance(self,
+                         hash1: typing.Union[np.ndarray, str],
+                         hash2: typing.Union[np.ndarray, str],
+                         hash_format='base64'):
+        """Compute the distance between two hashes.
+
+        Args:
+            hash1: The first hash or vector
+            hash2: The second hash or vector
+            hash_format: If either or both of the hashes are hash strings,
+                what format the string is encoded in.
+        """
+        if isinstance(hash1, str):
+            hash1 = self.string_to_vector(hash1, hash_format=hash_format)
+        if isinstance(hash2, str):
+            hash2 = self.string_to_vector(hash2, hash_format=hash_format)
+
+        if self.distance_metric == 'sqeuclidean':
+            return scipy.spatial.distance.sqeuclidean(hash1, hash2)
+        if self.distance_metric == 'euclidean':
+            return scipy.spatial.distance.euclidean(hash1, hash2)
+        if self.distance_metric == 'hamming':
+            return scipy.spatial.distance.hamming(hash1, hash2)
+        if self.distance_metric == 'cosine':
+            return scipy.spatial.distance.cosine(hash1, hash2)
+        if self.distance_metric == 'custom':
+            return self._compute_distance(hash1, hash2)
+        raise NotImplementedError(
+            f'Distance metric: {self.distance_metric} not supported.')
+
+    # pylint: disable=no-self-use
+    def _compute_distance(self, vector1, vector2):
+        raise ValueError(
+            'Called a custom distance function but it is not implemented.')
 
     # pylint: disable=too-many-arguments
     @typing.no_type_check
     def compute_parallel(self,
-                         images: typing.List[str],
+                         filepaths: typing.List[str],
                          progress: 'tqdm.tqdm' = None,
                          progress_desc: str = None,
                          max_workers: int = 5,
@@ -61,7 +113,7 @@ class Hasher(ABC):
         """Compute hashes in a parallelized fashion.
 
         Args:
-            images: A list of paths to images.
+            filepaths: A list of paths to images or videos (depending on the hasher).
             progress: A tqdm-like wrapper for reporting progress. If None,
                 progress is not reported.
             progress_desc: The title of the progress bar.
@@ -75,8 +127,13 @@ class Hasher(ABC):
                 'This hash cannot be used in parallel. Setting max_workers to 1.',
                 category=UserWarning)
             max_workers = 1
-        assert all(isinstance(p, str)
-                   for p in images), 'All images should be provided as paths.'
+        assert all(
+            isinstance(p, str)
+            for p in filepaths), 'All images should be provided as paths.'
+
+        if isinstance(self, VideoHasher) and isometric:
+            raise ValueError(
+                'Computing isometric hashes for videos is not supported.')
 
         # We can use a with statement to ensure threads are cleaned up promptly
         records = []
@@ -85,13 +142,13 @@ class Hasher(ABC):
             # Start the load operations and mark each future with its filepath
             compute: typing.Callable = self.compute_isometric if isometric else self.compute
             future_to_path: dict = {
-                executor.submit(compute, image=path): path
-                for path in images
+                executor.submit(compute, path): path
+                for path in filepaths
             }
             generator = concurrent.futures.as_completed(future_to_path)
             if progress is not None:
                 generator = progress(
-                    generator, total=len(images), desc=progress_desc)
+                    generator, total=len(filepaths), desc=progress_desc)
             for future in generator:
                 path = future_to_path[future]
                 try:
@@ -110,6 +167,18 @@ class Hasher(ABC):
                         'error': None
                     })
         return records
+
+
+class ImageHasher(Hasher):
+    @abstractmethod
+    def _compute(self, image: np.ndarray):
+        """Compute hash from an image.
+
+        Args:
+            image: A numpy array representing an image as
+                of shape (H, W, 3) where channels are ordered
+                as RGB or a filepath to an image.
+        """
 
     def compute_isometric_from_hash(self,
                                     hash_string_or_vector,
@@ -176,7 +245,11 @@ class Hasher(ABC):
         vector = self._compute(tools.to_image_array(image))
         if hash_format == 'vector':
             return vector
-        return self.vector_to_string(vector, hash_format=hash_format)
+        return self.vector_to_string(
+            vector,
+            hash_format=hash_format) if not self.returns_multiple else [
+                self.vector_to_string(v) for v in vector
+            ]
 
     def compute_with_quality(self,
                              image: tools.ImageInputType,
@@ -189,64 +262,76 @@ class Hasher(ABC):
                 it must be in RGB color order (note the OpenCV default is
                 BGR).
             hash_format: One 'base64' or 'hex'
+
+        Returns:
+            A tuple of (hash, quality)
         """
-        hash_vector, quality = self._compute_with_quality(
+        vector, quality = self._compute_with_quality(
             tools.to_image_array(image))
         if hash_format == 'vector':
-            return hash_vector, quality
-        return self.vector_to_string(
-            hash_vector, hash_format=hash_format), quality
+            return vector, quality
+        return (self.vector_to_string(vector, hash_format=hash_format),
+                quality) if not self.returns_multiple else (
+                    [self.vector_to_string(v) for v in vector], quality)
 
     def _compute_with_quality(self, image: np.ndarray):
         return self._compute(image), tools.compute_quality(image)
 
-    def compute_distance(self,
-                         hash1: typing.Union[np.ndarray, str],
-                         hash2: typing.Union[np.ndarray, str],
-                         hash_format='base64'):
-        """Compute the distance between two hashes.
+
+class VideoHasher(Hasher):
+    frames_per_second: float = 1
+
+    @abstractmethod
+    def process_frame(self,
+                      frame: np.ndarray,
+                      frame_index: int,
+                      frame_timestamp: float,
+                      state: dict = None) -> dict:
+        """Called for each frame in the video. For all
+        but the first frame, a state is provided recording the state from
+        the previous frame.
 
         Args:
-            hash1: The first hash or vector
-            hash2: The second hash or vector
+            frame: The current frame as an RGB ndarray
+            frame_index: The current frame index
+            frame_timestamp: The current frame timestamp
+            state: The state from the last call to process_frame
         """
-        if isinstance(hash1, str):
-            hash1 = self.string_to_vector(hash1, hash_format=hash_format)
-        if isinstance(hash2, str):
-            hash2 = self.string_to_vector(hash2, hash_format=hash_format)
-        hash1, hash2 = map(np.float32, [hash1, hash2])
 
-        if self.distance_metric == 'sqeuclidean':
-            return scipy.spatial.distance.sqeuclidean(hash1, hash2)
-        if self.distance_metric == 'euclidean':
-            return scipy.spatial.distance.euclidean(hash1, hash2)
-        if self.distance_metric == 'hamming':
-            return scipy.spatial.distance.hamming(hash1, hash2)
-        if self.distance_metric == 'cosine':
-            return scipy.spatial.distance.cosine(hash1, hash2)
-        raise NotImplementedError(
-            f'Distance metric: {self.distance_metric} not supported.')
-
-    def string_to_vector(self, hash_string: str, hash_format: str = 'base64'):
-        """Convert hash string to vector.
+    @abstractmethod
+    def hash_from_final_state(self, state: dict) -> np.ndarray:
+        """Called after all frames have been processed. Returns the final
+        feature vector.
 
         Args:
-            hash_string: The input hash string
-            hash_format: One of 'base64' or 'hex'
+            state: The state dictionary at the end of processing.
         """
-        return tools.string_to_vector(
-            hash_string,
-            dtype=self.dtype,
-            hash_length=self.hash_length,
-            hash_format=hash_format)
 
-    def vector_to_string(self, vector: np.ndarray,
-                         hash_format: str = 'base64'):
-        """Convert vector to hash string.
+    # pylint: disable=arguments-differ
+    def compute(self, filepath, errors='raise', hash_format='base64'):
+        """Compute a hash for a video at a given filepath.
 
         Args:
-            vector: Input vector
-            hash_format: One of 'base64' or 'hex'
+            filepath: Path to video file
+            errors: One of "raise", "ignore", or "warn". Passed
+                to perception.hashers.tools.read_video.
         """
-        return tools.vector_to_string(
-            vector, dtype=self.dtype, hash_format=hash_format)
+        state = None
+        for frame, frame_index, frame_timestamp in tools.read_video(
+                filepath=filepath,
+                frames_per_second=self.frames_per_second,
+                errors=errors):
+            state = self.process_frame(
+                frame=frame,
+                frame_index=frame_index,
+                frame_timestamp=frame_timestamp,
+                state=state)
+        assert state is not None
+        vector = self.hash_from_final_state(state=state)
+        if hash_format == 'vector':
+            return vector
+        return self.vector_to_string(
+            vector,
+            hash_format=hash_format) if not self.returns_multiple else [
+                self.vector_to_string(v) for v in vector
+            ]

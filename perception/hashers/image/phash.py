@@ -2,11 +2,11 @@ import scipy.fftpack
 import numpy as np
 import cv2
 
-from .hasher import Hasher
-from . import tools
+from ..hasher import ImageHasher
+from .. import tools
 
 
-class PHash(Hasher):
+class PHash(ImageHasher):
     """Also known as the DCT hash, a hash based on discrete cosine transforms of images.
     See `complete paper <https://www.phash.org/docs/pubs/thesis_zauner.pdf>`_ for
     details. Implementation based on that of
@@ -65,3 +65,14 @@ class PHash(Hasher):
             for transform_name, dct in tools.get_isometric_dct_transforms(
                 self._compute_dct(image)).items()
         }
+
+
+class PHashF(PHash):
+    dtype = 'float32'
+    distance_metric = 'euclidean'
+
+    def _dct_to_hash(self, dct):
+        dct = dct.flatten()
+        if self.exclude_first_term:
+            dct = dct[1:]
+        return dct
