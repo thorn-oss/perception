@@ -1,6 +1,7 @@
 FROM python:3.7
 
 WORKDIR /usr/src
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY ./versioneer.py ./
 COPY ./setup* ./
 COPY ./Pipfile* ./
