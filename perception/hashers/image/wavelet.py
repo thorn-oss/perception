@@ -3,10 +3,10 @@ import numpy as np
 
 import pywt
 
-from .hasher import Hasher
+from ..hasher import ImageHasher
 
 
-class WaveletHash(Hasher):
+class WaveletHash(ImageHasher):
     """Similar to PHash but using wavelets instead of DCT.
     Implementation based on that of
     `ImageHash <https://github.com/JohannesBuchner/imagehash>`_.

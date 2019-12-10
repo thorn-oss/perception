@@ -22,6 +22,7 @@ init:
 bash:
 	docker run -it $(DOCKER_ARGS)  --rm $(IMAGE_NAME) bash
 lab-server:
+	@-docker volume rm $(VOLUME_NAME)
 	docker run -it $(DOCKER_ARGS)  --rm -p $(NOTEBOOK_PORT):$(NOTEBOOK_PORT) $(IMAGE_NAME) pipenv run jupyter lab $(JUPYTER_OPTIONS)
 documentation-server:
 	docker run -it $(DOCKER_ARGS) -p $(DOCUMENTATION_PORT):$(DOCUMENTATION_PORT) $(IMAGE_NAME) pipenv run sphinx-autobuild -b html "docs" "docs/_build/html" --host 0.0.0.0 --port $(DOCUMENTATION_PORT) $(O)

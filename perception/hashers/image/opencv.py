@@ -3,10 +3,10 @@
 import cv2
 import numpy as np
 
-from .hasher import Hasher
+from ..hasher import ImageHasher
 
 
-class OpenCVHasher(Hasher):  # pylint: disable=abstract-method
+class OpenCVHasher(ImageHasher):  # pylint: disable=abstract-method
     allow_parallel = False
 
     def __init__(self):

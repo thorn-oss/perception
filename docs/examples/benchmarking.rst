@@ -35,7 +35,7 @@ The below example does the following:
         f.extractall('.')
     
     # Load the dataset
-    dataset = benchmarking.BenchmarkDataset.from_tuples(files=[
+    dataset = benchmarking.BenchmarkImageDataset.from_tuples(files=[
         (filepath, filepath.split(os.path.sep)[-2]) for filepath in glob.glob(
             os.path.join('thorn-perceptual-benchmark-v0', '**', '*.jpg')
         )
@@ -109,7 +109,7 @@ The below example does the following:
     )
     # We don't actually have to do this, but it shows
     # how to reload the transformed dataset later.
-    transformed = benchmarking.BenchmarkTransforms.load(
+    transformed = benchmarking.BenchmarkImageTransforms.load(
         path_to_zip_or_directory='transformed', verify_md5=False
     )
 

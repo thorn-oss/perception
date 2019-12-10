@@ -15,6 +15,8 @@ pytest-cov = "*"
 yapf = "==0.25.0"
 Pillow = "*"
 twine = "*"
+torch = "*"
+videoalignment = {git = "https://github.com/facebookresearch/videoalignment.git", ref = "1603926" }
 
 [packages]
 perception = {editable = true,path = ".",extras = ["benchmarking"]}

@@ -1,14 +1,37 @@
 Hashers
 *******
 
-All hashers share a common set of methods, implemented in their shared :code:`Hasher` base class
+All hashers from the :code:`Hasher` class.
 
 .. autoclass:: perception.hashers.hasher.Hasher
         :members:
 
-The following hash functions are included in the package.
+Images
+~~~~~~
 
-.. automodule:: perception.hashers
+All image hashers inherit from the :code:`ImageHasher` class. 
+
+.. autoclass:: perception.hashers.hasher.ImageHasher
+        :members:
+
+The following image hash functions are included in the package.
+
+.. automodule:: perception.hashers.image
+        :members:
+        :imported-members:
+
+
+Videos
+~~~~~~
+
+All video hashers inherit from the :code:`VideoHasher` class. 
+
+.. autoclass:: perception.hashers.hasher.VideoHasher
+        :members:
+
+The following video hash functions are included in the package.
+
+.. automodule:: perception.hashers.video
         :members:
         :imported-members:
 

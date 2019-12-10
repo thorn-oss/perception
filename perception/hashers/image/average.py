@@ -1,10 +1,10 @@
 import cv2
 
-from .hasher import Hasher
-from . import tools
+from ..hasher import ImageHasher
+from .. import tools
 
 
-class AverageHash(Hasher):
+class AverageHash(ImageHasher):
     """Computes a simple hash comparing the intensity of each
     pixel in a resized version of the image to the mean.
     Implementation based on that of

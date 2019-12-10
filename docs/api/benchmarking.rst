@@ -2,5 +2,5 @@ Benchmarking
 ************
 
 .. automodule:: perception.benchmarking
-        :members: BenchmarkDataset, BenchmarkTransforms, BenchmarkHashes
+        :members: BenchmarkImageDataset, BenchmarkImageTransforms, BenchmarkVideoDataset, BenchmarkVideoTransforms, BenchmarkHashes
         :inherited-members:

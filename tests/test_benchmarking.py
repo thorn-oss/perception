@@ -1,4 +1,5 @@
 # pylint: disable=protected-access,invalid-name
+import tempfile
 import shutil
 import os
 
@@ -8,7 +9,7 @@ import pytest
 from perception import benchmarking, hashers, testing
 
 files = testing.DEFAULT_TEST_IMAGES
-dataset = benchmarking.BenchmarkDataset.from_tuples(
+dataset = benchmarking.BenchmarkImageDataset.from_tuples(
     [(fn, i % 2) for i, fn in enumerate(files)])
 
 
@@ -17,7 +18,7 @@ def test_deduplicate():
     new_file = '/tmp/duplicate/dup_file.jpg'
     shutil.copy(files[0], new_file)
     duplicated_files = files + [new_file]
-    deduplicated, duplicates = benchmarking.BenchmarkDataset.from_tuples(
+    deduplicated, duplicates = benchmarking.BenchmarkImageDataset.from_tuples(
         [(fn, i % 2) for i, fn in enumerate(duplicated_files)]).deduplicate(
             hasher=hashers.AverageHash(), threshold=1e-2)
     assert len(duplicates) == 1
@@ -26,7 +27,7 @@ def test_deduplicate():
 
 def test_bad_dataset():
     bad_files = files + ['tests/images/nonexistent.jpg']
-    bad_dataset = benchmarking.BenchmarkDataset.from_tuples(
+    bad_dataset = benchmarking.BenchmarkImageDataset.from_tuples(
         [(fn, i % 2) for i, fn in enumerate(bad_files)])
     transforms = {
         'blur0.05': iaa.GaussianBlur(0.05),
@@ -53,9 +54,9 @@ def test_benchmark_dataset():
 
     dataset.save('/tmp/dataset.zip')
     dataset.save('/tmp/dataset_folder')
-    o1 = benchmarking.BenchmarkDataset.load('/tmp/dataset.zip')
-    o2 = benchmarking.BenchmarkDataset.load('/tmp/dataset_folder')
-    o3 = benchmarking.BenchmarkDataset.load('/tmp/dataset.zip')
+    o1 = benchmarking.BenchmarkImageDataset.load('/tmp/dataset.zip')
+    o2 = benchmarking.BenchmarkImageDataset.load('/tmp/dataset_folder')
+    o3 = benchmarking.BenchmarkImageDataset.load('/tmp/dataset.zip')
 
     for opened in [o1, o2, o3]:
         assert (opened._df['filepath'].apply(
@@ -86,3 +87,73 @@ def test_benchmark_transforms():
     # This is a charting function but we execute it just to make sure
     # it runs without error.
     hashes.show_histograms()
+
+
+def test_video_benchmark_dataset():
+    video_dataset = benchmarking.BenchmarkVideoDataset.from_tuples(
+        files=[('perception/testing/videos/v1.m4v',
+                'category1'), ('perception/testing/videos/v2.m4v',
+                               'category1'),
+               ('perception/testing/videos/v1.m4v',
+                'category2'), ('perception/testing/videos/v2.m4v',
+                               'category2')])
+    transforms = {
+        'noop':
+        benchmarking.video_transforms.get_simple_transform(
+            width=128, sar='1/1'),
+        'gif':
+        benchmarking.video_transforms.get_simple_transform(
+            codec='gif', output_ext='.gif'),
+        'clip1s':
+        benchmarking.video_transforms.get_simple_transform(clip_s=(1, None)),
+        'blackpad':
+        benchmarking.video_transforms.get_black_frame_padding_transform(
+            duration_s=1),
+        'slideshow':
+        benchmarking.video_transforms.get_slideshow_transform(
+            frame_input_rate=1, frame_output_rate=1),
+    }
+    transformed = video_dataset.transform(
+        storage_dir=tempfile.TemporaryDirectory().name, transforms=transforms)
+    assert len(transformed._df) == len(transforms) * len(video_dataset._df)
+    assert transformed._df['filepath'].isnull().sum() == 0
+
+    # We will compute hashes for each of the transformed
+    # videos and check the results for correctness.
+    phash_framewise_hasher = hashers.FramewiseHasher(
+        frame_hasher=hashers.PHash(),
+        interframe_threshold=-1,
+        frames_per_second=2)
+    hashes = transformed.compute_hashes(
+        hashers={'phashframewise': phash_framewise_hasher})
+
+    guid = hashes._df.guid.iloc[0]
+    df = hashes._df[hashes._df['guid'] == guid]
+    clip1s = df[(df.transform_name == 'clip1s')]
+    noop = df[(df.transform_name == 'noop')]
+    blackpad = df[(df.transform_name == 'blackpad')]
+    slideshow = df[(df.transform_name == 'slideshow')]
+
+    # We should have dropped two hashes from the beginning
+    # on the clipped video.
+    assert len(clip1s) == len(noop) - 2
+
+    # The first hash from the clipped video should be the
+    # same as the third hash from the original
+    assert clip1s.hash.iloc[0] == noop.hash.iloc[2]
+
+    # The black padding adds four hashes (two on either side).
+    assert len(blackpad) == len(noop) + 4
+
+    # A black frame should yield all zeros for PHash
+    assert phash_framewise_hasher.string_to_vector(
+        blackpad.iloc[0].hash).sum() == 0
+
+    # The slideshow hashes should be the same as the noop
+    # hashes for every other hash.
+    assert (noop.hash.values[::2] == slideshow.hash.values[::2]).all()
+
+    # Every second hash in the slideshow should be the same as the
+    # previous one.
+    for n in range(0, 10, 2):
+        assert slideshow.hash.values[n] == slideshow.hash.values[n + 1]
