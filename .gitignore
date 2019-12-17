@@ -28,3 +28,6 @@ notebooks
 
 # Docs build artifacts
 /docs/_build
+
+# Remove .vscode folder
+.vscode
