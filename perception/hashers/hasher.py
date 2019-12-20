@@ -85,13 +85,16 @@ class Hasher(ABC):
             hash2 = self.string_to_vector(hash2, hash_format=hash_format)
 
         if self.distance_metric == 'sqeuclidean':
-            return scipy.spatial.distance.sqeuclidean(hash1, hash2)
+            return scipy.spatial.distance.sqeuclidean(
+                hash1.astype('float32'), hash2.astype('float32'))
         if self.distance_metric == 'euclidean':
-            return scipy.spatial.distance.euclidean(hash1, hash2)
+            return scipy.spatial.distance.euclidean(
+                hash1.astype('float32'), hash2.astype('float32'))
         if self.distance_metric == 'hamming':
             return scipy.spatial.distance.hamming(hash1, hash2)
         if self.distance_metric == 'cosine':
-            return scipy.spatial.distance.cosine(hash1, hash2)
+            return scipy.spatial.distance.cosine(
+                hash1.astype('float32'), hash2.astype('float32'))
         if self.distance_metric == 'custom':
             return self._compute_distance(hash1, hash2)
         raise NotImplementedError(
