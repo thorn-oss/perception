@@ -75,4 +75,22 @@ class PHashF(PHash):
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]
+        if (dct == 0).all():
+            return None
+        return dct
+
+
+class PHashU8(PHash):
+    dtype = 'uint8'
+    distance_metric = 'euclidean'
+
+    def _dct_to_hash(self, dct):
+        dct = dct.flatten()
+        if self.exclude_first_term:
+            dct = dct[1:]
+        if (dct == 0).all():
+            return None
+        min_value = dct.min()
+        max_value = dct.max()
+        dct = np.uint8(255 * (dct - min_value) / (max_value - min_value))
         return dct
