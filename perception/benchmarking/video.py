@@ -134,6 +134,7 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
         def process_row(row):
             error = None
             try:
+                assert not pd.isnull(row['filepath']), 'No filepath provided.'
                 hashes = tools.compute_synchronized_video_hashes(
                     filepath=row['filepath'],
                     hashers=hashers,
@@ -142,6 +143,10 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
             # pylint: disable=broad-except
             except Exception as exception:
                 error = str(exception)
+                hashes = {
+                    hasher_name: [None] if hasher.returns_multiple else None
+                    for hasher_name, hasher in hashers.items()
+                }
             base_dict = {
                 'guid': row['guid'],
                 'filepath': row['filepath'],
