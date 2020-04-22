@@ -2,6 +2,10 @@ Benchmarking
 ************
 
 This package provides a fair amount of infrastructure for benchmarking different hashers to evaluate their performance.
+
+Image Hashing
+=============
+
 The below example does the following:
 
 - Download a benchmarking dataset (we provide a dataset with images that have compatible licensing for this example)
@@ -430,3 +434,156 @@ phash           0.273438      80.106  6.56685e-05          38540
 shrinkhash     60.1166        19.538  0                    38540
 wavelet         0.0078125     16.168  0                    38540
 =============  ===========  ========  ===========  =============
+
+Video Hashing
+=============
+
+The below example does the following:
+
+- Download a benchmarking dataset. Here we use the `Charades <https://prior.allenai.org/projects/charades>`_ dataset which contain over 9,000 videos.
+- Load the dataset.
+- Transform the dataset to generate synthetically altered videos.
+- Define some hashers we want to evaluate.
+- Compute all the hashes.
+- Report metrics for each video category / hasher / transformation combination.
+
+.. code-block:: python
+
+    import os
+    import zipfile
+    import urllib.request
+
+
+    import pandas as pd
+
+    import perception.benchmarking
+    import perception.hashers
+
+    if not os.path.isdir('Charades_v1_480'):
+        # Download the dataset since it appears we do not have it. Note that
+        # these are large files (> 13GB).
+        urllib.request.urlretrieve(
+            url='http://ai2-website.s3.amazonaws.com/data/Charades_v1_480.zip',
+            filename='Charades_v1_480.zip'
+        )
+        with zipfile.ZipFile('Charades_v1_480.zip') as zfile:
+            zfile.extractall('.')
+        urllib.request.urlretrieve(
+            url='http://ai2-website.s3.amazonaws.com/data/Charades.zip',
+            filename='Charades.zip'
+        )
+        with zipfile.ZipFile('Charades.zip') as zfile:
+            zfile.extractall('.')
+
+
+    # These are files that we've identified as having identical subsequences, typically
+    # when a person is out of frame and the backgrounds are the same.
+    duplicates = [
+        ('0HVVN.mp4', 'UZRQD.mp4'), ('ZIOET.mp4', 'YGXX6.mp4'), ('82XPD.mp4', 'E7QDZ.mp4'),
+        ('FQDS1.mp4', 'AIOTI.mp4'), ('PBV4T.mp4', 'XXYWL.mp4'), ('M0P0H.mp4', 'STY6W.mp4'),
+        ('3Q92U.mp4', 'GHPO3.mp4'), ('NFIQM.mp4', 'I2DHG.mp4'), ('PIRMO.mp4', '0GFE8.mp4'),
+        ('LRPBA.mp4', '9VK0J.mp4'), ('UI0QG.mp4', 'FHXKQ.mp4'), ('Y05U8.mp4', '4RVZB.mp4'),
+        ('J6TVB.mp4', '2ZBL5.mp4'), ('A8T8V.mp4', 'IGOQK.mp4'), ('H8QM1.mp4', 'QYMWC.mp4'),
+        ('O45BC.mp4', 'ZS7X6.mp4'), ('NOP6W.mp4', 'F7KFE.mp4'), ('4MPPQ.mp4', 'A3M94.mp4'),
+        ('L8FFR.mp4', 'M8MP0.mp4'), ('EHYXP.mp4', 'O8PO3.mp4'), ('MGBLJ.mp4', 'RIEG6.mp4'),
+        ('53FPM.mp4', 'BLFEV.mp4'), ('UIIF3.mp4', 'TKEKQ.mp4'), ('GVX7E.mp4', '7GPSY.mp4'),
+        ('T7HZB.mp4', '6KGZA.mp4'), ('65M4K.mp4', 'UDGP2.mp4'), ('6SS4H.mp4', 'CK6OL.mp4'),
+        ('OVHFT.mp4', 'GG1X2.mp4'), ('VEHER.mp4', 'XBPEJ.mp4'), ('WN38A.mp4', '2QI8F.mp4'),
+        ('UMXKN.mp4', 'EOKJ0.mp4'), ('OSIKP.mp4', 'WT2C0.mp4'), ('H5V2Y.mp4', 'ZXN6A.mp4'),
+        ('XS6PF.mp4', '1WJ6O.mp4'), ('S2XJW.mp4', 'YH0BX.mp4'), ('UO607.mp4', 'Z5JZD.mp4'),
+        ('XN64E.mp4', 'CSRZM.mp4'), ('YXI7M.mp4', 'IKQLJ.mp4'), ('1B9C8.mp4', '004QE.mp4'),
+        ('V1SQH.mp4', '48WOM.mp4'), ('107YZ.mp4', 'I049A.mp4'), ('3S6WL.mp4', 'SC5YW.mp4'),
+        ('OY50Q.mp4', '5T607.mp4'), ('XKH7W.mp4', '028CE.mp4'), ('X8XQE.mp4', 'J0VXY.mp4'),
+        ('STB0G.mp4', 'J0VXY.mp4'), ('UNXLF.mp4', 'J0VXY.mp4'), ('56PK0.mp4', 'M1TZR.mp4'),
+        ('FVITB.mp4', 'R0M34.mp4'), ('BPZE3.mp4', 'R0M34.mp4'), ('VS7DA.mp4', '1X0M3.mp4'),
+        ('I7MEA.mp4', 'YMM1Z.mp4'), ('9N76L.mp4', '0LDP7.mp4'), ('AXS82.mp4', 'W8WRK.mp4'),
+        ('8TSU4.mp4', 'MXATD.mp4'), ('80FWF.mp4', '18HFG.mp4'), ('RO3A2.mp4', 'V4HY4.mp4'),
+        ('HU409.mp4', 'BDWIX.mp4'), ('3YY88.mp4', 'EHHRS.mp4'), ('65RS3.mp4', 'SLIH4.mp4'),
+        ('LR0L8.mp4', 'Y665P.mp4')
+    ]
+
+    blacklist = [fp1 for fp1, fp2 in duplicates]
+    df = pd.concat([pd.read_csv('Charades/Charades_v1_test.csv'), pd.read_csv('Charades/Charades_v1_train.csv')])
+    df = df[~(df['id'] + '.mp4').isin(blacklist)]
+    df['filepath'] = df['id'].apply(lambda video_id: os.path.join('Charades_v1_480', video_id + '.mp4'))
+    assert df['filepath'].apply(os.path.isfile).all(), 'Some video files are missing.'
+    dataset = perception.benchmarking.BenchmarkVideoDataset.from_tuples(files=df[['filepath', 'scene']].itertuples(index=False))
+
+    if not os.path.isdir('benchmarking_videos'):
+        # We haven't computed the transforms yet, so we do that
+        # now.
+        pad_width = 240
+        pad_height = 320
+        transforms = {
+            'noop': perception.benchmarking.video_transforms.get_simple_transform(
+                width='ceil(min(240/max(iw, ih), 1)*iw/2)*2',
+                height='ceil(min(240/max(iw, ih), 1)*ih/2)*2',
+                codec='h264',
+                output_ext='.m4v',
+                sar='1/1',
+                clip_s=(None, 60*5)
+            ),
+            'shrink': perception.benchmarking.video_transforms.get_simple_transform(
+                width='ceil(0.7*iw/2)*2',
+                height='ceil(0.7*ih/2)*2'
+            ),
+            'clip0.2': perception.benchmarking.video_transforms.get_simple_transform(clip_pct=(0.2, 0.8)),
+            'slideshow': perception.benchmarking.video_transforms.get_slideshow_transform(
+                frame_input_rate=1/2.5, frame_output_rate=0.5, max_frames=10, offset=1.3),
+            'black_frames': perception.benchmarking.video_transforms.get_black_frame_padding_transform(0.5, 0.05),
+            'gif': perception.benchmarking.video_transforms.get_simple_transform(
+                output_ext='.gif', codec='gif', clip_s=(1.2, 10.2), fps=1/2.5
+            ),
+            'black_padding': perception.benchmarking.video_transforms.get_simple_transform(
+                width=f'(iw*sar)*min({pad_width}/(iw*sar),{pad_height}/ih)', height=f'ih*min({pad_width}/(iw*sar),{pad_height}/ih)',
+                pad=f'{pad_width}:{pad_height}:({pad_width}-iw*min({pad_width}/iw,{pad_height}/ih))/2:({pad_height}-ih*min({pad_width}/iw,{pad_height}/ih))/2'
+            )
+        }
+
+        # Save the transforms for later.
+        transformed = dataset.transform(transforms=transforms, storage_dir='benchmarking_videos')
+
+    transformed = perception.benchmarking.BenchmarkVideoTransforms.load('benchmarking_videos', verify_md5=False)
+
+    phashu8 = perception.hashers.PHashU8(exclude_first_term=False, freq_shift=1, hash_size=12)
+    hashers = {
+        'phashu8_framewise': perception.hashers.FramewiseHasher(
+            frames_per_second=1, frame_hasher=phashu8, interframe_threshold=50, quality_threshold=90),
+        'phashu8_tmkl1': perception.hashers.SimpleSceneDetection(
+            base_hasher=perception.hashers.TMKL1(
+                frames_per_second=5, frame_hasher=phashu8,
+                distance_metric='euclidean', dtype='uint8',
+                norm=None, quality_threshold=90),
+            max_scene_length=1,
+            interscene_threshold=50
+        )
+    }
+    if not os.path.isfile('hashes.csv'):
+        # We haven't computed the hashes, so we do that now.
+        hashes = transformed.compute_hashes(hashers=hashers, max_workers=0)
+        hashes.save('hashes.csv')
+
+    # Save the hashes for later. It took a long time after all!
+    hashes = perception.benchmarking.BenchmarkHashes.load('hashes.csv')
+
+    hashes.compute_threshold_recall(fpr_threshold=0.001, grouping=['transform_name'])
+
+
+================  =================  ===========  ========  ===========  =============
+transform_name    hasher_name          threshold    recall          fpr    n_exemplars
+================  =================  ===========  ========  ===========  =============
+black_frames      phashu8_framewise      51.0979    88.163  0.000933489         277865
+black_frames      phashu8_tmkl1          55.7584    99.918  0.000821862         403415
+black_padding     phashu8_framewise      74.6391     7.689  0                   276585
+black_padding     phashu8_tmkl1          53.8702    99.887  0.000924784         411664
+clip0.2           phashu8_framewise      54.8635    90.772  0.000904977         223591
+clip0.2           phashu8_tmkl1          59.1693    99.753  0.000926021         323870
+gif               phashu8_framewise      55.4437    68.314  0.000913103          82038
+gif               phashu8_tmkl1          63.773     82.926  0.000993172          32140
+noop              phashu8_framewise       0        100      0                   281976
+noop              phashu8_tmkl1           0        100      0                   408673
+shrink            phashu8_framewise      24.7184   100      0                   280617
+shrink            phashu8_tmkl1          52.8678    99.866  0.000926307         399357
+slideshow         phashu8_framewise      56.9825    99.712  0.000926689         164361
+slideshow         phashu8_tmkl1          63.4271    95.131  0.000988576          71668
+================  =================  ===========  ========  ===========  =============

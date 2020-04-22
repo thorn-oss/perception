@@ -4,6 +4,8 @@ import shutil
 import os
 
 from imgaug import augmenters as iaa
+from scipy import spatial
+import numpy as np
 import pytest
 
 from perception import benchmarking, hashers, testing
@@ -157,3 +159,36 @@ def test_video_benchmark_dataset():
     # previous one.
     for n in range(0, 10, 2):
         assert slideshow.hash.values[n] == slideshow.hash.values[n + 1]
+
+
+def test_euclidean_extension():
+
+    # This function plainly inplements the process of computing
+    # the closest positive and negative examples and their indexes.
+    def compute_euclidean_metrics_py(X_noop, X_transformed, mask):
+        distance_matrix = spatial.distance.cdist(
+            XA=X_transformed, XB=X_noop, metric='euclidean')
+        pos = np.ma.masked_array(distance_matrix, np.logical_not(mask))
+        neg = np.ma.masked_array(distance_matrix, mask)
+        distances = np.concatenate([
+            neg.min(axis=1).data[np.newaxis],
+            pos.min(axis=1).data[np.newaxis]
+        ],
+                                   axis=0).T
+        indexes = np.concatenate(
+            [neg.argmin(axis=1)[np.newaxis],
+             pos.argmin(axis=1)[np.newaxis]]).T
+        return distances, indexes
+
+    X_noop = np.random.uniform(low=0, high=255, size=(5, 144)).astype('int32')
+    X_trans = np.random.uniform(
+        low=0, high=255, size=(10, 144)).astype('int32')
+    mask = np.array([True, False] * 5 * 5).reshape(10, 5)
+
+    distances, indexes = benchmarking.common.extensions.compute_euclidean_metrics(
+        X_noop, X_trans, mask)
+    distances_py, indexes_py = compute_euclidean_metrics_py(
+        X_noop, X_trans, mask)
+
+    assert (indexes_py == indexes).all()
+    np.testing.assert_allclose(distances, distances_py)

@@ -17,6 +17,7 @@ init:
 	rm -rf .venv
 	PIPENV_VENV_IN_PROJECT=true pipenv install --dev --skip-lock
 	pipenv run pip install -r docs/requirements.txt
+	pipenv run pip install cython
 	pipenv run pip freeze | grep opencv | xargs -n 1 pipenv run pip uninstall -y
 	pipenv run pip install -U --no-cache-dir opencv-contrib-python-headless
 bash:
@@ -37,8 +38,11 @@ format:
 format_check:
 	$(IN_DOCKER) yapf --recursive --diff --exclude=perception/_version.py tests perception\
 		|| (echo '\nUnexpected format.' && exit 1)
+build_ext:
+	$(IN_DOCKER) python setup.py build_ext --inplace
 precommit:
 	make build
+	make build_ext
 	make lint_check
 	make type_check
 	make format_check

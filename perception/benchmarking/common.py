@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name
-import concurrent.futures
 from abc import ABC
 import logging
 import tempfile
@@ -18,8 +17,40 @@ import numpy as np
 import tqdm
 
 from ..hashers.tools import compute_md5, string_to_vector
+from . import extensions  # type: ignore
 
 log = logging.getLogger(__name__)
+
+
+def create_mask(transformed_guids, noop_guids):
+    """Given a list of transformed guids and noop guids,
+    computes an MxN array indicating whether noop n has the same guid
+    as transform m. Used for applying a mask to a distance matrix
+    for efficient computation of recall at different thresholds.
+
+    Args:
+        transformed_guids: An iterable of transformed guids
+        noop: An iterable of noop guids
+
+    Returns:
+        An boolean array of shape
+        `(len(transformed_guids), len(transformed_noops))`
+    """
+    n_noops = len(noop_guids)
+    previous_guid = None
+    start = None
+    end = 0
+    mask = np.zeros((len(transformed_guids), len(noop_guids)), dtype='bool')
+    for current_guid, row in zip(transformed_guids, mask):
+        if previous_guid is None or current_guid != previous_guid:
+            start = end
+            end = start + next(
+                (other_index
+                 for other_index, guid in enumerate(noop_guids[start:])
+                 if guid != current_guid), n_noops)
+            previous_guid = current_guid
+        row[start:end] = True
+    return mask
 
 
 def compute_threshold_fpr_recall(pos, neg, fpr_threshold=0.001):
@@ -115,7 +146,8 @@ class Saveable(Filterable):
                 z.extract('index.csv', os.path.join(storage_dir))
                 index = pd.read_csv(os.path.join(storage_dir, 'index.csv'))
                 index['filepath'] = index['filename'].apply(
-                    lambda fn: os.path.join(storage_dir, fn))
+                    lambda fn: os.path.join(storage_dir, fn) if not pd.isnull(fn) else None
+                )
                 if index['filepath'].apply(os.path.isfile).all() and (
                         not verify_md5
                         or all(row['md5'] == compute_md5(row['filepath']))
@@ -133,7 +165,8 @@ class Saveable(Filterable):
             index = pd.read_csv(
                 os.path.join(path_to_zip_or_directory, 'index.csv'))
             index['filepath'] = index['filename'].apply(
-                lambda fn: os.path.join(path_to_zip_or_directory, fn))
+                lambda fn: os.path.join(path_to_zip_or_directory, fn) if not pd.isnull(fn) else None
+            )
 
         if verify_md5:
             assert all(
@@ -151,12 +184,12 @@ class Saveable(Filterable):
             path_to_zip_or_directory: Pretty self-explanatory
         """
         df = self._df
-        assert 'filepath' in df.columns, 'Index dataframe must contain md5.'
+        assert 'filepath' in df.columns, 'Index dataframe must contain filepath.'
 
         # Build index using filename instead of filepath.
         index = df.copy()
         index['filename'] = df['filepath'].apply(
-            lambda filepath: os.path.basename(filepath) if filepath is not None else filepath
+            lambda filepath: os.path.basename(filepath) if not pd.isnull(filepath) else None
         )
         if index['filename'].dropna().duplicated().sum() > 0:
             warnings.warn(f'Changing filenames to UUID due to duplicates.',
@@ -164,11 +197,11 @@ class Saveable(Filterable):
 
             index['filename'] = [
                 str(uuid.uuid4()) + os.path.splitext(row['filename'])[1]
-                if row['filename'] is not None else None
+                if not pd.isnull(row['filename']) else None
                 for _, row in index.iterrows()
             ]
         index['md5'] = [
-            compute_md5(filepath) if filepath is not None else None
+            compute_md5(filepath) if not pd.isnull(filepath) else None
             for filepath in tqdm.tqdm(
                 index['filepath'], desc='Computing md5s.')
         ]
@@ -186,7 +219,7 @@ class Saveable(Filterable):
                     f.writestr('index.csv', index_file.read())
                 for _, row in tqdm.tqdm(
                         index.iterrows(), desc='Saving files', total=len(df)):
-                    if row['filepath'] is None:
+                    if pd.isnull(row['filepath']):
                         #  There was an error associated with this file.
                         continue
                     f.write(row['filepath'], row['filename'])
@@ -198,7 +231,7 @@ class Saveable(Filterable):
                     index=False)
             for _, row in tqdm.tqdm(
                     index.iterrows(), desc='Saving files', total=len(df)):
-                if row['filepath'] is None:
+                if pd.isnull(row['filepath']):
                     # There was an error associated with this file.
                     continue
                 if row['filepath'] == os.path.join(path_to_zip_or_directory,
@@ -266,7 +299,6 @@ class BenchmarkHashes(Filterable):
                 hashsets.groupby(['hasher_name', 'transform_name',
                                   'category']),
                 desc='Computing metrics.'):
-
             # Note the guid filtering below. We need to include only guids
             # for which we have the transform *and* the guid. One of them
             # may have been dropped due to being invalid.
@@ -279,21 +311,42 @@ class BenchmarkHashes(Filterable):
             ]]
             n_noops = len(noops.guid)
             n_hashset = len(hashset.guid)
+            noop_guids = noops.guid.values
+            mask = create_mask(hashset.guid.values, noops.guid.values)
             if distance_metric != 'custom':
-                distance_matrix = spatial.distance.cdist(
-                    XA=np.array(
-                        hashset.hash.apply(
-                            string_to_vector,
-                            hash_length=hash_length,
-                            dtype=dtype,
-                            hash_format='base64').tolist()),
-                    XB=np.array(
-                        noops.hash.apply(
-                            string_to_vector,
-                            dtype=dtype,
-                            hash_format='base64',
-                            hash_length=hash_length).tolist()),
-                    metric=distance_metric)
+                X_trans = np.array(
+                    hashset.hash.apply(
+                        string_to_vector,
+                        hash_length=int(hash_length),
+                        dtype=dtype,
+                        hash_format='base64').tolist())
+                X_noop = np.array(
+                    noops.hash.apply(
+                        string_to_vector,
+                        dtype=dtype,
+                        hash_format='base64',
+                        hash_length=int(hash_length)).tolist())
+                if distance_metric != 'euclidean' or 'int' not in dtype:
+                    distance_matrix = spatial.distance.cdist(
+                        XA=X_trans, XB=X_noop, metric=distance_metric)
+                    distance_to_closest_image = distance_matrix.min(axis=1)
+                    distance_to_correct_image = np.ma.masked_array(
+                        distance_matrix, np.logical_not(mask)).min(axis=1)
+                    distance_matrix_incorrect_image = np.ma.masked_array(
+                        distance_matrix, mask)
+                    distance_to_incorrect_image = distance_matrix_incorrect_image.min(
+                        axis=1)
+                    closest_incorrect_guid = noop_guids[
+                        distance_matrix_incorrect_image.argmin(axis=1)]
+                else:
+                    distances, indexes = extensions.compute_euclidean_metrics(
+                        X_noop.astype('int32'), X_trans.astype('int32'), mask)
+                    distance_to_correct_image = distances[:, 1]
+                    distance_to_incorrect_image = distances[:, 0]
+                    distance_to_closest_image = distances.min(axis=1)
+                    closest_incorrect_guid = [
+                        noop_guids[idx] for idx in indexes[:, 0]
+                    ]
             else:
                 assert (
                     custom_distance_metrics is not None and
@@ -304,37 +357,20 @@ class BenchmarkHashes(Filterable):
                 hashset_hash_values = hashset.hash.values
                 distance_matrix = np.zeros((n_hashset, n_noops))
                 distance_function = custom_distance_metrics[hasher_name]
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    futures_to_indices = {
-                        executor.submit(distance_function,
-                                        hashset_hash_values[i1],
-                                        noops_hash_values[i2]): (i1, i2)
-                        for i1, i2 in itertools.product(
-                            range(n_hashset), range(n_noops))
-                    }
-                    for future in concurrent.futures.as_completed(
-                            futures_to_indices):
-                        i1, i2 = futures_to_indices[future]
-                        distance_matrix[i1, i2] = future.result()
-            distance_to_closest_image = distance_matrix.min(axis=1)
-            previous_guid = None
-            start = None
-            end = 0
-            mask = np.zeros_like(distance_matrix, dtype='bool')
-            noop_guids = noops.guid.values
-            for current_guid, row in zip(hashset.guid, mask):
-                if previous_guid is None or current_guid != previous_guid:
-                    start = end
-                    end = start + next(
-                        (other_index
-                         for other_index, guid in enumerate(noop_guids[start:])
-                         if guid != current_guid), n_noops)
-                    previous_guid = current_guid
-                row[start:end] = True
-            distance_matrix_correct_image = np.ma.masked_array(
-                distance_matrix, np.logical_not(mask))
-            distance_matrix_incorrect_image = np.ma.masked_array(
-                distance_matrix, mask)
+                for i1, i2 in itertools.product(
+                        range(n_hashset), range(n_noops)):
+                    distance_matrix[i1, i2] = distance_function(
+                        hashset_hash_values[i1], noops_hash_values[i2])
+                distance_to_closest_image = distance_matrix.min(axis=1)
+                distance_to_correct_image = np.ma.masked_array(
+                    distance_matrix, np.logical_not(mask)).min(axis=1)
+                distance_matrix_incorrect_image = np.ma.masked_array(
+                    distance_matrix, mask)
+                distance_to_incorrect_image = distance_matrix_incorrect_image.min(
+                    axis=1)
+                closest_incorrect_guid = noop_guids[
+                    distance_matrix_incorrect_image.argmin(axis=1)]
+
             metrics.append(
                 pd.DataFrame({
                     'guid':
@@ -346,13 +382,13 @@ class BenchmarkHashes(Filterable):
                     'category':
                     category,
                     'distance_to_closest_correct_image':
-                    distance_matrix_correct_image.min(axis=1),
+                    distance_to_correct_image,
                     'distance_to_closest_incorrect_image':
-                    distance_matrix_incorrect_image.min(axis=1),
+                    distance_to_incorrect_image,
                     'distance_to_closest_image':
                     distance_to_closest_image,
                     'closest_incorrect_guid':
-                    noop_guids[distance_matrix_incorrect_image.argmin(axis=1)]
+                    closest_incorrect_guid
                 }))
         metrics = pd.concat(metrics)
         self._metrics = metrics
@@ -413,8 +449,10 @@ class BenchmarkHashes(Filterable):
                 ax = axs[rowIdx if nrows > 1 else colIdx]
 
             # Plot the charts
-            neg = subset['distance_to_closest_incorrect_image'].values
-            pos = subset['distance_to_closest_correct_image'].values
+            pos, neg = subset.groupby(['guid', 'transform_name'])[[
+                'distance_to_closest_correct_image',
+                'distance_to_closest_incorrect_image'
+            ]].min().values.T
             optimal_threshold, _, optimal_recall = compute_threshold_fpr_recall(
                 pos=pos, neg=neg, fpr_threshold=fpr_threshold)
             optimal_threshold = optimal_threshold.round(3)
@@ -440,7 +478,7 @@ class BenchmarkHashes(Filterable):
         fig.tight_layout()
 
     def compute_threshold_recall(self,
-                                 fpr_threshold=0.01,
+                                 fpr_threshold=0.001,
                                  grouping=None,
                                  **kwargs) -> pd.DataFrame:
         """Compute a table for threshold and recall for each category, hasher,
@@ -464,10 +502,10 @@ class BenchmarkHashes(Filterable):
             grouping = ['category', 'transform_name']
 
         def group_func(subset):
-            neg = subset.groupby(
-                'guid')['distance_to_closest_incorrect_image'].min().values
-            pos = subset.groupby(
-                'guid')['distance_to_closest_correct_image'].min().values
+            pos, neg = subset.groupby(['guid', 'transform_name'])[[
+                'distance_to_closest_correct_image',
+                'distance_to_closest_incorrect_image'
+            ]].min().values.T
             optimal_threshold, optimal_fpr, optimal_recall = compute_threshold_fpr_recall(
                 pos=pos, neg=neg, fpr_threshold=fpr_threshold)
             return pd.Series({

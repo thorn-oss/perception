@@ -31,3 +31,7 @@ notebooks
 
 # Remove .vscode folder
 .vscode
+
+# Extension artifacts
+*.c
+*.so
