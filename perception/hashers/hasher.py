@@ -246,12 +246,11 @@ class ImageHasher(Hasher):
             hash_format: One 'base64', 'hex', or 'vector'
         """
         vector = self._compute(tools.to_image_array(image))
-        if hash_format == 'vector':
-            return vector
         return self.vector_to_string(
             vector,
             hash_format=hash_format) if not self.returns_multiple else [
-                self.vector_to_string(v) for v in vector
+                self.vector_to_string(v, hash_format=hash_format)
+                for v in vector
             ]
 
     def compute_with_quality(self,
@@ -331,10 +330,9 @@ class VideoHasher(Hasher):
                 state=state)
         assert state is not None
         vector = self.hash_from_final_state(state=state)
-        if hash_format == 'vector':
-            return vector
         return self.vector_to_string(
             vector,
             hash_format=hash_format) if not self.returns_multiple else [
-                self.vector_to_string(v) for v in vector
+                self.vector_to_string(v, hash_format=hash_format)
+                for v in vector
             ]
