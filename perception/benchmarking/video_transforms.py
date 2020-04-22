@@ -104,14 +104,17 @@ def get_simple_transform(width: typing.Union[str, int] = -1,
         stream = stream.output(output_filepath, **format_kwargs) \
                     .overwrite_output()
         ffmpeg.run(stream)
-        return output_filepath
+        if os.path.isfile(output_filepath):
+            return output_filepath
+        return None
 
     return transform
 
 
 def get_slideshow_transform(frame_input_rate,
                             frame_output_rate,
-                            max_frames=None):
+                            max_frames=None,
+                            offset=0):
     """Get a slideshow transform to create slideshows from
     videos.
 
@@ -123,6 +126,7 @@ def get_slideshow_transform(frame_input_rate,
             in the slideshow (e.g., a rate of 0.5 means each frame will
             appear for 2 seconds).
         max_frames: The maximum number of frames to write.
+        offset: The number of seconds to wait before beginning the slide show.
     """
 
     def transform(input_filepath, output_filepath):
@@ -131,9 +135,11 @@ def get_slideshow_transform(frame_input_rate,
         writer = None
         frame_count = 0
         try:
-            for frame, _, _ in read_video(
+            for frame, _, timestamp in read_video(
                     filepath=input_filepath,
                     frames_per_second=frame_input_rate):
+                if timestamp < offset:
+                    continue
                 if writer is None:
                     writer = cv2.VideoWriter(
                         filename=output_filepath,
@@ -148,7 +154,9 @@ def get_slideshow_transform(frame_input_rate,
         finally:
             if writer is not None:
                 writer.release()
-        return output_filepath
+        if os.path.isfile(output_filepath):
+            return output_filepath
+        return None
 
     return transform
 
@@ -182,6 +190,8 @@ def get_black_frame_padding_transform(duration_s=0, duration_pct=0):
                 "[pre] [in] [post] concat=n=3").format(
                     width=width, height=height,
                     duration=duration)).overwrite_output().run()
-        return output_filepath
+        if os.path.isfile(output_filepath):
+            return output_filepath
+        return None
 
     return transform
