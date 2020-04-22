@@ -150,12 +150,14 @@ class TMKL2(VideoHasher):
 class TMKL1(VideoHasher):
     """The TMK L1 video hashing algorithm."""
 
-    dtype = 'float32'
-    distance_metric = 'cosine'
-
+    # pylint: disable=too-many-arguments
     def __init__(self,
                  frame_hasher: ImageHasher = None,
-                 frames_per_second: int = 15):
+                 frames_per_second: int = 15,
+                 dtype='float32',
+                 distance_metric='cosine',
+                 norm=2,
+                 quality_threshold=None):
         if frame_hasher is None:
             frame_hasher = PHashF(
                 hash_size=16, exclude_first_term=True, freq_shift=1)
@@ -163,6 +165,10 @@ class TMKL1(VideoHasher):
         self.frames_per_second = frames_per_second
         assert frame_hasher.dtype != 'bool', 'This hasher requires real valued hashes.'
         self.frame_hasher = frame_hasher
+        self.norm = norm
+        self.dtype = dtype or self.frame_hasher.dtype
+        self.distance_metric = distance_metric or self.frame_hasher.distance_metric
+        self.quality_threshold = quality_threshold
 
     # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
@@ -171,11 +177,24 @@ class TMKL1(VideoHasher):
                 'sum': np.zeros(self.frame_hasher.hash_length),
                 'frame_count': 0
             }
-        state['sum'] += np.float32(
-            self.frame_hasher.compute(frame, hash_format='vector'))
-        state['frame_count'] += 1
+        if not self.quality_threshold:
+            hash_vector = self.frame_hasher.compute(
+                frame, hash_format='vector')
+        else:
+            hash_vector, quality = self.frame_hasher.compute_with_quality(
+                frame, hash_format='vector')
+            if quality < self.quality_threshold:
+                return state
+        if hash_vector is not None:
+            state['sum'] += np.float32(hash_vector)
+            state['frame_count'] += 1
         return state
 
     def hash_from_final_state(self, state):
+        if state['frame_count'] == 0:
+            return None
         average_vector = state['sum'] / state['frame_count']
-        return average_vector / np.linalg.norm(average_vector, ord=2)
+        if self.norm is not None:
+            return (average_vector / np.linalg.norm(
+                average_vector, ord=self.norm)).astype(self.frame_hasher.dtype)
+        return average_vector.astype(self.frame_hasher.dtype)
