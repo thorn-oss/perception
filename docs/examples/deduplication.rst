@@ -158,9 +158,6 @@ pairs of videos that have matching frames.
     import tqdm
 
     import perception.hashers
-    import perception.tools
-
-    hasher = perception.hashers.PHash(hash_size=16)
 
     # Download some example videos.
     urllib.request.urlretrieve(
@@ -171,28 +168,26 @@ pairs of videos that have matching frames.
     with zipfile.ZipFile('thorn-perceptual-video-deduplication-example.zip') as f:
         f.extractall('.')
 
-    # Set a threshold for matching frames within videos and across videos.
-    intravideo_threshold = 0.1
-    intervideo_threshold = 0.2
-    files = glob.glob('thorn-perceptual-video-deduplication-example/*.m4v') + \
-            glob.glob('thorn-perceptual-video-deduplication-example/*.gif')
+    # By default, this will use TMK L1 with PHashU8.
+    hasher = perception.hashers.SimpleSceneDetection(max_scene_length=5)
 
-    hashes = []
-    for f in tqdm.tqdm(files):
-        previous = None
-        for frame, _, _ in perception.hashers.tools.read_video(f, frames_per_second=1):
-            current, quality = hasher.compute_with_quality(frame, hash_format='vector')
-            if quality < 90 or (
-                previous is not None and
-                hasher.compute_distance(current, previous) < intravideo_threshold
-            ):
-                # This frame is either low quality or too similar to the previous frame
-                continue
-            previous = current
-            hashes.append((f, current))
+    # Set a threshold for matching frames within videos and across videos.
+    filepaths = glob.glob('thorn-perceptual-video-deduplication-example/*.m4v') + \
+                glob.glob('thorn-perceptual-video-deduplication-example/*.gif')
+
+    # Returns a list of dicts with a "filepath" and "hash" key. "hash" contains a
+    # list of hashes.
+    hashes = hasher.compute_parallel(filepaths=filepaths, progress=tqdm.tqdm)
+
+
+    # Flatten the hashes into a list of (filepath, hash) tuples.
+    hashes_flattened = perception.tools.flatten([
+        [(hash_group['filepath'], hash_string) for hash_string in hash_group['hash']]
+        for hash_group in hashes
+    ])
 
     duplicates = perception.tools.deduplicate_hashes(
-        hashes=hashes,
-        threshold=intervideo_threshold,
+        hashes=hashes_flattened,
+        threshold=50,
         hasher=hasher
     )
