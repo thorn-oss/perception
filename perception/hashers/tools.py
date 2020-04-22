@@ -83,6 +83,14 @@ def vector_to_string(vector: np.ndarray, dtype: str, hash_format: str):
     Args:
         vector: Input vector
     """
+    # At times, a vector returned by a hasher is None (e.g., for hashes
+    # that depend on the image not being featureless). In those cases,
+    # we need to just return None, which is the least surprising outcome
+    # because after all, the string representation of None is None.
+    if vector is None:
+        return vector
+    if hash_format == 'vector':
+        return vector.astype(dtype)
     if dtype == 'uint8':
         vector_bytes = vector.astype('uint8')
     elif dtype == 'float32':
@@ -259,12 +267,14 @@ def get_isometric_dct_transforms(dct: np.ndarray):
         r270=dct.T * T1.T)
 
 
-def read(filepath_or_buffer: ImageInputType):
+def read(filepath_or_buffer: ImageInputType, timeout=None):
     """Read a file into an image object
 
     Args:
         filepath_or_buffer: The path to the file or any object
             with a `read` method (such as `io.BytesIO`)
+        timeout: If filepath_or_buffer is a URL, the timeout to
+            use for making the HTTP request.
     """
     if PIL is not None and isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
@@ -274,7 +284,7 @@ def read(filepath_or_buffer: ImageInputType):
         image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif (isinstance(filepath_or_buffer, str)
           and validators.url(filepath_or_buffer)):
-        return read(request.urlopen(filepath_or_buffer))
+        return read(request.urlopen(filepath_or_buffer), timeout=timeout)
     else:
         if not os.path.isfile(filepath_or_buffer):
             raise FileNotFoundError('Could not find image at path: ' +
@@ -339,40 +349,50 @@ def _get_keyframes(filepath):
     return frames
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,too-many-locals
 def read_video_to_generator(
         filepath,
         frames_per_second: typing.Optional[typing.Union[str, float]] = None,
         errors='raise'):
     # pylint: disable=no-member
     if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
-        warnings.warn(
-            message=
-            'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
-        )
+        message = 'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
+        if errors == 'raise':
+            raise ValueError(message)
+        warnings.warn(message=message)
+
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f'Could not find {filepath}.')
     cap = cv2.VideoCapture(filename=filepath, apiPreference=cv2.CAP_FFMPEG)
     try:
-        video_frames_per_second = cap.get(cv2.CAP_PROP_FPS)
+        # The purpose of the following block is largely to create a
+        # frame_indexes (iterator or list) that indicates which
+        # frames we should be returning to the user and then
+        # yielding those frames as we come across them.
+        file_frames_per_second = cap.get(cv2.CAP_PROP_FPS)
         if frames_per_second is None:
-            frames_per_second = video_frames_per_second
+            frames_per_second = file_frames_per_second
         seconds_between_desired_frames = None if (
             frames_per_second is not None
             and isinstance(frames_per_second,
                            str)) else 1 / frames_per_second  # type: ignore
-        seconds_between_grabbed_frames = 1 / video_frames_per_second
+        seconds_between_grabbed_frames = 1 / file_frames_per_second
         grabbed_frame_count = 0
         returned_frame_count = 0
         if frames_per_second == 'keyframes':
             frame_indexes: typing.Union[range, typing.List[int], typing.
                                         Iterator[int]] = _get_keyframes(
                                             filepath)
+            # The repeat flag is used to handle the case where the
+            # desired sampling rate is higher than the file's frame
+            # rate. In this case, we will need to repeat frames in
+            # order to provide the least-surprising behavior that
+            # we can.
             repeat = False
         else:
             frame_indexes = itertools.count(
-                0, video_frames_per_second / frames_per_second)
-            repeat = video_frames_per_second < frames_per_second
+                0, file_frames_per_second / frames_per_second)
+            repeat = file_frames_per_second < frames_per_second
         for frame_index in frame_indexes:
             while grabbed_frame_count < frame_index:
                 # We need to skip this frame.
@@ -386,7 +406,7 @@ def read_video_to_generator(
                 # The video is over or an error has occurred.
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            current_timestamp = frame_index / video_frames_per_second
+            current_timestamp = frame_index / file_frames_per_second
             yield frame, returned_frame_count, current_timestamp
             returned_frame_count += 1
             if repeat:
@@ -411,10 +431,12 @@ def read_video_to_generator(
 
 def read_video_into_queue(*args, video_queue, **kwargs):
     # We're inside a thread now and the queue is being read elsewhere.
-    for frame, frame_index, timestamp in read_video_to_generator(
-            *args, **kwargs):
-        video_queue.put((frame, frame_index, timestamp))
-    video_queue.put((None, None, None))
+    try:
+        for frame, frame_index, timestamp in read_video_to_generator(
+                *args, **kwargs):
+            video_queue.put((frame, frame_index, timestamp))
+    finally:
+        video_queue.put((None, None, None))
 
 
 def read_video(
