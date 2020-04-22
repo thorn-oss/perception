@@ -106,3 +106,41 @@ def test_synchronized_hashing():
         hashes2 = hashers.tools.compute_synchronized_video_hashes(
             filepath=filepath, hashers=video_hashers)
         assert hashes1 == hashes2
+
+
+def test_scene_detection():
+    hasher = hashers.SimpleSceneDetection(
+        base_hasher=hashers.TMKL1(
+            frames_per_second=30,
+            frame_hasher=hashers.PHashU8(),
+            norm=None,
+            distance_metric='euclidean'),
+        max_scene_length=10)
+    assert len(
+        hasher.compute('perception/testing/videos/v1.m4v',
+                       errors='raise')) == 1
+    assert len(
+        hasher.compute('perception/testing/videos/v2.m4v',
+                       errors='raise')) == 1
+    hashes_v2s = hasher.compute(
+        'perception/testing/videos/v2s.mov', errors='raise')
+    assert len(hashes_v2s) == 2
+
+    hashes_batches = []
+    frame_count = 0
+    for batch in hasher.compute_batches(
+            'perception/testing/videos/v2s.mov', batch_size=1):
+        for hash_string, frames in batch:
+            hashes_batches.append(hash_string)
+            frame_count += len(frames)
+    # Ensure we get the same hashes whether using compute or compute_batches
+    assert len(hashes_batches) == len(hashes_v2s)
+    assert all(h1 == h2 for h1, h2 in zip(hashes_batches, hashes_v2s))
+
+    expected_frame_count = 0
+    for _, _, _ in hashers.tools.read_video(
+            'perception/testing/videos/v2s.mov', frames_per_second=30):
+        expected_frame_count += 1
+
+    # Ensure all frames were accounted for in scene detection
+    assert expected_frame_count == frame_count
