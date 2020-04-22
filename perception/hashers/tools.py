@@ -568,3 +568,31 @@ def compute_synchronized_video_hashes(filepath: str,
             # This is a custom hasher that we just pass a video path to.
             hashes[hasher_name] = hasher.compute(filepath)
     return hashes
+
+
+def unletterbox(image) -> typing.Optional[
+        typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
+    """Obtain bounds on an image that remove the black bars
+    on the top, right, bottom, and left side of an image.
+
+    Args:
+        image: The image from which to remove letterboxing.
+        threshold: The threshold to consider as "black."
+
+    Returns:
+        A pair of coordinates bounds of the form (x1, x2)
+        and (y1, y2) representing the left, right, top, and
+        bottom bounds.
+    """
+    adj = image.mean(axis=2) > 2
+    if adj.all():
+        bounds = (0, image.shape[1] + 1), (0, image.shape[0])
+    else:
+        y = np.where(adj.sum(axis=1) > 0.1 * image.shape[0])[0]
+        x = np.where(adj.sum(axis=0) > 0.1 * image.shape[1])[0]
+        if len(y) <= 1 or len(x) <= 1:
+            return None
+        x1, x2 = x[[0, -1]]
+        y1, y2 = y[[0, -1]]
+        bounds = (x1, x2 + 1), (y1, y2 + 1)
+    return bounds
