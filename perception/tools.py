@@ -167,7 +167,7 @@ def deduplicate(
 class SaferMatcher:
     """An object for matching hashes with the known CSAM hashes in the
     Safer matching service.
-    Please contact `safer@wearethorn.org <mailto:safer@wearethorn.org>`_
+    Please contact `info@getsafer.io <mailto:info@getsafer.io>`_
     for details on obtaining credentials and information on how match
     responses are provided.
 
