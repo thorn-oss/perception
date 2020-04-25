@@ -126,6 +126,16 @@ def test_scene_detection():
         'perception/testing/videos/v2s.mov', errors='raise')
     assert len(hashes_v2s) == 2
 
+def test_scene_detection_batches():
+    hasher = hashers.SimpleSceneDetection(
+        base_hasher=hashers.TMKL1(
+            frames_per_second=30,
+            frame_hasher=hashers.PHashU8(),
+            norm=None,
+            distance_metric='euclidean'),
+        max_scene_length=10)
+    hashes_v2s = hasher.compute(
+        'perception/testing/videos/v2s.mov', errors='raise')
     hashes_batches = []
     frame_count = 0
     for batch in hasher.compute_batches(
