@@ -378,7 +378,6 @@ def read_video_to_generator(
                            str)) else 1 / frames_per_second  # type: ignore
         seconds_between_grabbed_frames = 1 / file_frames_per_second
         grabbed_frame_count = 0
-        returned_frame_count = 0
         if frames_per_second == 'keyframes':
             frame_indexes: typing.Union[range, typing.List[int], typing.
                                         Iterator[int]] = _get_keyframes(
@@ -407,15 +406,13 @@ def read_video_to_generator(
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             current_timestamp = frame_index / file_frames_per_second
-            yield frame, returned_frame_count, current_timestamp
-            returned_frame_count += 1
+            yield frame, grabbed_frame_count, current_timestamp
             if repeat:
                 next_desired_timestamp = current_timestamp + seconds_between_desired_frames
                 next_timestamp = current_timestamp + seconds_between_grabbed_frames
                 while next_desired_timestamp < next_timestamp:
-                    yield (frame, returned_frame_count, next_desired_timestamp)
+                    yield (frame, grabbed_frame_count, next_desired_timestamp)
                     next_desired_timestamp += seconds_between_desired_frames
-                    returned_frame_count += 1
     # pylint: disable=broad-except
     except Exception as e:
         if errors not in ['warn', 'ignore']:
@@ -530,17 +527,19 @@ def compute_synchronized_video_hashes(filepath: str,
         if hasher.frames_per_second is not None
     }
     for current_framerate, current_hasher_names in framerates.items():
-        for frame, frame_index, frame_timestamp in read_video(
-                filepath=filepath,
-                frames_per_second=current_framerate,
-                use_queue=use_queue):
+        for frame_index, (frame, grabbed_frame_index,
+                          frame_timestamp) in enumerate(
+                              read_video(
+                                  filepath=filepath,
+                                  frames_per_second=current_framerate,
+                                  use_queue=use_queue)):
             for hasher_name in current_hasher_names:
                 config = results[hasher_name]
                 hasher = hashers[hasher_name]
                 if frame_index % config['relative_framerate'] == 0:
                     config['state'] = hasher.process_frame(
                         frame=frame,
-                        frame_index=frame_index,
+                        frame_index=grabbed_frame_index,
                         frame_timestamp=frame_timestamp,
                         state=config['state'])
         for hasher_name in current_hasher_names:

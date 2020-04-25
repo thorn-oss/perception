@@ -54,6 +54,7 @@ def test_unletterbox():
     assert x1 == 25
     assert x2 == 25 + image.shape[1]
 
+
 def test_unletterbox_noblackbars():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     (x1, x2), (y1, y2) = hashers.tools.unletterbox(image)
