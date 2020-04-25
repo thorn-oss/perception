@@ -68,6 +68,9 @@ class PHash(ImageHasher):
 
 
 class PHashF(PHash):
+    """A real-valued version of PHash. It
+    returns the raw 32-bit floats in the DCT.
+    For a more compact approach, see PHashU8."""
     dtype = 'float32'
     distance_metric = 'euclidean'
 
@@ -81,6 +84,11 @@ class PHashF(PHash):
 
 
 class PHashU8(PHash):
+    """A real-valued version of PHash. It
+    uses minimum / maximum scaling to convert
+    DCT values to unsigned 8-bit integers (more
+    compact than the 32-bit floats used by PHashF at
+    the cost of precision)."""
     dtype = 'uint8'
     distance_metric = 'euclidean'
 
