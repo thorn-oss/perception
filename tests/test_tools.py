@@ -44,7 +44,7 @@ def test_api_is_over_https():
 
 
 def test_unletterbox():
-    image = hashers.tools.read('perception/testing/images/image1.jpg')
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     padded = np.zeros((image.shape[0] + 100, image.shape[1] + 50, 3),
                       dtype='uint8')
     padded[50:50 + image.shape[0], 25:25 + image.shape[1]] = image
@@ -53,3 +53,11 @@ def test_unletterbox():
     assert y2 == 50 + image.shape[0]
     assert x1 == 25
     assert x2 == 25 + image.shape[1]
+
+def test_unletterbox_noblackbars():
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    (x1, x2), (y1, y2) = hashers.tools.unletterbox(image)
+    assert x1 == 0
+    assert y1 == 0
+    assert x2 == image.shape[1]
+    assert y2 == image.shape[0]
