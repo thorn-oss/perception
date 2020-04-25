@@ -577,7 +577,6 @@ def unletterbox(image) -> typing.Optional[
 
     Args:
         image: The image from which to remove letterboxing.
-        threshold: The threshold to consider as "black."
 
     Returns:
         A pair of coordinates bounds of the form (x1, x2)
