@@ -511,7 +511,24 @@ The below example does the following:
 
     if not os.path.isdir('benchmarking_videos'):
         # We haven't computed the transforms yet, so we do that
-        # now.
+        # now. Below, we create the following files for each of
+        # the videos in our dataset. Note that the only required
+        # transform is `noop` (see documentation for
+        # perception.bencharmking.BenchmarkVideoDataset.transform).
+        #
+        # noop: This is the base video we'll actually use in benchmarking, rather
+        #       than using the raw video. It is the same as the raw video but downsampled
+        #       to a size that is reasonable for hashing (240p). This is because all
+        #       of our hashers downsample to a size smaller than this anyway, so there
+        #       is no benefit to a higher resolution. Also, we limit the length to the
+        #       first five minutes of the video, which speeds everything up significantly.
+        # shrink: Shrink the noop video down to 70% of its original size.
+        # clip0.2: Clip the first 20% and last 20% of the noop video off.
+        # slideshow: Create a slideshow version of the video that grabs frames periodically
+        #            from the original.
+        # black_frames: Add black frames before and after the start of the video.
+        # gif: Create a GIF from the video (similar to slideshow but with re-encoding)
+        # black_padding: Add black bars to the top and bottom of the video.
         pad_width = 240
         pad_height = 320
         transforms = {
@@ -561,9 +578,9 @@ The below example does the following:
     if not os.path.isfile('hashes.csv'):
         # We haven't computed the hashes, so we do that now.
         hashes = transformed.compute_hashes(hashers=hashers, max_workers=0)
+        # Save the hashes for later. It took a long time after all!
         hashes.save('hashes.csv')
 
-    # Save the hashes for later. It took a long time after all!
     hashes = perception.benchmarking.BenchmarkHashes.load('hashes.csv')
 
     hashes.compute_threshold_recall(fpr_threshold=0.001, grouping=['transform_name'])
