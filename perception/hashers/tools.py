@@ -284,7 +284,7 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
         image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif (isinstance(filepath_or_buffer, str)
           and validators.url(filepath_or_buffer)):
-        return read(request.urlopen(filepath_or_buffer), timeout=timeout)
+        return read(request.urlopen(filepath_or_buffer, timeout=timeout))
     else:
         if not os.path.isfile(filepath_or_buffer):
             raise FileNotFoundError('Could not find image at path: ' +
