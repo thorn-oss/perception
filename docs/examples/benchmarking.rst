@@ -442,10 +442,12 @@ The below example does the following:
 
 - Download a benchmarking dataset. Here we use the `Charades <https://prior.allenai.org/projects/charades>`_ dataset which contain over 9,000 videos.
 - Load the dataset.
-- Transform the dataset to generate synthetically altered videos.
+- Transform the dataset to generate synthetically altered videos. Our hashers are responsible for
+  matching the altered videos with the originals.
 - Define some hashers we want to evaluate.
 - Compute all the hashes.
-- Report metrics for each video category / hasher / transformation combination.
+- Report metrics for each video category / hasher / transformation combination to see how well our hashers
+  can match the altered videos to the original ("no-op" videos).
 
 .. code-block:: python
 
