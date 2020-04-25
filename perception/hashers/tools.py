@@ -349,7 +349,7 @@ def _get_keyframes(filepath):
     return frames
 
 
-# pylint: disable=too-many-branches,too-many-locals
+# pylint: disable=too-many-branches,too-many-locals,too-many-statements
 def read_video_to_generator(
         filepath,
         frames_per_second: typing.Optional[typing.Union[str, float]] = None,
@@ -370,6 +370,17 @@ def read_video_to_generator(
         # frames we should be returning to the user and then
         # yielding those frames as we come across them.
         file_frames_per_second = cap.get(cv2.CAP_PROP_FPS)
+        if file_frames_per_second == 0:
+            if errors == "raise":
+                raise ValueError("Video file has framerate of 0fps.")
+            # The known case where this occurs is for GIFs, where
+            # 0 fps is typically inferred as 10 fps.
+            file_frames_per_second = 10
+            if errors == "warn":
+                warnings.warn(
+                    message=
+                    "Video file has framerate of 0 fps. Guessing framerate of 10fps."
+                )
         if frames_per_second is None:
             frames_per_second = file_frames_per_second
         seconds_between_desired_frames = None if (
