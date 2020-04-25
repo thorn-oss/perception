@@ -509,7 +509,9 @@ The below example does the following:
     df = df[~(df['id'] + '.mp4').isin(blacklist)]
     df['filepath'] = df['id'].apply(lambda video_id: os.path.join('Charades_v1_480', video_id + '.mp4'))
     assert df['filepath'].apply(os.path.isfile).all(), 'Some video files are missing.'
-    dataset = perception.benchmarking.BenchmarkVideoDataset.from_tuples(files=df[['filepath', 'scene']].itertuples(index=False))
+    dataset = perception.benchmarking.BenchmarkVideoDataset.from_tuples(
+        files=df[['filepath', 'scene']].itertuples(index=False)
+    )
 
     if not os.path.isdir('benchmarking_videos'):
         # We haven't computed the transforms yet, so we do that
