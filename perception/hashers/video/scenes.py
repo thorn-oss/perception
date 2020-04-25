@@ -139,8 +139,15 @@ class SimpleSceneDetection(VideoHasher):
                 'frames': [],
                 'scenes': []
             }
+        # Check to see we have set bounds for this scene yet.
         if not state['bounds']:
+            # We don't have bounds, so we'll set them.
             bounds = tools.unletterbox(frame)
+            # If the bounds come back invalid (i.e., the frame is too small)
+            # or no bounds are found (i.e., the frame is all back), we
+            # reset the start of the scene to this point and continue on
+            # to the next frame. This will repeat until we find appropriate
+            # bounds.
             if bounds is None or max(bounds[0][1] - bounds[0][0], bounds[1][1]
                                      - bounds[1][0]) < self.min_frame_size:
                 state['start'] = frame_timestamp
@@ -151,13 +158,17 @@ class SimpleSceneDetection(VideoHasher):
         current = cv2.resize(
             cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY), (128, 128))
         current = cv2.blur(current, ksize=(4, 4))
+        # Chck if we have a previous frame to compare the
+        # current frame to.
         if state['pre'] is not None:
+            # Compute similarity between the previous frame and the
+            # current frame.
             similarity = 1 - np.abs(state['pre'].astype('float32') - current.
                                     astype('float32')).sum() / (255 * 128**2)
             if similarity < 0.95 or (self.max_scene_length is not None
                                      and frame_timestamp - state['start'] >
                                      self.max_scene_length):
-                # We've started a new scene.
+                # The similarity is too low. We've started a new scene.
                 self.handle_scene(state, frame_timestamp)
 
         state['pre'] = current
