@@ -536,6 +536,7 @@ def compute_synchronized_video_hashes(filepath: str,
             for hasher_name in current_hasher_names:
                 config = results[hasher_name]
                 hasher = hashers[hasher_name]
+                assert config['relative_framerate'] is not None
                 if frame_index % config['relative_framerate'] == 0:
                     config['state'] = hasher.process_frame(
                         frame=frame,
