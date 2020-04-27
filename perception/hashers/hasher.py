@@ -273,8 +273,10 @@ class ImageHasher(Hasher):
         if hash_format == 'vector':
             return vector, quality
         return (self.vector_to_string(vector, hash_format=hash_format),
-                quality) if not self.returns_multiple else (
-                    [self.vector_to_string(v) for v in vector], quality)
+                quality) if not self.returns_multiple else ([
+                    self.vector_to_string(v, hash_format=hash_format)
+                    for v in vector
+                ], quality)
 
     def _compute_with_quality(self, image: np.ndarray):
         return self._compute(image), tools.compute_quality(image)
