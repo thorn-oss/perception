@@ -1,0 +1,14 @@
+name: ci
+on:
+    push:
+      branches:
+        - '**'
+      tags-ignore:        
+        - v*
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Run precommit
+          run: make precommit_docker

@@ -1,0 +1,42 @@
+name: release
+on:
+    push:
+      tags:        
+        - v*
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Run precommit
+          run: make precommit_docker
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+              os: [ubuntu-latest, windows-latest, macos-latest]
+        name: Build for ${{ matrix.os }}
+        needs: test
+        steps:
+            - uses: actions/checkout@v2
+            - run: git fetch --prune --unshallow
+            - name: Setup conda
+              uses: s-weigand/setup-conda@v1
+              if: ${{ matrix.os != 'ubuntu-latest' }}
+            - run: build-scripts/macos.sh
+              if: ${{ matrix.os == 'macos-latest' }}
+            - run: build-scripts/windows.bat
+              if: ${{ matrix.os == 'windows-latest' }}
+            - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux1_x86_64 /io/build-scripts/linux.sh
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+            - uses: actions/upload-artifact@v2
+              if: ${{ matrix.os != 'ubuntu-latest' }}
+              with:
+                name: wheels
+                path: dist/*
+            - uses: actions/upload-artifact@v2
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              with:
+                name: wheels
+                path: dist/*manylinux1_x86_64.whl

@@ -1,4 +1,4 @@
-# perception [![CircleCI](https://circleci.com/gh/thorn-oss/perception.svg?style=svg)](https://circleci.com/gh/thorn-oss/perception)
+# perception ![ci](https://github.com/thorn-oss/perception/workflows/ci/badge.svg)
 
 `perception` provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use. See [the documentation](https://perception.thorn.engineering/en/latest/) for details.
 

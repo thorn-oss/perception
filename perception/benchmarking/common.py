@@ -17,7 +17,14 @@ import numpy as np
 import tqdm
 
 from ..hashers.tools import compute_md5, string_to_vector
-from . import extensions  # type: ignore
+try:
+    from . import extensions  # type: ignore
+except ImportError:
+    warnings.warn(
+        'C extensions were not built. Some metrics will be computed more slowly. '
+        'Please install from wheels or set up a compiler prior to installation '
+        'from source to use extensions.')
+    extensions = None
 
 log = logging.getLogger(__name__)
 
@@ -326,7 +333,7 @@ class BenchmarkHashes(Filterable):
                         dtype=dtype,
                         hash_format='base64',
                         hash_length=int(hash_length)).tolist())
-                if distance_metric != 'euclidean' or 'int' not in dtype:
+                if distance_metric != 'euclidean' or 'int' not in dtype or extensions is None:
                     distance_matrix = spatial.distance.cdist(
                         XA=X_trans, XB=X_noop, metric=distance_metric)
                     distance_to_closest_image = distance_matrix.min(axis=1)
