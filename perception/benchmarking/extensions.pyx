@@ -81,12 +81,12 @@ def compute_euclidean_metrics(int[:, :] X_noop, int[:, :] X_tran, uint8[:, :] ma
         if local_buf is NULL:
             abort()
         for i_tran in prange(n_tran):
-            local_buf[1] = INT_MAX
-            local_buf[2] = INT_MAX
-            local_buf[3] = 0
-            local_buf[4] = 0
+            local_buf[1] = INT_MAX  # Smallest false positive distance
+            local_buf[2] = INT_MAX  # Smallest true positive distance
+            local_buf[3] = 0        # Smallest false positive index
+            local_buf[4] = 0        # Smallest true positive index
             for i_noop in range(n_noop):
-                local_buf[0] = 0
+                local_buf[0] = 0    # Current distance
                 is_pos = mask[i_tran, i_noop] == True
                 for i_d in range(d_noop):
                     local_buf[0] += (X_noop[i_noop, i_d] - X_tran[i_tran, i_d]) ** 2
