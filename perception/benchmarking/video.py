@@ -190,6 +190,6 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
                     flatten([
                         future.result() for future in tqdm.tqdm(
                             concurrent.futures.as_completed(futures),
-                            desc=f'Computing hashes.',
+                            desc='Computing hashes.',
                             total=len(self._df))
                     ])))

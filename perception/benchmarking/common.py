@@ -192,7 +192,7 @@ class Saveable(Filterable):
             lambda filepath: os.path.basename(filepath) if not pd.isnull(filepath) else None
         )
         if index['filename'].dropna().duplicated().sum() > 0:
-            warnings.warn(f'Changing filenames to UUID due to duplicates.',
+            warnings.warn('Changing filenames to UUID due to duplicates.',
                           UserWarning)
 
             index['filename'] = [
