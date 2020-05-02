@@ -16,10 +16,7 @@ from scipy import spatial
 import numpy as np
 
 from . import hashers as perception_hashers
-
-
-def flatten(list_of_lists):
-    return [item for sublist in list_of_lists for item in sublist]
+from .utils import flatten
 
 
 def deduplicate_hashes(

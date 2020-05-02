@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 
 from .. import tools
-from ...tools import flatten
+from ...utils import flatten
 from ..hasher import VideoHasher
 from ..image.phash import PHashU8
 from .tmk import TMKL1
