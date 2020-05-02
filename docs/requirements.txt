@@ -6,3 +6,4 @@ m2r==0.2.1
 opencv-contrib-python-headless
 tqdm
 imgaug
+ffmpeg-python
