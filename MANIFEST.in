@@ -3,4 +3,5 @@ include perception/_version.py
 include perception/testing/images/*
 include perception/testing/videos/*
 include perception/**/*.pyx
+include perception/*.pyx
 exclude tests/*

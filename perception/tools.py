@@ -17,6 +17,14 @@ import numpy as np
 
 from . import hashers as perception_hashers
 from .utils import flatten
+try:
+    from . import extensions  # type: ignore
+except ImportError:
+    warnings.warn(
+        'C extensions were not built. Some metrics will be computed more slowly. '
+        'Please install from wheels or set up a compiler prior to installation '
+        'from source to use extensions.')
+    extensions = None
 
 
 def deduplicate_hashes(
@@ -70,27 +78,41 @@ def deduplicate_hashes(
     ])
     files = np.array([identifier for identifier, _ in hashes])
     pairs: typing.List[typing.Tuple[str, str]] = []
-    distances = spatial.distance.pdist(vectors, metric=distance_metric)
-    start_idx = 0
-    end_idx = None
     n_hashes = len(vectors)
     iterator = range(n_hashes)
     if progress is not None:
         iterator = progress(iterator, total=n_hashes, desc='Deduplicating.')
-    for hash_index in iterator:
-        if end_idx is not None:
-            start_idx = end_idx
-        end_idx = start_idx + (n_hashes - hash_index - 1)
-        current_distances = distances[start_idx:end_idx]
-        duplicated_files = files[hash_index +
-                                 1:][current_distances < threshold]
-        current_file = files[hash_index]
-        # We have to make sure the two files are not the same file
-        # because it can happen for highly symmetric images when
-        # we are including isometric hashes.
-        pairs.extend([(current_file, duplicated_file)
-                      for duplicated_file in duplicated_files
-                      if duplicated_file != current_file])
+    start_idx = 0
+    end_idx = None
+    if distance_metric != 'euclidean' or 'int' not in hash_dtype or extensions is None:
+        distances = spatial.distance.pdist(vectors, metric=distance_metric)
+        for hash_index in iterator:
+            if end_idx is not None:
+                start_idx = end_idx
+            end_idx = start_idx + (n_hashes - hash_index - 1)
+            current_distances = distances[start_idx:end_idx]
+            duplicated_files = files[hash_index +
+                                     1:][current_distances < threshold]
+            current_file = files[hash_index]
+            # We have to make sure the two files are not the same file
+            # because it can happen for highly symmetric images when
+            # we are including isometric hashes.
+            pairs.extend([(current_file, duplicated_file)
+                          for duplicated_file in duplicated_files
+                          if duplicated_file != current_file])
+    else:
+        duplicated = extensions.compute_euclidean_pairwise_duplicates(
+            vectors.astype('int32'), threshold=threshold).astype('bool')
+        for hash_index in iterator:
+            if end_idx is not None:
+                start_idx = end_idx
+            end_idx = start_idx + (n_hashes - hash_index - 1)
+            current_duplicated = duplicated[start_idx:end_idx]
+            current_file = files[hash_index]
+            duplicated_files = files[hash_index + 1:][current_duplicated]
+            pairs.extend([(current_file, duplicated_file)
+                          for duplicated_file in duplicated_files
+                          if duplicated_file != current_file])
     return list(set(pairs))
 
 

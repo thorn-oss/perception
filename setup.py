@@ -28,7 +28,7 @@ try:
     setup(version=versioneer.get_version(),
           cmdclass={**versioneer.get_cmdclass(), 'build_ext': CatchableBuildExt},
           ext_modules=cythonize(
-              "perception/benchmarking/extensions.pyx",
+              "perception/**/extensions.pyx",
           ), include_dirs=[numpy.get_include()])
 except BuildFailure:
     warnings.warn('Failed to build Cython extensions. They will not be available at runtime.')
