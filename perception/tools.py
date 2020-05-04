@@ -61,6 +61,8 @@ def deduplicate_hashes(
             '`hash_length`, `hash_dtype`, and `distance_metric`.'
         )
     if hasher is not None:
+        assert all(k is None for k in [hash_length, hash_dtype, distance_metric]), \
+            'If hasher is provided, hash_length, hash_dtype, and distance_metric must all be None.'
         hash_length = hasher.hash_length
         hash_dtype = hasher.dtype
         distance_metric = hasher.distance_metric
