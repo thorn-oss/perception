@@ -17,7 +17,10 @@ ctypedef np.uint8_t uint8
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold):
-    """Find the pairwise duplicates within an array of vectors.
+    """Find the pairwise duplicates within an array of vectors. This
+    function is faster than using scipy.spatial.distance because
+    it computes distances in parallel and avoids computing full
+    distances when they're not necessary.
     
     Args:
         X: The vectors with shape (N, D)
