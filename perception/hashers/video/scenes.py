@@ -123,6 +123,26 @@ class SimpleSceneDetection(VideoHasher):
         if frame_timestamp is not None:
             state['start'] = frame_timestamp
 
+    def crop(self, frame, bounds):
+        # Check to see we have set bounds for this scene yet.
+        if not bounds:
+            # We don't have bounds, so we'll set them.
+            bounds = tools.unletterbox(frame)
+            # If the bounds come back invalid (i.e., the frame is too small)
+            # or no bounds are found (i.e., the frame is all back), we
+            # reset the start of the scene to this point and continue on
+            # to the next frame. This will repeat until we find appropriate
+            # bounds.
+            if bounds is None or max(bounds[0][1] - bounds[0][0], bounds[1][1]
+                                     - bounds[1][0]) < self.min_frame_size:
+                return None, None
+        (x1, x2), (y1, y2) = bounds
+        cropped = np.ascontiguousarray(frame[y1:y2, x1:x2])
+        current = cv2.resize(
+            cv2.cvtColor(cropped, cv2.COLOR_RGB2GRAY), (128, 128))
+        current = cv2.blur(current, ksize=(4, 4))
+        return cropped, current, bounds
+
     # pylint: disable=arguments-differ,too-many-arguments
     def process_frame(self,
                       frame,
@@ -139,26 +159,12 @@ class SimpleSceneDetection(VideoHasher):
                 'frames': [],
                 'scenes': []
             }
-        # Check to see we have set bounds for this scene yet.
-        if not state['bounds']:
-            # We don't have bounds, so we'll set them.
-            bounds = tools.unletterbox(frame)
-            # If the bounds come back invalid (i.e., the frame is too small)
-            # or no bounds are found (i.e., the frame is all back), we
-            # reset the start of the scene to this point and continue on
-            # to the next frame. This will repeat until we find appropriate
-            # bounds.
-            if bounds is None or max(bounds[0][1] - bounds[0][0], bounds[1][1]
-                                     - bounds[1][0]) < self.min_frame_size:
-                state['start'] = frame_timestamp
-                return state
-            state['bounds'] = bounds
-        (x1, x2), (y1, y2) = state['bounds']
-        frame = np.ascontiguousarray(frame[y1:y2, x1:x2])
-        current = cv2.resize(
-            cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY), (128, 128))
-        current = cv2.blur(current, ksize=(4, 4))
-        # Chck if we have a previous frame to compare the
+        cropped, current, state['bounds'] = self.crop(frame, state['bounds'])
+        if cropped is None:
+            state['start'] = frame_timestamp
+            return state
+
+        # Check if we have a previous frame to compare the
         # current frame to.
         if state['pre'] is not None:
             # Compute similarity between the previous frame and the
@@ -170,11 +176,16 @@ class SimpleSceneDetection(VideoHasher):
                                      self.max_scene_length):
                 # The similarity is too low. We've started a new scene.
                 self.handle_scene(state, frame_timestamp)
+                cropped, current, state['bounds'] = self.crop(
+                    frame, state['bounds'])
+                if cropped is None:
+                    state['start'] = frame_timestamp
+                    return state
 
         state['pre'] = current
         try:
             state['substate'] = self.base_hasher.process_frame(
-                frame, frame_index, frame_timestamp, state=state['substate'])
+                cropped, frame_index, frame_timestamp, state=state['substate'])
             if batch_mode:
                 state['frames'].append((frame, frame_index, frame_timestamp))
         except Exception as e:  # pylint: disable=broad-except
