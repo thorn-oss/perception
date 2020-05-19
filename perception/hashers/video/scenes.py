@@ -130,9 +130,7 @@ class SimpleSceneDetection(VideoHasher):
             bounds = tools.unletterbox(frame)
             # If the bounds come back invalid (i.e., the frame is too small)
             # or no bounds are found (i.e., the frame is all back), we
-            # reset the start of the scene to this point and continue on
-            # to the next frame. This will repeat until we find appropriate
-            # bounds.
+            # return None.
             if bounds is None or max(bounds[0][1] - bounds[0][0], bounds[1][1]
                                      - bounds[1][0]) < self.min_frame_size:
                 return None, None
@@ -161,6 +159,9 @@ class SimpleSceneDetection(VideoHasher):
             }
         cropped, current, state['bounds'] = self.crop(frame, state['bounds'])
         if cropped is None:
+            # A good crop was not found so we set the start of the scene to this
+            # point and continue on to the next frame. This will repeat until we
+            # find appropriate bounds.
             state['start'] = frame_timestamp
             return state
 
@@ -179,6 +180,7 @@ class SimpleSceneDetection(VideoHasher):
                 cropped, current, state['bounds'] = self.crop(
                     frame, state['bounds'])
                 if cropped is None:
+                    # See comment above about invalid crops.
                     state['start'] = frame_timestamp
                     return state
 
