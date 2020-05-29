@@ -131,7 +131,7 @@ class SimpleSceneDetection(VideoHasher):
             # If the bounds come back invalid (i.e., the frame is too small)
             # or no bounds are found (i.e., the frame is all back), we
             # return None.
-            if bounds is None or max(bounds[0][1] - bounds[0][0], bounds[1][1]
+            if bounds is None or min(bounds[0][1] - bounds[0][0], bounds[1][1]
                                      - bounds[1][0]) < self.min_frame_size:
                 return None, None
         (x1, x2), (y1, y2) = bounds
