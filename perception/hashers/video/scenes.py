@@ -120,6 +120,7 @@ class SimpleSceneDetection(VideoHasher):
         state['substate'] = None
         state['bounds'] = None
         state['frames'] = []
+        state['pre'] = None
         if frame_timestamp is not None:
             state['start'] = frame_timestamp
 
@@ -133,7 +134,7 @@ class SimpleSceneDetection(VideoHasher):
             # return None.
             if bounds is None or min(bounds[0][1] - bounds[0][0], bounds[1][1]
                                      - bounds[1][0]) < self.min_frame_size:
-                return None, None
+                return None, None, None
         (x1, x2), (y1, y2) = bounds
         cropped = np.ascontiguousarray(frame[y1:y2, x1:x2])
         current = cv2.resize(
