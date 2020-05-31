@@ -11,6 +11,56 @@ from ..hashers import VideoHasher, tools
 from .common import BenchmarkDataset, BenchmarkTransforms, BenchmarkHashes
 
 
+def _process_row(row, hashers, framerates):
+    error = None
+    try:
+        assert not pd.isnull(row['filepath']), 'No filepath provided.'
+        hashes = tools.compute_synchronized_video_hashes(
+            filepath=row['filepath'],
+            hashers=hashers,
+            framerates=framerates,
+            hash_format='base64')
+    # pylint: disable=broad-except
+    except Exception as exception:
+        error = str(exception)
+        hashes = {
+            hasher_name: [None] if hasher.returns_multiple else None
+            for hasher_name, hasher in hashers.items()
+        }
+    base_dict = {
+        'guid': row['guid'],
+        'filepath': row['filepath'],
+        'error': error,
+        'category': row['category'],
+        'transform_name': row['transform_name'],
+        'input_filepath': row['input_filepath']
+    }
+    hash_dicts = []
+    for hasher_name, hasher in hashers.items():
+        base_hash_dict = {
+            'hasher_name': hasher_name,
+            'hasher_dtype': hasher.dtype,
+            'hasher_distance_metric': hasher.distance_metric,
+            'hasher_hash_length': hasher.hash_length,
+        }
+        if not hasher.returns_multiple:
+            hash_dicts.append({
+                **{
+                    'hash': hashes[hasher_name],
+                },
+                **base_hash_dict
+            })
+        else:
+            for hash_value in hashes[hasher_name]:
+                hash_dicts.append({
+                    **{
+                        'hash': hash_value,
+                    },
+                    **base_hash_dict
+                })
+    return [{**hash_dict, **base_dict} for hash_dict in hash_dicts]
+
+
 class BenchmarkVideoDataset(BenchmarkDataset):
     def transform(self,
                   transforms: typing.Dict[str, typing.Callable],
@@ -131,60 +181,14 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
         else:
             framerates = {}
 
-        def process_row(row):
-            error = None
-            try:
-                assert not pd.isnull(row['filepath']), 'No filepath provided.'
-                hashes = tools.compute_synchronized_video_hashes(
-                    filepath=row['filepath'],
-                    hashers=hashers,
-                    framerates=framerates,
-                    hash_format='base64')
-            # pylint: disable=broad-except
-            except Exception as exception:
-                error = str(exception)
-                hashes = {
-                    hasher_name: [None] if hasher.returns_multiple else None
-                    for hasher_name, hasher in hashers.items()
-                }
-            base_dict = {
-                'guid': row['guid'],
-                'filepath': row['filepath'],
-                'error': error,
-                'category': row['category'],
-                'transform_name': row['transform_name'],
-                'input_filepath': row['input_filepath']
-            }
-            hash_dicts = []
-            for hasher_name, hasher in hashers.items():
-                base_hash_dict = {
-                    'hasher_name': hasher_name,
-                    'hasher_dtype': hasher.dtype,
-                    'hasher_distance_metric': hasher.distance_metric,
-                    'hasher_hash_length': hasher.hash_length,
-                }
-                if not hasher.returns_multiple:
-                    hash_dicts.append({
-                        **{
-                            'hash': hashes[hasher_name],
-                        },
-                        **base_hash_dict
-                    })
-                else:
-                    for hash_value in hashes[hasher_name]:
-                        hash_dicts.append({
-                            **{
-                                'hash': hash_value,
-                            },
-                            **base_hash_dict
-                        })
-            return [{**hash_dict, **base_dict} for hash_dict in hash_dicts]
-
-        with concurrent.futures.ThreadPoolExecutor(
+        with concurrent.futures.ProcessPoolExecutor(
                 max_workers=max_workers) as executor:
             futures = [
-                executor.submit(process_row, row=row)
-                for index, row in self._df.iterrows()
+                executor.submit(
+                    _process_row,
+                    row=row,
+                    framerates=framerates,
+                    hashers=hashers) for index, row in self._df.iterrows()
             ]
             return BenchmarkHashes(
                 pd.DataFrame.from_records(
