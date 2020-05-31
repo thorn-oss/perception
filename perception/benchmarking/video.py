@@ -180,7 +180,8 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
                         })
             return [{**hash_dict, **base_dict} for hash_dict in hash_dicts]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers) as executor:
             futures = [
                 executor.submit(process_row, row=row)
                 for index, row in self._df.iterrows()

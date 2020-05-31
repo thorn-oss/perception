@@ -29,6 +29,7 @@ ImageInputType = typing.Union[str, np.ndarray, 'PIL.Image.Image', io.BytesIO]
 
 SIZES = {'float32': 32, 'uint8': 8, 'bool': 1}
 
+
 # pylint: disable=invalid-name
 def compute_quality(image):
     """Compute a quality metric, using the calculation proposed by
@@ -421,7 +422,8 @@ def read_video_to_generator(
                 next_desired_timestamp = current_timestamp + seconds_between_desired_frames
                 next_timestamp = current_timestamp + seconds_between_grabbed_frames
                 while next_desired_timestamp < next_timestamp:
-                    yield (frame, grabbed_frame_count - 1, next_desired_timestamp)
+                    yield (frame, grabbed_frame_count - 1,
+                           next_desired_timestamp)
                     next_desired_timestamp += seconds_between_desired_frames
     # pylint: disable=broad-except
     except Exception as e:
