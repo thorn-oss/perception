@@ -29,7 +29,6 @@ ImageInputType = typing.Union[str, np.ndarray, 'PIL.Image.Image', io.BytesIO]
 
 SIZES = {'float32': 32, 'uint8': 8, 'bool': 1}
 
-
 # pylint: disable=invalid-name
 def compute_quality(image):
     """Compute a quality metric, using the calculation proposed by
@@ -417,12 +416,12 @@ def read_video_to_generator(
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             current_timestamp = frame_index / file_frames_per_second
-            yield frame, grabbed_frame_count, current_timestamp
+            yield frame, grabbed_frame_count - 1, current_timestamp
             if repeat:
                 next_desired_timestamp = current_timestamp + seconds_between_desired_frames
                 next_timestamp = current_timestamp + seconds_between_grabbed_frames
                 while next_desired_timestamp < next_timestamp:
-                    yield (frame, grabbed_frame_count, next_desired_timestamp)
+                    yield (frame, grabbed_frame_count - 1, next_desired_timestamp)
                     next_desired_timestamp += seconds_between_desired_frames
     # pylint: disable=broad-except
     except Exception as e:
@@ -437,12 +436,15 @@ def read_video_to_generator(
         cap.release()
 
 
-def read_video_into_queue(*args, video_queue, **kwargs):
+def read_video_into_queue(*args, video_queue, terminate, **kwargs):
     # We're inside a thread now and the queue is being read elsewhere.
     try:
         for frame, frame_index, timestamp in read_video_to_generator(
                 *args, **kwargs):
-            video_queue.put((frame, frame_index, timestamp))
+            if not terminate.isSet():
+                video_queue.put((frame, frame_index, timestamp))
+            else:
+                break
     finally:
         video_queue.put((None, None, None))
 
@@ -473,21 +475,37 @@ def read_video(
         video_queue = queue.Queue(
             maxsize=max_queue_size
         )  # type: queue.Queue[typing.Tuple[np.ndarray, int, float]]
+        terminate = threading.Event()
         thread = threading.Thread(
             target=read_video_into_queue,
             kwargs={
                 'frames_per_second': frames_per_second,
                 'video_queue': video_queue,
                 'filepath': filepath,
-                'errors': errors
+                'errors': errors,
+                'terminate': terminate
             })
         thread.start()
-        while True:
-            frame, frame_index, timestamp = video_queue.get()
-            if frame is None:
-                break
-            yield (frame, frame_index, timestamp)
-        thread.join()
+        try:
+            while True:
+                frame, frame_index, timestamp = video_queue.get()
+                video_queue.task_done()
+                if frame is None:
+                    break
+                yield (frame, frame_index, timestamp)
+        finally:
+            # Set the termination flag for the
+            # background thread.
+            terminate.set()
+            try:
+                # Unblock the thread, in the event
+                # that it is waiting.
+                video_queue.get_nowait()
+            except queue.Empty:
+                # It doesn't matter if it's empty.
+                pass
+            # Wait for the background thread to terminate.
+            thread.join()
     else:
         for frame, frame_index, timestamp in read_video_to_generator(
                 filepath=filepath,
