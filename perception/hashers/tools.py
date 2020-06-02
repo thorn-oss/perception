@@ -503,6 +503,12 @@ def read_video(
                 # Unblock the thread, in the event
                 # that it is waiting.
                 video_queue.get_nowait()
+
+                # Do it twice for the edge case
+                # where the queue is completely
+                # full and the end sentinel is
+                # blocking.
+                video_queue.get_nowait()
             except queue.Empty:
                 # It doesn't matter if it's empty.
                 pass
