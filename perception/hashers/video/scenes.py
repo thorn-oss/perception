@@ -30,13 +30,17 @@ class SimpleSceneDetection(VideoHasher):
             relevant for letterbox detection as black frames will tend to be completely
             "cropped" and make the frame very small.
         max_scene_length: The maximum length of a single scene.
+        similarity_threshold: The threshold for detecting whether two frames are
+            different enough to constitute a new scene.
     """
     returns_multiple = True
 
+    # pylint: disable=too-many-arguments
     def __init__(self,
                  base_hasher: VideoHasher = None,
                  interscene_threshold=None,
                  min_frame_size=50,
+                 similarity_threshold=0.95,
                  max_scene_length=None):
         if base_hasher is None:
             base_hasher = TMKL1(
@@ -61,6 +65,7 @@ class SimpleSceneDetection(VideoHasher):
         self.max_scene_length = max_scene_length
         self.interscene_threshold = interscene_threshold
         self.min_frame_size = min_frame_size
+        self.similarity_threshold = similarity_threshold
 
     def compute_batches(self,
                         filepath,
@@ -173,9 +178,9 @@ class SimpleSceneDetection(VideoHasher):
             # current frame.
             similarity = 1 - np.abs(state['pre'].astype('float32') - current.
                                     astype('float32')).sum() / (255 * 128**2)
-            if similarity < 0.95 or (self.max_scene_length is not None
-                                     and frame_timestamp - state['start'] >
-                                     self.max_scene_length):
+            if (similarity < self.similarity_threshold or
+                (self.max_scene_length is not None and
+                 frame_timestamp - state['start'] > self.max_scene_length)):
                 # The similarity is too low. We've started a new scene.
                 self.handle_scene(state, frame_timestamp)
                 cropped, current, state['bounds'] = self.crop(
