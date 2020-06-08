@@ -401,7 +401,7 @@ def read_video_to_generator(
             repeat = False
         else:
             frame_indexes = itertools.count(
-                0, file_frames_per_second / frames_per_second)
+                0, max(1, file_frames_per_second / frames_per_second))
             repeat = file_frames_per_second < frames_per_second
         for frame_index in frame_indexes:
             while grabbed_frame_count < frame_index:
