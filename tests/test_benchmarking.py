@@ -16,8 +16,8 @@ dataset = benchmarking.BenchmarkImageDataset.from_tuples(
 
 
 def test_deduplicate():
-    os.makedirs('/tmp/duplicate')
-    new_file = '/tmp/duplicate/dup_file.jpg'
+    tempdir = tempfile.TemporaryDirectory()
+    new_file = os.path.join(tempdir.name, 'dup_file.jpg')
     shutil.copy(files[0], new_file)
     duplicated_files = files + [new_file]
     deduplicated, duplicates = benchmarking.BenchmarkImageDataset.from_tuples(
