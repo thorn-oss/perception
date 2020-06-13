@@ -105,7 +105,7 @@ class Hasher(ABC):
         raise ValueError(
             'Called a custom distance function but it is not implemented.')
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals
     @typing.no_type_check
     def compute_parallel(self,
                          filepaths: typing.List[str],
@@ -140,8 +140,11 @@ class Hasher(ABC):
 
         # We can use a with statement to ensure threads are cleaned up promptly
         records = []
-        with concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_workers) as executor:
+        if isinstance(self, VideoHasher):
+            executor_class = concurrent.futures.ProcessPoolExecutor
+        else:
+            executor_class = concurrent.futures.ThreadPoolExecutor
+        with executor_class(max_workers=max_workers) as executor:
             # Start the load operations and mark each future with its filepath
             compute: typing.Callable = self.compute_isometric if isometric else self.compute
             future_to_path: dict = {
