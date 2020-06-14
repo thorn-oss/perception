@@ -37,6 +37,9 @@ DEFAULT_TEST_VIDEOS = [
     pkg_resources.resource_filename(
         'perception', os.path.join('testing', 'videos', f'v{n}.m4v'))
     for n in range(1, 3)
+] + [
+    pkg_resources.resource_filename(
+        'perception', os.path.join('testing', 'videos', 'v2s.mov'))
 ]
 
 
