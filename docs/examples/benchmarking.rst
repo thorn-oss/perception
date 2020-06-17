@@ -501,7 +501,22 @@ The below example does the following:
         ('I7MEA.mp4', 'YMM1Z.mp4'), ('9N76L.mp4', '0LDP7.mp4'), ('AXS82.mp4', 'W8WRK.mp4'),
         ('8TSU4.mp4', 'MXATD.mp4'), ('80FWF.mp4', '18HFG.mp4'), ('RO3A2.mp4', 'V4HY4.mp4'),
         ('HU409.mp4', 'BDWIX.mp4'), ('3YY88.mp4', 'EHHRS.mp4'), ('65RS3.mp4', 'SLIH4.mp4'),
-        ('LR0L8.mp4', 'Y665P.mp4')
+        ('LR0L8.mp4', 'Y665P.mp4'), ('DVPL2.mp4', 'EI5M3.mp4'), ('0EGNU.mp4', 'CU3JE.mp4'),
+        ('94KP4.mp4', '94KP4.mp4'), ('79QDP.mp4', '79QDP.mp4'), ('GKBX9.mp4', 'GKBX9.mp4'),
+        ('RX6R8.mp4', 'RX6R8.mp4'), ('PMVT7.mp4', 'PMVT7.mp4'), ('XNXW6.mp4', 'XNXW6.mp4'),
+        ('I005F.mp4', 'I005F.mp4'), ('TF95Y.mp4', 'TF95Y.mp4'), ('79QDP.mp4', '79QDP.mp4'),
+        ('LQGMM.mp4', 'LQGMM.mp4'), ('QCAUL.mp4', 'QCAUL.mp4'), ('GFVSV.mp4', 'GFVSV.mp4'),
+        ('4UYGY.mp4', '4UYGY.mp4'), ('BYDSE.mp4', 'BYDSE.mp4'), ('PV3KQ.mp4', 'PV3KQ.mp4'),
+        ('1X0M3.mp4', '1X0M3.mp4'), ('T5FHD.mp4', 'T5FHD.mp4'), ('QRHJJ.mp4', 'QRHJJ.mp4'),
+        ('JYBGS.mp4', 'JYBGS.mp4'), ('N2XCF.mp4', 'N2XCF.mp4'), ('OZPA9.mp4', 'OZPA9.mp4'),
+        ('297S4.mp4', '297S4.mp4'), ('LHU7D.mp4', 'LHU7D.mp4'), ('TSKZL.mp4', 'TSKZL.mp4'),
+        ('BCONW.mp4', 'BCONW.mp4'), ('KBPDM.mp4', 'KBPDM.mp4'), ('7FTBS.mp4', '7FTBS.mp4'),
+        ('099Y1.mp4', '099Y1.mp4'), ('S2RIQ.mp4', 'S2RIQ.mp4'), ('22FJU.mp4', '22FJU.mp4'),
+        ('99UA6.mp4', '99UA6.mp4'), ('WJ13E.mp4', 'WJ13E.mp4'), ('5OLVC.mp4', '5OLVC.mp4'),
+        ('YQ6Z6.mp4', 'YQ6Z6.mp4'), ('T5MLJ.mp4', 'T5MLJ.mp4'), ('0VOQC.mp4', '0VOQC.mp4'),
+        ('S2RIQ.mp4', 'S2RIQ.mp4'), ('2VNXF.mp4', '2VNXF.mp4'), ('G87XG.mp4', 'G87XG.mp4'),
+        ('RRS54.mp4', 'RRS54.mp4'), ('TXJK7.mp4', 'TXJK7.mp4'), ('G4KE3.mp4', 'G4KE3.mp4'),
+        ('3SNSC.mp4', '3SNSC.mp4'), ('U2FA5.mp4', 'U2FA5.mp4'), ('9AFQ7.mp4', '9AFQ7.mp4')
     ]
 
     blacklist = [fp1 for fp1, fp2 in duplicates]
