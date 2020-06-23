@@ -27,6 +27,19 @@ except ImportError:
     extensions = None
 
 
+def _multiple_hashes_for_ids(
+        hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]]):
+    """Check if a list of (hash_id, hash) tuples has more
+    than one hash for a hash_id.
+
+    Args:
+        hashes: A list of (hash_id, hash) tuples.
+    """
+    hash_ids = [hash_id for hash_id, _ in hashes]
+    return len(hash_ids) != len(set(hash_ids))
+
+
+# pylint: disable=too-many-branches
 def deduplicate_hashes(
         hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
         threshold: float,
@@ -73,7 +86,9 @@ def deduplicate_hashes(
     # to be sequential in case we are able to use the more
     # efficient distance calculation (compute_euclidean_pairwise_duplicates)
     # that skips computation of distance between two hashes for the same file.
-    hashes = sorted(hashes)
+    multiple_hashes_per_id = _multiple_hashes_for_ids(hashes)
+    if multiple_hashes_per_id:
+        hashes = sorted(hashes)
     vectors = np.array([
         perception_hashers.tools.string_to_vector(
             hash_string=hash_string_or_vector,
@@ -112,18 +127,22 @@ def deduplicate_hashes(
         # may be more than one -- for example in the case of video. We need
         # this so we can pass it to the compute_euclidean_pairwise_duplicates
         # function.
-        counts = np.zeros(shape=len(set(hash_id for hash_id, _ in hashes)))
-        previous_hash_id = None
-        counts_idx = 0
-        for hash_id, _ in hashes:
-            if previous_hash_id is not None and hash_id != previous_hash_id:
-                counts_idx += 1
-            counts[counts_idx] += 1
-            previous_hash_id = hash_id
+        if multiple_hashes_per_id:
+            counts = np.zeros(
+                shape=len(set(
+                    hash_id for hash_id, _ in hashes))).astype('int32')
+            previous_hash_id = None
+            counts_idx = 0
+            for hash_id, _ in hashes:
+                if previous_hash_id is not None and hash_id != previous_hash_id:
+                    counts_idx += 1
+                counts[counts_idx] += 1
+                previous_hash_id = hash_id
+        else:
+            counts = None
         duplicated = extensions.compute_euclidean_pairwise_duplicates(
-            vectors.astype('int32'),
-            threshold=threshold,
-            counts=counts.astype('int32')).astype('bool')
+            vectors.astype('int32'), threshold=threshold,
+            counts=counts).astype('bool')
         for hash_index in iterator:
             if end_idx is not None:
                 start_idx = end_idx
