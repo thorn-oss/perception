@@ -16,7 +16,7 @@ ctypedef np.uint8_t uint8
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: int[:]):
+def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: int[:] = None):
     """Find the pairwise duplicates within an array of vectors, where there may be multiple
     vectors for the same file. This function is faster than using scipy.spatial.distance
     because it computes distances in parallel, avoids computing full distances when they're
@@ -27,7 +27,9 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
         X: The vectors with shape (N, D). Vectors for the same file need to be
             supplied sequentially so that we can use the counts argument
             to determine which vectors are for the same file.
-        counts: For each file, the number of sequential vectors in X.
+        counts: For each file, the number of sequential vectors in X. If not
+            provided, each vector is assumed to be for a different file (i.e.,
+            this is equivalent to `counts = np.ones(N)`).
     
     Returns:
         n_duplicates: An array of length M!/(2*((M-2)!)) indicating
@@ -39,8 +41,11 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
             file 0 and file 1, two matches between file 1 and file 2, and three
             matches between file 1 and file 3.
     """
-    cdef Py_ssize_t m = counts.shape[0]
+    if counts is None:
+        counts_arr = np.ones(X.shape[0], dtype=np.int32)
+        counts = counts_arr
     cdef Py_ssize_t n = X.shape[0]
+    cdef Py_ssize_t m = counts.shape[0]
     cdef Py_ssize_t d = X.shape[1]
     cdef Py_ssize_t n_pairs = int(math.factorial(m)/(2*math.factorial(m-2)))
     
