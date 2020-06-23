@@ -30,11 +30,14 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
         counts: For each file, the number of sequential vectors in X.
     
     Returns:
-        is_duplicate: An array of length M!/(2*((M-2)!)) indicating
-            whether a duplicate pair exists. The indexing matches that
+        n_duplicates: An array of length M!/(2*((M-2)!)) indicating
+            the number of duplicate hash pairs. The indexing matches that
             of scipy.spatial.pdist. M is the number of files. So if M = 4,
             the array will represent comparisons of the file indexes as follows:
-            [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]
+            [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]. So a possible return would
+            be [1, 0, 0, 2, 3] which means that there was one match between
+            file 0 and file 1, two matches between file 1 and file 2, and three
+            matches between file 1 and file 3.
     """
     cdef Py_ssize_t m = counts.shape[0]
     cdef Py_ssize_t n = X.shape[0]

@@ -108,6 +108,10 @@ def deduplicate_hashes(
                           for duplicated_file in duplicated_files
                           if duplicated_file != current_file])
     else:
+        # We want to count the number of hashes for each unique hash ID. There
+        # may be more than one -- for example in the case of video. We need
+        # this so we can pass it to the compute_euclidean_pairwise_duplicates
+        # function.
         counts = np.zeros(shape=len(set(hash_id for hash_id, _ in hashes)))
         previous_hash_id = None
         counts_idx = 0
