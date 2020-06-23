@@ -69,6 +69,11 @@ def deduplicate_hashes(
     assert hash_length is not None
     assert isinstance(hash_dtype, str)
     assert isinstance(distance_metric, str)
+    # If there is more than one hash for an id, we want them
+    # to be sequential in case we are able to use the more
+    # efficient distance calculation (compute_euclidean_pairwise_duplicates)
+    # that skips computation of distance between two hashes for the same file.
+    hashes = sorted(hashes)
     vectors = np.array([
         perception_hashers.tools.string_to_vector(
             hash_string=hash_string_or_vector,
@@ -103,8 +108,18 @@ def deduplicate_hashes(
                           for duplicated_file in duplicated_files
                           if duplicated_file != current_file])
     else:
+        counts = np.zeros(shape=len(set(hash_id for hash_id, _ in hashes)))
+        previous_hash_id = None
+        counts_idx = 0
+        for hash_id, _ in hashes:
+            if previous_hash_id is not None and hash_id != previous_hash_id:
+                counts_idx += 1
+            counts[counts_idx] += 1
+            previous_hash_id = hash_id
         duplicated = extensions.compute_euclidean_pairwise_duplicates(
-            vectors.astype('int32'), threshold=threshold).astype('bool')
+            vectors.astype('int32'),
+            threshold=threshold,
+            counts=counts.astype('int32')).astype('bool')
         for hash_index in iterator:
             if end_idx is not None:
                 start_idx = end_idx

@@ -47,6 +47,34 @@ def test_deduplicate_u8():
                                      (file2 == duplicate))
 
 
+def test_deduplicate_u8_multihash():
+    # The purpose of this test is to verify that the handling of
+    # deduplication with files that have multiple hashes works
+    # properly. This is particularly important for video where
+    # we are likely to have many hashes.
+    X = np.array([
+        # File 1
+        [0, 0, 0],
+        [1, 1, 1],
+        [2, 2, 2],
+        # File 2
+        [1, 1, 1],
+        [2, 2, 2],
+        [3, 3, 3],
+        # File 3
+        [3, 3, 3],
+        [4, 4, 4],
+        # File 4
+        [5, 5, 5],
+        [6, 6, 6]
+    ])
+    counts = np.array([3, 3, 2, 2])
+    expected = np.array([2, 0, 0, 1, 0, 0])
+    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+        X=X.astype('int32'), threshold=1, counts=counts.astype('int32'))
+    assert (expected == actual).all()
+
+
 def test_api_is_over_https():
     matcher_https = tools.SaferMatcher(
         api_key='foo', url='https://www.example.com/')
