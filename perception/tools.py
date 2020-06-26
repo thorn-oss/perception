@@ -84,7 +84,7 @@ def deduplicate_hashes(
     assert isinstance(distance_metric, str)
     # If there is more than one hash for an id, we want them
     # to be sequential in case we are able to use the more
-    # efficient distance calculation (compute_euclidean_pairwise_overlap)
+    # efficient distance calculation (compute_euclidean_pairwise_duplicates)
     # that skips computation of distance between two hashes for the same file.
     multiple_hashes_per_id = _multiple_hashes_for_ids(hashes)
     if multiple_hashes_per_id:
@@ -125,7 +125,7 @@ def deduplicate_hashes(
     else:
         # We want to count the number of hashes for each unique hash ID. There
         # may be more than one -- for example in the case of video. We need
-        # this so we can pass it to the compute_euclidean_pairwise_overlap
+        # this so we can pass it to the compute_euclidean_pairwise_duplicates
         # function.
         if multiple_hashes_per_id:
             counts = np.zeros(
@@ -140,7 +140,7 @@ def deduplicate_hashes(
                 previous_hash_id = hash_id
         else:
             counts = None
-        duplicated = (extensions.compute_euclidean_pairwise_overlap(
+        duplicated = (extensions.compute_euclidean_pairwise_duplicates(
             vectors.astype('int32'), threshold=threshold,
             counts=counts).max(axis=1) > 0)
         for hash_index in iterator:

@@ -16,7 +16,7 @@ ctypedef np.uint8_t uint8
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_euclidean_pairwise_overlap(int[:, :] X, float threshold, counts: int[:] = None):
+def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: int[:] = None, compute_overlap=False):
     """Find the pairwise overlap within an array of vectors, where there may be multiple
     vectors for the same file. This function is faster than using scipy.spatial.distance
     because it computes distances in parallel, avoids computing full distances when they're
@@ -30,6 +30,9 @@ def compute_euclidean_pairwise_overlap(int[:, :] X, float threshold, counts: int
         counts: For each file, the number of sequential vectors in X. If not
             provided, each vector is assumed to be for a different file (i.e.,
             this is equivalent to `counts = np.ones(N)`).
+        compute_overlap: If True, the values returned will be divided by the number
+            of hashes in each file. If False, the raw duplicate counts will
+            be returned.
     
     Returns:
         pct_duplicates: An array of shape (M!/(2*((M-2)!)), 2) indicating
@@ -51,6 +54,9 @@ def compute_euclidean_pairwise_overlap(int[:, :] X, float threshold, counts: int
     cdef Py_ssize_t d = X.shape[1]
     cdef Py_ssize_t n_pairs = int(math.factorial(m)/(2*math.factorial(m-2)))
     cdef Py_ssize_t max_counts = np.max(counts)
+    cdef int compute_overlap_int = 0
+    if compute_overlap:
+        compute_overlap_int = 1
     # i_1 is the index of file1, i_2 is the index of file2, i_d is the
     # index of the vector dimension we're on, i_i is used to compute
     # the starting index in the flattened vector in the different threads.
@@ -123,8 +129,9 @@ def compute_euclidean_pairwise_overlap(int[:, :] X, float threshold, counts: int
                 for i_2_sub in range(counts[i_2]):
                     duplicate[local_buf[1], 1] += matched_2[i_2_sub]
                 # Divide by the total number of vectors for each file.
-                duplicate[local_buf[1], 0] /= counts[i_1]
-                duplicate[local_buf[1], 1] /= counts[i_2]
+                if compute_overlap_int:
+                    duplicate[local_buf[1], 0] /= counts[i_1]
+                    duplicate[local_buf[1], 1] /= counts[i_2]
                 # Advance to the next pair index.
                 local_buf[1] += 1
         free(local_buf)
