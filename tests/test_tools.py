@@ -28,7 +28,7 @@ def test_deduplicate():
 
 
 def test_deduplicate_u8():
-    # This test verifies that extensions.compute_euclidean_pairwise_duplicates
+    # This test verifies that extensions.compute_euclidean_pairwise_overlap
     # works properly.
     directory = tempfile.TemporaryDirectory()
     original = testing.DEFAULT_TEST_IMAGES[0]
@@ -47,7 +47,7 @@ def test_deduplicate_u8():
                                      (file2 == duplicate))
 
 
-def test_compute_euclidean_pairwise_duplicates():
+def test_compute_euclidean_pairwise_overlap():
     # The purpose of this test is to verify that the handling of
     # deduplication with files that have multiple hashes works
     # properly. This is particularly important for video where
@@ -71,8 +71,9 @@ def test_compute_euclidean_pairwise_duplicates():
 
     # Use grouped files.
     counts = np.array([3, 3, 2, 2])
-    expected = np.array([2, 0, 0, 1, 0, 0])
-    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+    expected = np.array([[2 / 3, 2 / 3], [0, 0], [0, 0], [1 / 3, 1 / 2],
+                         [0, 0], [0, 0]])
+    actual = tools.extensions.compute_euclidean_pairwise_overlap(
         X=X.astype('int32'), threshold=1, counts=counts.astype('int32'))
     assert (expected == actual).all()
 
@@ -84,9 +85,10 @@ def test_compute_euclidean_pairwise_duplicates():
         [2, 2, 2],
         [1, 1, 1],
     ])
-    expected = np.array([0, 0, 0, 0, 1, 0])
-    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+    expected = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [1, 1], [0, 0]])
+    actual = tools.extensions.compute_euclidean_pairwise_overlap(
         X=X.astype('int32'), threshold=1)
+    print(actual)
     assert (expected == actual).all()
 
 
