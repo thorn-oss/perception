@@ -35,12 +35,13 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
             be returned.
     
     Returns:
-        pct_duplicates: An array of shape (M!/(2*((M-2)!)), 2) indicating
+        duplicates: An array of shape (M!/(2*((M-2)!)), 2) indicating
             the fraction of vectors for each file found in another file.
             The indexing matches that of scipy.spatial.pdist. M is the number of files.
             So if M = 4, the array will represent comparisons of the file indexes as follows:
-            [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]. So a possible return would
-            be [(1.0, 1.0), (0, 0), (0, 0), (0.66, 1.0), (0.5, 0.25)] which means that:
+            [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]. So (assuming compute_overlap=True),
+            a possible return would be [(1.0, 1.0), (0, 0), (0, 0), (0.66, 1.0), (0.5, 0.25)]
+            which means that:
 
             - There was 100% overlap between file 0 and file 1
             - 66% of file 1 was in file 2 and 100% of file 2 was in file 1
