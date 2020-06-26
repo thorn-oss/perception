@@ -88,7 +88,6 @@ def test_compute_euclidean_pairwise_overlap():
     expected = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [1, 1], [0, 0]])
     actual = tools.extensions.compute_euclidean_pairwise_overlap(
         X=X.astype('int32'), threshold=1)
-    print(actual)
     assert (expected == actual).all()
 
 
