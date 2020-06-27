@@ -286,6 +286,8 @@ class ImageHasher(Hasher):
 
 
 class VideoHasher(Hasher):
+
+    #: The frame rate at which videos are read
     frames_per_second: float = 1
 
     @abstractmethod
@@ -315,19 +317,25 @@ class VideoHasher(Hasher):
         """
 
     # pylint: disable=arguments-differ
-    def compute(self, filepath, errors='raise', hash_format='base64'):
-        """Compute a hash for a video at a given filepath.
+    def compute(self, filepath, errors='raise', hash_format='base64',
+                **kwargs):
+        """Compute a hash for a video at a given filepath. All
+        other arguments are passed to perception.hashers.tools.read_video.
 
         Args:
             filepath: Path to video file
             errors: One of "raise", "ignore", or "warn". Passed
                 to perception.hashers.tools.read_video.
+            hash_format: One of "vector", "base64", or "hex"
+            max_duration: The maximum length of the video to hash.
+            max_size: The maximum size of frames to queue
         """
         state = None
         for frame, frame_index, frame_timestamp in tools.read_video(
                 filepath=filepath,
                 frames_per_second=self.frames_per_second,
-                errors=errors):
+                errors=errors,
+                **kwargs):
             state = self.process_frame(
                 frame=frame,
                 frame_index=frame_index,

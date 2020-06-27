@@ -353,7 +353,9 @@ def _get_keyframes(filepath):
 def read_video_to_generator(
         filepath,
         frames_per_second: typing.Optional[typing.Union[str, float]] = None,
-        errors='raise'):
+        errors='raise',
+        max_duration: float = None,
+        max_size: int = None):
     # pylint: disable=no-member
     if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
         message = 'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
@@ -403,6 +405,17 @@ def read_video_to_generator(
             frame_indexes = itertools.count(
                 0, max(1, file_frames_per_second / frames_per_second))
             repeat = file_frames_per_second < frames_per_second
+        input_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        input_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        if max_size is not None:
+            scale = min(max_size / max(input_width, input_height), 1)
+        else:
+            scale = 1
+        target_size: typing.Optional[typing.Tuple[int, int]]
+        if scale < 1:
+            target_size = (int(scale * input_width), int(scale * input_height))
+        else:
+            target_size = None
         for frame_index in frame_indexes:
             while grabbed_frame_count < frame_index:
                 # We need to skip this frame.
@@ -416,8 +429,13 @@ def read_video_to_generator(
                 # The video is over or an error has occurred.
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if target_size is not None:
+                frame = cv2.resize(
+                    frame, target_size, interpolation=cv2.INTER_NEAREST)
             current_timestamp = frame_index / file_frames_per_second
             yield frame, grabbed_frame_count - 1, current_timestamp
+            if max_duration is not None and current_timestamp > max_duration:
+                break
             if repeat:
                 next_desired_timestamp = current_timestamp + seconds_between_desired_frames
                 next_timestamp = current_timestamp + seconds_between_grabbed_frames
@@ -451,14 +469,17 @@ def read_video_into_queue(*args, video_queue, terminate, **kwargs):
         video_queue.put((None, None, None))
 
 
+# pylint: disable=too-many-arguments
 def read_video(
         filepath,
         frames_per_second: typing.Optional[typing.Union[str, float]] = None,
         max_queue_size=128,
         use_queue=True,
-        errors='raise'):
+        errors='raise',
+        **kwargs):
     """Provides a generator of RGB frames, frame indexes, and timestamps from a
-    video. This function requires you to have installed ffmpeg.
+    video. This function requires you to have installed ffmpeg. All other
+    arguments passed to read_video_to_generator.
 
     Args:
         filepath: Path to the video file
@@ -468,6 +489,8 @@ def read_video(
             we use ffmpeg to select I frames from the video.
         max_queue_size: The maximum number of frames to load in the queue
         use_queue: Whether to use a queue of frames during processing
+        max_duration: The maximum length of the video to hash.
+        max_size: The maximum size of frames to queue
         errors: Whether to 'raise', 'warn', or 'ignore' errors
 
     Yields:
@@ -485,7 +508,8 @@ def read_video(
                 'video_queue': video_queue,
                 'filepath': filepath,
                 'errors': errors,
-                'terminate': terminate
+                'terminate': terminate,
+                **kwargs
             })
         thread.start()
         try:
@@ -518,7 +542,8 @@ def read_video(
         for frame, frame_index, timestamp in read_video_to_generator(
                 filepath=filepath,
                 frames_per_second=frames_per_second,
-                errors=errors):
+                errors=errors,
+                **kwargs):
             yield (frame, frame_index, timestamp)
 
 
