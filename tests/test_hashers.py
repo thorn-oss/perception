@@ -6,6 +6,7 @@ import string
 import pytest
 
 from perception import hashers, testing
+from perception.hashers.image.pdq import PDQHash
 
 TEST_IMAGES = [
     os.path.join('tests', 'images', f'image{n}.jpg') for n in range(1, 11)
@@ -19,7 +20,7 @@ TEST_IMAGES = [
     "hasher_class,pil_opencv_threshold,transform_threshold,opencv_hasher",
     [(hashers.AverageHash, 0.1, 0.1, False),
      (hashers.WaveletHash, 0.1, 0.1, False), (hashers.PHash, 0.1, 0.1, False),
-     (hashers.PDQHash, 0.1, 0.15, False), (hashers.DHash, 0.1, 0.1, False),
+     (PDQHash, 0.1, 0.15, False), (hashers.DHash, 0.1, 0.1, False),
      (hashers.MarrHildreth, 0.1, 0.1, True),
      (hashers.BlockMean, 0.1, 0.1, True),
      (hashers.ColorMoment, 10, 0.1, True)])
