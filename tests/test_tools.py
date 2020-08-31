@@ -47,6 +47,33 @@ def test_deduplicate_u8():
                                      (file2 == duplicate))
 
 
+def test_deduplicate_hashes_multiple():
+    # This test verifies that deduplicate_hashes functions properly
+    # when there is more than one hash for a file.
+    directory = tempfile.TemporaryDirectory()
+    original = testing.DEFAULT_TEST_IMAGES[0]
+    duplicate = os.path.join(directory.name, 'image1.jpg')
+    hasher = hashers.PHashU8(hash_size=16)
+    shutil.copy(original, duplicate)
+    hashes = [
+        (0, hasher.compute(original)),
+        (1, hasher.compute(duplicate)),
+        (1, hasher.compute(duplicate)),
+        (1, hasher.compute(duplicate)),
+        (2, hasher.compute(testing.DEFAULT_TEST_IMAGES[1])),
+    ]
+    pairs = tools.deduplicate_hashes(
+        hashes=hashes,
+        threshold=10,
+        hash_format='base64',
+        hash_length=hasher.hash_length,
+        distance_metric='euclidean',
+        hash_dtype='uint8')
+    assert len(pairs) == 1
+    file1, file2 = pairs[0]
+    assert ((file1 == 0) and (file2 == 1)) or ((file1 == 1) and (file2 == 0))
+
+
 def test_compute_euclidean_pairwise_duplicates():
     # The purpose of this test is to verify that the handling of
     # deduplication with files that have multiple hashes works
