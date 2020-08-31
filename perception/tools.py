@@ -39,7 +39,7 @@ def _multiple_hashes_for_ids(
     return len(hash_ids) != len(set(hash_ids))
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,too-many-statements
 def deduplicate_hashes(
         hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
         threshold: float,
@@ -101,12 +101,13 @@ def deduplicate_hashes(
     files = np.array([identifier for identifier, _ in hashes])
     pairs: typing.List[typing.Tuple[str, str]] = []
     n_hashes = len(vectors)
-    iterator = range(n_hashes)
-    if progress is not None:
-        iterator = progress(iterator, total=n_hashes, desc='Deduplicating.')
     start_idx = 0
     end_idx = None
     if distance_metric != 'euclidean' or 'int' not in hash_dtype or extensions is None:
+        iterator = range(n_hashes)
+        if progress is not None:
+            iterator = progress(
+                iterator, total=n_hashes, desc='Deduplicating.')
         distances = spatial.distance.pdist(vectors, metric=distance_metric)
         for hash_index in iterator:
             if end_idx is not None:
@@ -133,23 +134,32 @@ def deduplicate_hashes(
                     hash_id for hash_id, _ in hashes))).astype('int32')
             previous_hash_id = None
             counts_idx = 0
+            files = [
+            ]  # We're going to re-build the IDs with deduplicated files.
             for hash_id, _ in hashes:
+                if hash_id != previous_hash_id:
+                    files.append(hash_id)
                 if previous_hash_id is not None and hash_id != previous_hash_id:
                     counts_idx += 1
                 counts[counts_idx] += 1
                 previous_hash_id = hash_id
+            files = np.array(files)
         else:
             counts = None
+        n_files = len(files)
+        iterator = range(n_files)
+        if progress is not None:
+            iterator = progress(iterator, total=n_files, desc='Deduplicating.')
         duplicated = (extensions.compute_euclidean_pairwise_duplicates(
             vectors.astype('int32'), threshold=threshold,
             counts=counts).max(axis=1) > 0)
-        for hash_index in iterator:
+        for file_index in iterator:
             if end_idx is not None:
                 start_idx = end_idx
-            end_idx = start_idx + (n_hashes - hash_index - 1)
+            end_idx = start_idx + (n_files - file_index - 1)
             current_duplicated = duplicated[start_idx:end_idx]
-            current_file = files[hash_index]
-            duplicated_files = files[hash_index + 1:][current_duplicated]
+            current_file = files[file_index]
+            duplicated_files = files[file_index + 1:][current_duplicated]
             pairs.extend([(current_file, duplicated_file)
                           for duplicated_file in duplicated_files
                           if duplicated_file != current_file])
