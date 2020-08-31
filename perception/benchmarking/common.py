@@ -158,7 +158,6 @@ class Saveable(Filterable):
                 if index['filepath'].apply(os.path.isfile).all() and (
                         not verify_md5
                         or all(row['md5'] == compute_md5(row['filepath']))
-                        # pylint: disable=bad-continuation
                         for _, row in tqdm.tqdm(
                             index.iterrows(), desc='Checking cache.')):
                     log.info(

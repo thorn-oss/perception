@@ -114,7 +114,6 @@ class SimpleSceneDetection(VideoHasher):
         if state['scenes']:
             yield convert(state['scenes'])
 
-    # pylint: disable=bad-continuation
     def handle_scene(self, state, frame_timestamp=None):
         subhash = self.base_hasher.hash_from_final_state(state['substate'])
         if subhash is not None and (self.base_hasher.returns_multiple or (

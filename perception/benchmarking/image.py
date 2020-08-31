@@ -156,10 +156,10 @@ class BenchmarkImageDataset(BenchmarkDataset):
                     continue
                 try:
                     transformed = transform(image=image)
-                except Exception:
+                except Exception as e:
                     raise Exception(
                         f'An exception occurred while processing {filepath} '
-                        f'with transform {transform_name}.')
+                        f'with transform {transform_name}.') from e
                 transformed_path = os.path.join(
                     storage_dir, f'{guid}_{transform_name}.jpg')
                 cv2.imwrite(transformed_path,
