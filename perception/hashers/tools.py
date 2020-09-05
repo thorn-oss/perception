@@ -115,9 +115,10 @@ def string_to_vector(hash_string: str,
     """Convert hash back to vector.
 
     Args:
-        hash_string: The input base64 hash string
+        hash_string: The input hash string
         dtype: The data type of the hash
         hash_length: The length of the hash vector
+        hash_format: The iinput format of the hash (base64 or hex)
         verify_length: Whether to verify the string length
     """
     assert not verify_length or len(hash_string) == get_string_length(
@@ -141,6 +142,52 @@ def string_to_vector(hash_string: str,
     if dtype == 'bool':
         return np.unpackbits(vector_bytes)[:hash_length].astype('bool')
     raise NotImplementedError(f'Cannot convert hash of type {dtype}.')
+
+
+def hex2b64(hash_string: str,
+            dtype: str,
+            hash_length: int,
+            verify_length: bool = True):
+    """Convert a hex-encoded hash to base64.
+
+    Args:
+        hash_string: The input base64 hash string
+        dtype: The data type of the hash
+        hash_length: The length of the hash vector
+        verify_length: Whether to verify the string length
+    """
+    return vector_to_string(
+        string_to_vector(
+            hash_string,
+            hash_length=hash_length,
+            hash_format='hex',
+            dtype=dtype,
+            verify_length=verify_length),
+        dtype=dtype,
+        hash_format='base64')
+
+
+def b642hex(hash_string: str,
+            dtype: str,
+            hash_length: int,
+            verify_length: bool = True):
+    """Convert a base64-encoded hash to hex.
+
+    Args:
+        hash_string: The input hex hash string
+        dtype: The data type of the hash
+        hash_length: The length of the hash vector
+        verify_length: Whether to verify the string length
+    """
+    return vector_to_string(
+        string_to_vector(
+            hash_string,
+            hash_length=hash_length,
+            hash_format='base64',
+            dtype=dtype,
+            verify_length=verify_length),
+        dtype=dtype,
+        hash_format='hex')
 
 
 def to_image_array(image: ImageInputType, require_color=True):
