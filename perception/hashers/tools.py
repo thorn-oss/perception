@@ -118,7 +118,7 @@ def string_to_vector(hash_string: str,
         hash_string: The input hash string
         dtype: The data type of the hash
         hash_length: The length of the hash vector
-        hash_format: The iinput format of the hash (base64 or hex)
+        hash_format: The input format of the hash (base64 or hex)
         verify_length: Whether to verify the string length
     """
     assert not verify_length or len(hash_string) == get_string_length(
