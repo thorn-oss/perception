@@ -156,3 +156,22 @@ def test_scene_detection_batches():
 
     # Ensure all frames were accounted for in scene detection
     assert expected_frame_count == frame_count
+
+
+def test_hex_b64_conversion():
+    b64_string = """
+    CFFRABrAaRKCDQigEBIGwAhNBdIISgVZBxQYAgP4fwYNUR0oBgYCPwwIDSqTAmIH
+    FRQhCiT/IT9DpHIeIx4cA2hQcBTwISovFkspMxz/MzdnljeCOEs4LnBYNHHBMC4x
+    EC8mPxLaLkI/dywmNk1lMXoqJyCLSyg7BxwRSgTmIlI/LwsrP04hTCMtBSxaGAFB
+    """.replace("\n", "").replace(" ", "").strip()
+    hex_string = """
+    085151001ac06912820d08a0101206c0084d05d2084a05590714180203f87f06
+    0d511d280606023f0c080d2a930262071514210a24ff213f43a4721e231e1c03
+    68507014f0212a2f164b29331cff333767963782384b382e70583471c1302e31
+    102f263f12da2e423f772c26364d65317a2a27208b4b283b071c114a04e62252
+    3f2f0b2b3f4e214c232d052c5a180141
+    """.replace("\n", "").replace(" ", "").strip()
+    assert hashers.tools.hex_to_b64(
+        hex_string, dtype='uint8', hash_length=144) == b64_string
+    assert hashers.tools.b64_to_hex(
+        b64_string, dtype='uint8', hash_length=144) == hex_string
