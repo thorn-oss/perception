@@ -144,10 +144,10 @@ def string_to_vector(hash_string: str,
     raise NotImplementedError(f'Cannot convert hash of type {dtype}.')
 
 
-def hex2b64(hash_string: str,
-            dtype: str,
-            hash_length: int,
-            verify_length: bool = True):
+def hex_to_b64(hash_string: str,
+               dtype: str,
+               hash_length: int,
+               verify_length: bool = True):
     """Convert a hex-encoded hash to base64.
 
     Args:
@@ -167,10 +167,10 @@ def hex2b64(hash_string: str,
         hash_format='base64')
 
 
-def b642hex(hash_string: str,
-            dtype: str,
-            hash_length: int,
-            verify_length: bool = True):
+def b64_to_hex(hash_string: str,
+               dtype: str,
+               hash_length: int,
+               verify_length: bool = True):
     """Convert a base64-encoded hash to hex.
 
     Args:
