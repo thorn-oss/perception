@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2020-10-17
+This release switches from using false positive rates in benchmarking to reporting precision, which is more intuitive.
+
+### Breaking changes
+All references to fpr_threshold now refer to precision_threshold.
+
+### Bug fixes
+The PDQHash hasher now correctly returns the hash vector instead of the (vector, quality) tuple.
+
 ## [0.3.0] - 2020-04-27
 This release adds significantly more support for video.
 
