@@ -60,7 +60,7 @@ def create_mask(transformed_guids, noop_guids):
     return mask
 
 
-def compute_threshold_fpr_recall(pos, neg, fpr_threshold=0.001):
+def compute_threshold_precision_recall(pos, neg, precision_threshold=99.9):
     # Sort both arrays according to the positive distance
     neg = neg[pos.argsort()]
     pos = pos[pos.argsort()]
@@ -68,25 +68,30 @@ def compute_threshold_fpr_recall(pos, neg, fpr_threshold=0.001):
     # Compute false-positive rate for every value in pos
     tp = np.arange(1, len(pos) + 1)
     fp = np.array([(neg <= t).sum() for t in pos])
-    fpr = fp / (tp + fp)
+    precision = 100 * tp / (tp + fp)
 
     # Choose the optimal threshold
-    bad_thresholds = pos[fpr > fpr_threshold]
+    bad_threshold_idxs = np.where(precision < precision_threshold)[0]
 
     # pylint: disable=len-as-condition
-    if len(bad_thresholds) > 0:
-        optimal_threshold = bad_thresholds[0]
-        recovered = (pos < optimal_threshold).sum()
+    if len(bad_threshold_idxs) > 0 and bad_threshold_idxs[0] > 0:
+        optimal_threshold = pos[bad_threshold_idxs[0] - 1]
+        recovered = (pos <= optimal_threshold).sum()
         if recovered == 0:
-            optimal_fpr = 0
+            optimal_precision = np.nan
         else:
-            optimal_fpr = fpr[pos < optimal_threshold].max()
+            optimal_precision = precision[pos <= optimal_threshold].min()
         optimal_recall = round(100 * recovered / len(pos), 3)
+    elif len(bad_threshold_idxs) > 0:
+        # The closest hash was a false positive.
+        optimal_threshold = pos[0]
+        optimal_recall = 0
+        optimal_precision = np.nan
     else:
-        optimal_fpr = 0
+        optimal_precision = 100
         optimal_threshold = pos.max()
         optimal_recall = 100
-    return optimal_threshold, optimal_fpr, optimal_recall
+    return optimal_threshold, optimal_precision, optimal_recall
 
 
 class Filterable(ABC):
@@ -401,7 +406,10 @@ class BenchmarkHashes(Filterable):
         return metrics
 
     # pylint: disable=too-many-locals
-    def show_histograms(self, grouping=None, fpr_threshold=0.001, **kwargs):
+    def show_histograms(self,
+                        grouping=None,
+                        precision_threshold=99.9,
+                        **kwargs):
         """Plot histograms for true and false positives, similar
         to https://tech.okcupid.com/evaluating-perceptual-image-hashes-okcupid/
         Additional arguments passed to compute_metrics.
@@ -459,8 +467,8 @@ class BenchmarkHashes(Filterable):
                 'distance_to_closest_correct_image',
                 'distance_to_closest_incorrect_image'
             ]].min().values.T
-            optimal_threshold, _, optimal_recall = compute_threshold_fpr_recall(
-                pos=pos, neg=neg, fpr_threshold=fpr_threshold)
+            optimal_threshold, _, optimal_recall = compute_threshold_precision_recall(
+                pos=pos, neg=neg, precision_threshold=precision_threshold)
             optimal_threshold = optimal_threshold.round(3)
             emd = stats.wasserstein_distance(pos, neg).round(2)
             ax.hist(neg, label='neg', bins=10)
@@ -484,14 +492,14 @@ class BenchmarkHashes(Filterable):
         fig.tight_layout()
 
     def compute_threshold_recall(self,
-                                 fpr_threshold=0.001,
+                                 precision_threshold=99.9,
                                  grouping=None,
                                  **kwargs) -> pd.DataFrame:
         """Compute a table for threshold and recall for each category, hasher,
         and transformation combinations. Additional arguments passed to compute_metrics.
 
         Args:
-            fpr_threshold: The false positive rate threshold to use
+            precision_threshold: The precision threshold to use
                 for choosing a distance threshold for each hasher.
             grouping: List of fields to group by. By default, all fields are used
                 (category, and transform_name).
@@ -512,12 +520,14 @@ class BenchmarkHashes(Filterable):
                 'distance_to_closest_correct_image',
                 'distance_to_closest_incorrect_image'
             ]].min().values.T
-            optimal_threshold, optimal_fpr, optimal_recall = compute_threshold_fpr_recall(
-                pos=pos, neg=neg, fpr_threshold=fpr_threshold)
+
+            # pylint: disable=line-too-long
+            optimal_threshold, optimal_precision, optimal_recall = compute_threshold_precision_recall(
+                pos=pos, neg=neg, precision_threshold=precision_threshold)
             return pd.Series({
                 'threshold': optimal_threshold,
                 'recall': optimal_recall,
-                'fpr': optimal_fpr,
+                'precision': optimal_precision,
                 'n_exemplars': len(subset)
             })
 

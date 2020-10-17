@@ -29,6 +29,7 @@ The below example does the following:
     import numpy as np
 
     from perception import benchmarking, hashers
+    from perception.hashers.image.pdq import PDQHash
 
     urllib.request.urlretrieve(
         "https://thorn-perception.s3.amazonaws.com/thorn-perceptual-benchmark-v0.zip",
@@ -120,7 +121,7 @@ The below example does the following:
     # Create a new hash that we want to evaluate.
     # perception will handle most of the plumbing but
     # we do have to specify a few things.
-    class ShrinkHash(hashers.Hasher):
+    class ShrinkHash(hashers.ImageHasher):
         """This is a simple hash to demonstrate how you
         can create your own hasher and compare it to others.
         It just shrinks images to 8x8 pixels and then flattens
@@ -144,7 +145,7 @@ The below example does the following:
     hashers_dict = {
         'ahash': hashers.AverageHash(hash_size=16),
         'dhash': hashers.DHash(hash_size=16),
-        'pdq': hashers.PDQHash(),
+        'pdq': PDQHash(),
         'phash': hashers.PHash(hash_size=16),
         'marrhildreth': hashers.MarrHildreth(),
         'wavelet': hashers.WaveletHash(hash_size=16),
@@ -156,283 +157,307 @@ The below example does the following:
     hashes = transformed.compute_hashes(hashers=hashers_dict)
 
     # Get performance metrics (i.e., recall) for each hash function based on
-    # a false positive rate tolerance threshold. Here we use 0.01%
-    fpr_threshold = 1e-4
+    # a minimum precision threshold. Here we use 99.99%.
+    precision_threshold = 99.99
     
     # The metrics are just pandas dataframes. We use tabulate here to obtain the tables
     # formatted for the documentation.
-    metrics = hashes.compute_threshold_recall(fpr_threshold=fpr_threshold).reset_index()
+    metrics = hashes.compute_threshold_recall(precision_threshold=precision_threshold).reset_index()
     print(tabulate.tabulate(metrics, showindex=False, headers=metrics.columns, tablefmt='rst'))
 
-    metrics_by_transform = hashes.compute_threshold_recall(grouping=['transform_name'], fpr_threshold=fpr_threshold).reset_index()
+    metrics_by_transform = hashes.compute_threshold_recall(grouping=['transform_name'], precision_threshold=precision_threshold).reset_index()
     print(tabulate.tabulate(metrics_by_transform, showindex=False, headers=metrics_by_transform.columns, tablefmt='rst'))
 
-    metrics_simple = hashes.compute_threshold_recall(grouping=[], fpr_threshold=fpr_threshold).reset_index()
+    metrics_simple = hashes.compute_threshold_recall(grouping=[], precision_threshold=precision_threshold).reset_index()
     print(tabulate.tabulate(metrics_simple, showindex=False, headers=metrics_simple.columns, tablefmt='rst'))
 
 
 
-===========  ================  =============  ============  ========  =====  =============
-category     transform_name    hasher_name       threshold    recall    fpr    n_exemplars
-===========  ================  =============  ============  ========  =====  =============
-paintings    blur2             ahash            0.0117188     66.062      0           2204
-paintings    blur2             blockmean        0.0134298     87.432      0           2204
-paintings    blur2             dhash            0.132812     100          0           2204
-paintings    blur2             marrhildreth     0.126736     100          0           2204
-paintings    blur2             pdq              0.117188     100          0           2204
-paintings    blur2             phash            0.09375      100          0           2204
-paintings    blur2             shrinkhash      61.441         43.829      0           2204
-paintings    blur2             wavelet          0.015625      65.926      0           2204
-paintings    crop0.05          ahash            0.0078125      0.227      0           2204
-paintings    crop0.05          blockmean        0.0144628      0.408      0           2204
-paintings    crop0.05          dhash            0.222656      11.298      0           2204
-paintings    crop0.05          marrhildreth     0.215278       3.857      0           2204
-paintings    crop0.05          pdq              0.265625      11.298      0           2204
-paintings    crop0.05          phash            0.234375       8.757      0           2204
-paintings    crop0.05          shrinkhash      95.5667         2.314      0           2204
-paintings    crop0.05          wavelet          0.015625       0.318      0           2204
-paintings    gamma2            ahash            0.0078125      2.586      0           2204
-paintings    gamma2            blockmean        0.00826446     2.269      0           2204
-paintings    gamma2            dhash            0.175781      98.82       0           2204
-paintings    gamma2            marrhildreth     0.163194      99.501      0           2204
-paintings    gamma2            pdq              0.164062     100          0           2204
-paintings    gamma2            phash            0.164062     100          0           2204
-paintings    gamma2            shrinkhash     180.69           0.045      0           2204
-paintings    gamma2            wavelet          0.015625      18.603      0           2204
-paintings    jpeg95            ahash            0.0117188     29.9        0           2204
-paintings    jpeg95            blockmean        0.0134298     38.612      0           2204
-paintings    jpeg95            dhash            0.191406      92.604      0           2204
-paintings    jpeg95            marrhildreth     0.166667      85.844      0           2204
-paintings    jpeg95            pdq              0.25         100          0           2204
-paintings    jpeg95            phash            0.25         100          0           2204
-paintings    jpeg95            shrinkhash      66.7008        46.597      0           2204
-paintings    jpeg95            wavelet          0.015625      19.419      0           2204
-paintings    noise0.2          ahash            0.0078125      6.352      0           2204
-paintings    noise0.2          blockmean        0.0154959     21.779      0           2204
-paintings    noise0.2          dhash            0.238281      90.699      0           2204
-paintings    noise0.2          marrhildreth     0.166667      72.096      0           2204
-paintings    noise0.2          pdq              0.28125       99.501      0           2204
-paintings    noise0.2          phash            0.273438      99.909      0           2204
-paintings    noise0.2          shrinkhash     154.729          0.635      0           2204
-paintings    noise0.2          wavelet          0.0078125      1.407      0           2204
-paintings    noop              ahash            0            100          0           2204
-paintings    noop              blockmean        0            100          0           2204
-paintings    noop              dhash            0            100          0           2204
-paintings    noop              marrhildreth     0            100          0           2204
-paintings    noop              pdq              0            100          0           2204
-paintings    noop              phash            0            100          0           2204
-paintings    noop              shrinkhash       0            100          0           2204
-paintings    noop              wavelet          0            100          0           2204
-paintings    pad0.2            ahash            0.0820312      0.045      0           2204
-paintings    pad0.2            blockmean        0.0950413      0.045      0           2204
-paintings    pad0.2            dhash            0.214844       1.27       0           2204
-paintings    pad0.2            marrhildreth     0.220486       0.045      0           2204
-paintings    pad0.2            pdq              0.296875       2.586      0           2204
-paintings    pad0.2            phash            0.28125        3.448      0           2204
-paintings    pad0.2            shrinkhash     153.981          0.227      0           2204
-paintings    pad0.2            wavelet          0.109375       0          0           2204
-paintings    rotate4           ahash            0.0429688      4.083      0           2204
-paintings    rotate4           blockmean        0.0392562      3.448      0           2204
-paintings    rotate4           dhash            0.210938      40.245      0           2204
-paintings    rotate4           marrhildreth     0.229167      64.201      0           2204
-paintings    rotate4           pdq              0.28125       61.388      0           2204
-paintings    rotate4           phash            0.265625      66.924      0           2204
-paintings    rotate4           shrinkhash      69.4622         2.858      0           2204
-paintings    rotate4           wavelet          0.0390625      0.635      0           2204
-paintings    vignette          ahash            0.046875       7.623      0           2204
-paintings    vignette          blockmean        0.0485537      8.53       0           2204
-paintings    vignette          dhash            0.125         34.256      0           2204
-paintings    vignette          marrhildreth     0.177083      77.813      0           2204
-paintings    vignette          pdq              0.132812     100          0           2204
-paintings    vignette          phash            0.132812     100          0           2204
-paintings    vignette          shrinkhash     103.015          3.312      0           2204
-paintings    vignette          wavelet          0.0546875      5.172      0           2204
-paintings    watermark         ahash            0.0078125     31.307      0           2204
-paintings    watermark         blockmean        0.0134298     47.55       0           2204
-paintings    watermark         dhash            0.0664062    100          0           2204
-paintings    watermark         marrhildreth     0.0711806    100          0           2204
-paintings    watermark         pdq              0.28125       99.138      0           2204
-paintings    watermark         phash            0.289062      99.682      0           2204
-paintings    watermark         shrinkhash     104.723         75.635      0           2204
-paintings    watermark         wavelet          0.015625      51.18       0           2204
-photographs  blur2             ahash            0.0195312     80.788      0           1650
-photographs  blur2             blockmean        0.0330579     97.818      0           1650
-photographs  blur2             dhash            0.0898438     96.303      0           1650
-photographs  blur2             marrhildreth     0.102431      96.97       0           1650
-photographs  blur2             pdq              0.304688      99.939      0           1650
-photographs  blur2             phash            0.179688     100          0           1650
-photographs  blur2             shrinkhash     116.09          42.303      0           1650
-photographs  blur2             wavelet          0.0234375     78.303      0           1650
-photographs  crop0.05          ahash            0.0117188      0.242      0           1650
-photographs  crop0.05          blockmean        0.0278926      0.848      0           1650
-photographs  crop0.05          dhash            0.101562       1.333      0           1650
-photographs  crop0.05          marrhildreth     0.175347       3.152      0           1650
-photographs  crop0.05          pdq              0.320312      38.485      0           1650
-photographs  crop0.05          phash            0.335938      73.394      0           1650
-photographs  crop0.05          shrinkhash     128.222          1.212      0           1650
-photographs  crop0.05          wavelet          0.0234375      0.424      0           1650
-photographs  gamma2            ahash            0.0195312     10.606      0           1650
-photographs  gamma2            blockmean        0.0278926     18.242      0           1650
-photographs  gamma2            dhash            0.105469      91.636      0           1650
-photographs  gamma2            marrhildreth     0.121528      92.303      0           1650
-photographs  gamma2            pdq              0.195312     100          0           1650
-photographs  gamma2            phash            0.234375     100          0           1650
-photographs  gamma2            shrinkhash     121.569          0.545      0           1650
-photographs  gamma2            wavelet          0.0234375     19.152      0           1650
-photographs  jpeg95            ahash            0.0117188     33.576      0           1650
-photographs  jpeg95            blockmean        0.0299587     84.424      0           1650
-photographs  jpeg95            dhash            0.117188      77.273      0           1650
-photographs  jpeg95            marrhildreth     0.109375      73.333      0           1650
-photographs  jpeg95            pdq              0.4375        99.939      0           1650
-photographs  jpeg95            phash            0.335938      99.879      0           1650
-photographs  jpeg95            shrinkhash     124.78          83.758      0           1650
-photographs  jpeg95            wavelet          0.0234375     44.727      0           1650
-photographs  noise0.2          ahash            0.0195312     34.909      0           1650
-photographs  noise0.2          blockmean        0.036157      72.121      0           1650
-photographs  noise0.2          dhash            0.167969      69.03       0           1650
-photographs  noise0.2          marrhildreth     0.119792      56.182      0           1650
-photographs  noise0.2          pdq              0.34375       99.758      0           1650
-photographs  noise0.2          phash            0.320312      99.818      0           1650
-photographs  noise0.2          shrinkhash     190.137         24          0           1650
-photographs  noise0.2          wavelet          0.0234375     23.03       0           1650
-photographs  noop              ahash            0            100          0           1650
-photographs  noop              blockmean        0            100          0           1650
-photographs  noop              dhash            0            100          0           1650
-photographs  noop              marrhildreth     0            100          0           1650
-photographs  noop              pdq              0            100          0           1650
-photographs  noop              phash            0            100          0           1650
-photographs  noop              shrinkhash       0            100          0           1650
-photographs  noop              wavelet          0            100          0           1650
-photographs  pad0.2            ahash            0.046875       0.121      0           1650
-photographs  pad0.2            blockmean        0.0588843      0.061      0           1650
-photographs  pad0.2            dhash            0.109375       0.667      0           1650
-photographs  pad0.2            marrhildreth     0.190972       0.182      0           1650
-photographs  pad0.2            pdq              0.289062       1.515      0           1650
-photographs  pad0.2            phash            0.296875       4.606      0           1650
-photographs  pad0.2            shrinkhash     164.593          0.121      0           1650
-photographs  pad0.2            wavelet          0.0820312      0          0           1650
-photographs  rotate4           ahash            0.03125        2.545      0           1650
-photographs  rotate4           blockmean        0.0382231      4.242      0           1650
-photographs  rotate4           dhash            0.0976562      3.333      0           1650
-photographs  rotate4           marrhildreth     0.159722       7.394      0           1650
-photographs  rotate4           pdq              0.3125        78.121      0           1650
-photographs  rotate4           phash            0.320312      92.182      0           1650
-photographs  rotate4           shrinkhash     132.944          4.788      0           1650
-photographs  rotate4           wavelet          0.015625       0.182      0           1650
-photographs  vignette          ahash            0.03125        9.152      0           1650
-photographs  vignette          blockmean        0.0330579     10.242      0           1650
-photographs  vignette          dhash            0.0742188     24.606      0           1650
-photographs  vignette          marrhildreth     0.0954861     38.606      0           1650
-photographs  vignette          pdq              0.117188     100          0           1650
-photographs  vignette          phash            0.125        100          0           1650
-photographs  vignette          shrinkhash     133.364         10.727      0           1650
-photographs  vignette          wavelet          0.0234375      4.424      0           1650
-photographs  watermark         ahash            0.0195312     48          0           1650
-photographs  watermark         blockmean        0.0258264     59.697      0           1650
-photographs  watermark         dhash            0.078125     100          0           1650
-photographs  watermark         marrhildreth     0.114583      98.242      0           1650
-photographs  watermark         pdq              0.351562      99.879      0           1650
-photographs  watermark         phash            0.320312      99.758      0           1650
-photographs  watermark         shrinkhash     142.317         78.242      0           1650
-photographs  watermark         wavelet          0.0234375     51.515      0           1650
-===========  ================  =============  ============  ========  =====  =============
+===========  ================  =============  ============  ========  ===========  =============
+category     transform_name    hasher_name       threshold    recall    precision    n_exemplars
+===========  ================  =============  ============  ========  ===========  =============
+paintings    blur2             ahash            0.0078125     51.724          100           2204
+paintings    blur2             blockmean        0.0123967     85.753          100           2204
+paintings    blur2             dhash            0.105469     100              100           2204
+paintings    blur2             marrhildreth     0.0989583    100              100           2204
+paintings    blur2             pdq              0.117188     100              100           2204
+paintings    blur2             phash            0.0390625    100              100           2204
+paintings    blur2             shrinkhash      60.8112        43.33           100           2204
+paintings    blur2             wavelet          0.0117188     66.379          100           2204
+paintings    crop0.05          ahash            0.00390625     0.045          100           2204
+paintings    crop0.05          blockmean        0.0123967      0.227          100           2204
+paintings    crop0.05          dhash            0.210938       7.577          100           2204
+paintings    crop0.05          marrhildreth     0.213542       3.584          100           2204
+paintings    crop0.05          pdq              0.257812       8.439          100           2204
+paintings    crop0.05          phash            0.226562       6.76           100           2204
+paintings    crop0.05          shrinkhash      95.0053         2.269          100           2204
+paintings    crop0.05          wavelet          0.0078125      0              nan           2204
+paintings    gamma2            ahash            0.00390625     0.998          100           2204
+paintings    gamma2            blockmean        0.0072314      1.724          100           2204
+paintings    gamma2            dhash            0.167969      98.639          100           2204
+paintings    gamma2            marrhildreth     0.159722      99.41           100           2204
+paintings    gamma2            pdq              0.164062     100              100           2204
+paintings    gamma2            phash            0.164062     100              100           2204
+paintings    gamma2            shrinkhash      46.5296         0              nan           2204
+paintings    gamma2            wavelet          0.0117188     18.512          100           2204
+paintings    jpeg95            ahash            0.00390625     4.22           100           2204
+paintings    jpeg95            blockmean        0.0134298     28.811          100           2204
+paintings    jpeg95            dhash            0.191406      94.782          100           2204
+paintings    jpeg95            marrhildreth     0.168403      82.985          100           2204
+paintings    jpeg95            pdq              0.257812     100              100           2204
+paintings    jpeg95            phash            0.234375     100              100           2204
+paintings    jpeg95            shrinkhash      66.053         55.172          100           2204
+paintings    jpeg95            wavelet          0              0              nan           2204
+paintings    noise0.2          ahash            0.00390625     2.677          100           2204
+paintings    noise0.2          blockmean        0.00826446     6.987          100           2204
+paintings    noise0.2          dhash            0.25          93.648          100           2204
+paintings    noise0.2          marrhildreth     0.170139      73.911          100           2204
+paintings    noise0.2          pdq              0.257812      99.229          100           2204
+paintings    noise0.2          phash            0.257812     100              100           2204
+paintings    noise0.2          shrinkhash     169.387          3.312          100           2204
+paintings    noise0.2          wavelet          0.0078125      1.407          100           2204
+paintings    noop              ahash            0            100              100           2204
+paintings    noop              blockmean        0            100              100           2204
+paintings    noop              dhash            0            100              100           2204
+paintings    noop              marrhildreth     0            100              100           2204
+paintings    noop              pdq              0            100              100           2204
+paintings    noop              phash            0            100              100           2204
+paintings    noop              shrinkhash       0            100              100           2204
+paintings    noop              wavelet          0            100              100           2204
+paintings    pad0.2            ahash            0.0703125      0              nan           2204
+paintings    pad0.2            blockmean        0.0795455      0              nan           2204
+paintings    pad0.2            dhash            0.210938       1.089          100           2204
+paintings    pad0.2            marrhildreth     0.177083       0              nan           2204
+paintings    pad0.2            pdq              0.289062       1.86           100           2204
+paintings    pad0.2            phash            0.273438       2.541          100           2204
+paintings    pad0.2            shrinkhash     146.325          0.181          100           2204
+paintings    pad0.2            wavelet          0.109375       0              nan           2204
+paintings    resize0.5         ahash            0.0078125     76.089          100           2204
+paintings    resize0.5         blockmean        0.0144628     98.185          100           2204
+paintings    resize0.5         dhash            0.0976562    100              100           2204
+paintings    resize0.5         marrhildreth     0.154514      99.819          100           2204
+paintings    resize0.5         pdq              0.1875       100              100           2204
+paintings    resize0.5         phash            0.09375      100              100           2204
+paintings    resize0.5         shrinkhash      56.9034        76.27           100           2204
+paintings    resize0.5         wavelet          0.0117188     84.71           100           2204
+paintings    rotate4           ahash            0.0390625      2.949          100           2204
+paintings    rotate4           blockmean        0.0382231      2.949          100           2204
+paintings    rotate4           dhash            0.207031      36.298          100           2204
+paintings    rotate4           marrhildreth     0.227431      61.978          100           2204
+paintings    rotate4           pdq              0.273438      56.08           100           2204
+paintings    rotate4           phash            0.257812      61.615          100           2204
+paintings    rotate4           shrinkhash      69.1737         2.813          100           2204
+paintings    rotate4           wavelet          0.03125        0.136          100           2204
+paintings    vignette          ahash            0.0429688      6.171          100           2204
+paintings    vignette          blockmean        0.0475207      8.122          100           2204
+paintings    vignette          dhash            0.121094      32.305          100           2204
+paintings    vignette          marrhildreth     0.177083      77.904          100           2204
+paintings    vignette          pdq              0.132812     100              100           2204
+paintings    vignette          phash            0.132812     100              100           2204
+paintings    vignette          shrinkhash     102.186          3.267          100           2204
+paintings    vignette          wavelet          0.046875       3.085          100           2204
+paintings    watermark         ahash            0.00390625    20.054          100           2204
+paintings    watermark         blockmean        0.0123967     45.145          100           2204
+paintings    watermark         dhash            0.0585938    100              100           2204
+paintings    watermark         marrhildreth     0.0625       100              100           2204
+paintings    watermark         pdq              0.273438      98.866          100           2204
+paintings    watermark         phash            0.28125       99.456          100           2204
+paintings    watermark         shrinkhash     104.398         75.998          100           2204
+paintings    watermark         wavelet          0.0117188     51.27           100           2204
+photographs  blur2             ahash            0.015625      76.727          100           1650
+photographs  blur2             blockmean        0.0330579     98              100           1650
+photographs  blur2             dhash            0.0859375     98.97           100           1650
+photographs  blur2             marrhildreth     0.107639      97.576          100           1650
+photographs  blur2             pdq              0.304688     100              100           1650
+photographs  blur2             phash            0.179688     100              100           1650
+photographs  blur2             shrinkhash     117.627         44              100           1650
+photographs  blur2             wavelet          0.0195312     79.879          100           1650
+photographs  crop0.05          ahash            0.0078125      0.182          100           1650
+photographs  crop0.05          blockmean        0.0258264      0.788          100           1650
+photographs  crop0.05          dhash            0.0976562      1.091          100           1650
+photographs  crop0.05          marrhildreth     0.173611       3.152          100           1650
+photographs  crop0.05          pdq              0.304688      30.606          100           1650
+photographs  crop0.05          phash            0.320312      63.697          100           1650
+photographs  crop0.05          shrinkhash     125.94           1.152          100           1650
+photographs  crop0.05          wavelet          0.015625       0.182          100           1650
+photographs  gamma2            ahash            0.015625       8.182          100           1650
+photographs  gamma2            blockmean        0.0268595     17.212          100           1650
+photographs  gamma2            dhash            0.101562      90.303          100           1650
+photographs  gamma2            marrhildreth     0.105903      90.909          100           1650
+photographs  gamma2            pdq              0.210938     100              100           1650
+photographs  gamma2            phash            0.234375     100              100           1650
+photographs  gamma2            shrinkhash     119.683          0.545          100           1650
+photographs  gamma2            wavelet          0.0195312     18.424          100           1650
+photographs  jpeg95            ahash            0.0117188     29.879          100           1650
+photographs  jpeg95            blockmean        0.0278926     76.788          100           1650
+photographs  jpeg95            dhash            0.121094      84.182          100           1650
+photographs  jpeg95            marrhildreth     0.104167      69.576          100           1650
+photographs  jpeg95            pdq              0.296875      99.879          100           1650
+photographs  jpeg95            phash            0.28125       99.879          100           1650
+photographs  jpeg95            shrinkhash     131.031         89.212          100           1650
+photographs  jpeg95            wavelet          0.0195312     40.242          100           1650
+photographs  noise0.2          ahash            0.015625      27.636          100           1650
+photographs  noise0.2          blockmean        0.036157      75.091          100           1650
+photographs  noise0.2          dhash            0.121094      54.121          100           1650
+photographs  noise0.2          marrhildreth     0.0989583     46.364          100           1650
+photographs  noise0.2          pdq              0.296875      99.697          100           1650
+photographs  noise0.2          phash            0.304688      99.818          100           1650
+photographs  noise0.2          shrinkhash     210.661         57.576          100           1650
+photographs  noise0.2          wavelet          0.0234375     27.03           100           1650
+photographs  noop              ahash            0            100              100           1650
+photographs  noop              blockmean        0            100              100           1650
+photographs  noop              dhash            0            100              100           1650
+photographs  noop              marrhildreth     0            100              100           1650
+photographs  noop              pdq              0            100              100           1650
+photographs  noop              phash            0            100              100           1650
+photographs  noop              shrinkhash       0            100              100           1650
+photographs  noop              wavelet          0            100              100           1650
+photographs  pad0.2            ahash            0.0429688      0.061          100           1650
+photographs  pad0.2            blockmean        0.0320248      0              nan           1650
+photographs  pad0.2            dhash            0.105469       0.545          100           1650
+photographs  pad0.2            marrhildreth     0.177083       0.121          100           1650
+photographs  pad0.2            pdq              0.28125        1.455          100           1650
+photographs  pad0.2            phash            0.289062       3.515          100           1650
+photographs  pad0.2            shrinkhash     114.721          0.061          100           1650
+photographs  pad0.2            wavelet          0.0820312      0              nan           1650
+photographs  resize0.5         ahash            0.015625      87.697          100           1650
+photographs  resize0.5         blockmean        0.0330579     99.152          100           1650
+photographs  resize0.5         dhash            0.0898438     98.485          100           1650
+photographs  resize0.5         marrhildreth     0.111111      95.394          100           1650
+photographs  resize0.5         pdq              0.328125      99.818          100           1650
+photographs  resize0.5         phash            0.234375     100              100           1650
+photographs  resize0.5         shrinkhash     132.117         80.242          100           1650
+photographs  resize0.5         wavelet          0.0195312     88.97           100           1650
+photographs  rotate4           ahash            0.0273438      1.818          100           1650
+photographs  rotate4           blockmean        0.0371901      3.879          100           1650
+photographs  rotate4           dhash            0.09375        2.97           100           1650
+photographs  rotate4           marrhildreth     0.149306       4.606          100           1650
+photographs  rotate4           pdq              0.304688      73.394          100           1650
+photographs  rotate4           phash            0.3125        89.818          100           1650
+photographs  rotate4           shrinkhash     130.211          4.424          100           1650
+photographs  rotate4           wavelet          0.0078125      0.061          100           1650
+photographs  vignette          ahash            0.0273438      8.242          100           1650
+photographs  vignette          blockmean        0.0320248     10              100           1650
+photographs  vignette          dhash            0.0703125     22              100           1650
+photographs  vignette          marrhildreth     0.0954861     38.727          100           1650
+photographs  vignette          pdq              0.117188     100              100           1650
+photographs  vignette          phash            0.125        100              100           1650
+photographs  vignette          shrinkhash     138.989         11.939          100           1650
+photographs  vignette          wavelet          0.0195312      4.242          100           1650
+photographs  watermark         ahash            0.015625      42.667          100           1650
+photographs  watermark         blockmean        0.0247934     60.788          100           1650
+photographs  watermark         dhash            0.078125     100              100           1650
+photographs  watermark         marrhildreth     0.112847      98.727          100           1650
+photographs  watermark         pdq              0.3125        99.818          100           1650
+photographs  watermark         phash            0.3125        99.758          100           1650
+photographs  watermark         shrinkhash     142.046         79.576          100           1650
+photographs  watermark         wavelet          0.0195312     53.455          100           1650
+===========  ================  =============  ============  ========  ===========  =============
 
-================  =============  ============  ========  =====  =============
-transform_name    hasher_name       threshold    recall    fpr    n_exemplars
-================  =============  ============  ========  =====  =============
-blur2             ahash            0.0117188     62.247      0           3854
-blur2             blockmean        0.0134298     82.045      0           3854
-blur2             dhash            0.0898438     98.054      0           3854
-blur2             marrhildreth     0.102431      98.651      0           3854
-blur2             pdq              0.304688      99.974      0           3854
-blur2             phash            0.179688     100          0           3854
-blur2             shrinkhash      61.441         28.23       0           3854
-blur2             wavelet          0.015625      59.964      0           3854
-crop0.05          ahash            0.0078125      0.208      0           3854
-crop0.05          blockmean        0.0144628      0.337      0           3854
-crop0.05          dhash            0.101562       0.597      0           3854
-crop0.05          marrhildreth     0.175347       1.635      0           3854
-crop0.05          pdq              0.265625      11.598      0           3854
-crop0.05          phash            0.234375       9.185      0           3854
-crop0.05          shrinkhash      95.5667         1.427      0           3854
-crop0.05          wavelet          0.015625       0.259      0           3854
-gamma2            ahash            0.0078125      2.647      0           3854
-gamma2            blockmean        0.00826446     2.335      0           3854
-gamma2            dhash            0.105469      91.048      0           3854
-gamma2            marrhildreth     0.121528      95.381      0           3854
-gamma2            pdq              0.195312     100          0           3854
-gamma2            phash            0.234375     100          0           3854
-gamma2            shrinkhash     112.911          0.182      0           3854
-gamma2            wavelet          0.015625      15.153      0           3854
-jpeg95            ahash            0.0117188     31.474      0           3854
-jpeg95            blockmean        0.0134298     39.673      0           3854
-jpeg95            dhash            0.117188      64.037      0           3854
-jpeg95            marrhildreth     0.109375      66.762      0           3854
-jpeg95            pdq              0.273438      99.87       0           3854
-jpeg95            phash            0.335938      99.948      0           3854
-jpeg95            shrinkhash      66.7008        33.083      0           3854
-jpeg95            wavelet          0.015625      21.069      0           3854
-noise0.2          ahash            0.0078125      7.421      0           3854
-noise0.2          blockmean        0.0154959     23.638      0           3854
-noise0.2          dhash            0.167969      63.83       0           3854
-noise0.2          marrhildreth     0.119792      46.341      0           3854
-noise0.2          pdq              0.28125       99.559      0           3854
-noise0.2          phash            0.273438      99.87       0           3854
-noise0.2          shrinkhash     154.729          0.934      0           3854
-noise0.2          wavelet          0.0078125      1.635      0           3854
-noop              ahash            0            100          0           3854
-noop              blockmean        0            100          0           3854
-noop              dhash            0            100          0           3854
-noop              marrhildreth     0            100          0           3854
-noop              pdq              0            100          0           3854
-noop              phash            0            100          0           3854
-noop              shrinkhash       0            100          0           3854
-noop              wavelet          0            100          0           3854
-pad0.2            ahash            0.046875       0.052      0           3854
-pad0.2            blockmean        0.0588843      0.026      0           3854
-pad0.2            dhash            0.109375       0.285      0           3854
-pad0.2            marrhildreth     0.190972       0.104      0           3854
-pad0.2            pdq              0.289062       1.738      0           3854
-pad0.2            phash            0.28125        3.269      0           3854
-pad0.2            shrinkhash     136.11           0.078      0           3854
-pad0.2            wavelet          0.0820312      0          0           3854
-rotate4           ahash            0.03125        1.946      0           3854
-rotate4           blockmean        0.0382231      3.503      0           3854
-rotate4           dhash            0.0976562      1.583      0           3854
-rotate4           marrhildreth     0.159722       6.046      0           3854
-rotate4           pdq              0.28125       60.042      0           3854
-rotate4           phash            0.265625      65.646      0           3854
-rotate4           shrinkhash      69.4622         1.92       0           3854
-rotate4           wavelet          0.015625       0.078      0           3854
-vignette          ahash            0.03125        5.475      0           3854
-vignette          blockmean        0.0330579      6.461      0           3854
-vignette          dhash            0.0742188     14.011      0           3854
-vignette          marrhildreth     0.0954861     30.436      0           3854
-vignette          pdq              0.132812     100          0           3854
-vignette          phash            0.132812     100          0           3854
-vignette          shrinkhash     103.015          4.515      0           3854
-vignette          wavelet          0.0234375      2.024      0           3854
-watermark         ahash            0.0078125     28.464      0           3854
-watermark         blockmean        0.0134298     43.15       0           3854
-watermark         dhash            0.078125     100          0           3854
-watermark         marrhildreth     0.114583      99.248      0           3854
-watermark         pdq              0.28125       99.325      0           3854
-watermark         phash            0.289062      99.481      0           3854
-watermark         shrinkhash     104.666         70.239      0           3854
-watermark         wavelet          0.015625      46.653      0           3854
-================  =============  ============  ========  =====  =============
+================  =============  ============  ========  ===========  =============
+transform_name    hasher_name       threshold    recall    precision    n_exemplars
+================  =============  ============  ========  ===========  =============
+blur2             ahash            0.0078125     49.014          100           3854
+blur2             blockmean        0.0123967     80.773          100           3854
+blur2             dhash            0.0859375     99.196          100           3854
+blur2             marrhildreth     0.107639      98.962          100           3854
+blur2             pdq              0.234375      99.948          100           3854
+blur2             phash            0.179688     100              100           3854
+blur2             shrinkhash      60.8112        28.412          100           3854
+blur2             wavelet          0.0117188     62.247          100           3854
+crop0.05          ahash            0.00390625     0.052          100           3854
+crop0.05          blockmean        0.0123967      0.208          100           3854
+crop0.05          dhash            0.0976562      0.493          100           3854
+crop0.05          marrhildreth     0.173611       1.635          100           3854
+crop0.05          pdq              0.257812       9.03           100           3854
+crop0.05          phash            0.226562       7.058          100           3854
+crop0.05          shrinkhash      95.0053         1.427          100           3854
+crop0.05          wavelet          0.0078125      0              nan           3854
+gamma2            ahash            0.00390625     0.934          100           3854
+gamma2            blockmean        0.0072314      1.713          100           3854
+gamma2            dhash            0.101562      90.036          100           3854
+gamma2            marrhildreth     0.105903      94.24           100           3854
+gamma2            pdq              0.210938     100              100           3854
+gamma2            phash            0.234375     100              100           3854
+gamma2            shrinkhash     108.457          0.156          100           3854
+gamma2            wavelet          0.0117188     14.997          100           3854
+jpeg95            ahash            0.00390625     5.319          100           3854
+jpeg95            blockmean        0.0134298     32.045          100           3854
+jpeg95            dhash            0.121094      74.079          100           3854
+jpeg95            marrhildreth     0.104167      59.263          100           3854
+jpeg95            pdq              0.257812      99.896          100           3854
+jpeg95            phash            0.234375      99.896          100           3854
+jpeg95            shrinkhash      66.053         40.296          100           3854
+jpeg95            wavelet          0.00390625     3.71           100           3854
+noise0.2          ahash            0.00390625     2.984          100           3854
+noise0.2          blockmean        0.00826446     8.563          100           3854
+noise0.2          dhash            0.121094      40.088          100           3854
+noise0.2          marrhildreth     0.0989583     33.083          100           3854
+noise0.2          pdq              0.257812      99.222          100           3854
+noise0.2          phash            0.273438      99.896          100           3854
+noise0.2          shrinkhash     169.387          4.385          100           3854
+noise0.2          wavelet          0.0078125      1.894          100           3854
+noop              ahash            0            100              100           3854
+noop              blockmean        0            100              100           3854
+noop              dhash            0            100              100           3854
+noop              marrhildreth     0            100              100           3854
+noop              pdq              0            100              100           3854
+noop              phash            0            100              100           3854
+noop              shrinkhash       0            100              100           3854
+noop              wavelet          0            100              100           3854
+pad0.2            ahash            0.0429688      0.026          100           3854
+pad0.2            blockmean        0.0320248      0              nan           3854
+pad0.2            dhash            0.105469       0.234          100           3854
+pad0.2            marrhildreth     0.177083       0.052          100           3854
+pad0.2            pdq              0.28125        1.349          100           3854
+pad0.2            phash            0.273438       2.387          100           3854
+pad0.2            shrinkhash     114.721          0.052          100           3854
+pad0.2            wavelet          0.0820312      0              nan           3854
+resize0.5         ahash            0.0078125     70.784          100           3854
+resize0.5         blockmean        0.0144628     95.226          100           3854
+resize0.5         dhash            0.0898438     99.299          100           3854
+resize0.5         marrhildreth     0.112847      97.846          100           3854
+resize0.5         pdq              0.265625      99.844          100           3854
+resize0.5         phash            0.234375     100              100           3854
+resize0.5         shrinkhash      56.9034        51.453          100           3854
+resize0.5         wavelet          0.0117188     80.747          100           3854
+rotate4           ahash            0.0273438      1.297          100           3854
+rotate4           blockmean        0.0371901      3.036          100           3854
+rotate4           dhash            0.09375        1.401          100           3854
+rotate4           marrhildreth     0.149306       3.762          100           3854
+rotate4           pdq              0.273438      54.489          100           3854
+rotate4           phash            0.257812      59.626          100           3854
+rotate4           shrinkhash      69.1737         1.894          100           3854
+rotate4           wavelet          0.0078125      0.026          100           3854
+vignette          ahash            0.0273438      4.67           100           3854
+vignette          blockmean        0.0320248      6.098          100           3854
+vignette          dhash            0.0703125     12.195          100           3854
+vignette          marrhildreth     0.0954861     30.54           100           3854
+vignette          pdq              0.132812     100              100           3854
+vignette          phash            0.132812     100              100           3854
+vignette          shrinkhash     103.005          4.541          100           3854
+vignette          wavelet          0.0195312      1.946          100           3854
+watermark         ahash            0.00390625    18.5            100           3854
+watermark         blockmean        0.0123967     41.593          100           3854
+watermark         dhash            0.078125     100              100           3854
+watermark         marrhildreth     0.112847      99.455          100           3854
+watermark         pdq              0.273438      99.014          100           3854
+watermark         phash            0.28125       99.377          100           3854
+watermark         shrinkhash     104.398         71.199          100           3854
+watermark         wavelet          0.0117188     46.912          100           3854
+================  =============  ============  ========  ===========  =============
 
 =============  ===========  ========  ===========  =============
-hasher_name      threshold    recall          fpr    n_exemplars
+hasher_name      threshold    recall    precision    n_exemplars
 =============  ===========  ========  ===========  =============
-ahash           0.0078125     20.005  0                    38540
-blockmean       0.00826446    22.003  0                    38540
-dhash           0.0898438     46.798  6.07681e-05          38540
-marrhildreth    0.102431      52.377  9.97855e-05          38540
-pdq             0.265625      75.846  6.93433e-05          38540
-phash           0.273438      80.106  6.56685e-05          38540
-shrinkhash     60.1166        19.538  0                    38540
-wavelet         0.0078125     16.168  0                    38540
+ahash           0.00390625    17.578     100               42394
+blockmean       0.00826446    27.714     100               42394
+dhash           0.0859375     51.981      99.9952          42394
+marrhildreth    0.100694      55.942      99.9957          42394
+pdq             0.257812      77.181      99.9969          42394
+phash           0.273438      81.967      99.9942          42394
+shrinkhash     56.9034        22.378     100               42394
+wavelet         0.00390625    18.467     100               42394
 =============  ===========  ========  ===========  =============
 
 Video Hashing
@@ -596,30 +621,30 @@ The below example does the following:
     }
     if not os.path.isfile('hashes.csv'):
         # We haven't computed the hashes, so we do that now.
-        hashes = transformed.compute_hashes(hashers=hashers, max_workers=0)
+        hashes = transformed.compute_hashes(hashers=hashers, max_workers=5)
         # Save the hashes for later. It took a long time after all!
         hashes.save('hashes.csv')
 
     hashes = perception.benchmarking.BenchmarkHashes.load('hashes.csv')
 
-    hashes.compute_threshold_recall(fpr_threshold=0.001, grouping=['transform_name'])
+    hashes.compute_threshold_recall(precision_threshold=99.9, grouping=['transform_name'])
 
 
 ================  =================  ===========  ========  ===========  =============
-transform_name    hasher_name          threshold    recall          fpr    n_exemplars
+transform_name    hasher_name          threshold    recall    precision    n_exemplars
 ================  =================  ===========  ========  ===========  =============
-black_frames      phashu8_framewise      51.0979    88.163  0.000933489         277865
-black_frames      phashu8_tmkl1          55.7584    99.918  0.000821862         403415
-black_padding     phashu8_framewise      74.6391     7.689  0                   276585
-black_padding     phashu8_tmkl1          53.8702    99.887  0.000924784         411664
-clip0.2           phashu8_framewise      54.8635    90.772  0.000904977         223591
-clip0.2           phashu8_tmkl1          59.1693    99.753  0.000926021         323870
-gif               phashu8_framewise      55.4437    68.314  0.000913103          82038
-gif               phashu8_tmkl1          63.773     82.926  0.000993172          32140
-noop              phashu8_framewise       0        100      0                   281976
-noop              phashu8_tmkl1           0        100      0                   408673
-shrink            phashu8_framewise      24.7184   100      0                   280617
-shrink            phashu8_tmkl1          52.8678    99.866  0.000926307         399357
-slideshow         phashu8_framewise      56.9825    99.712  0.000926689         164361
-slideshow         phashu8_tmkl1          63.4271    95.131  0.000988576          71668
+black_frames      phashu8_framewise      51.0979    88.12       99.9069         278644
+black_frames      phashu8_tmkl1          55.7584    99.918      99.9079         403768
+black_padding     phashu8_framewise      74.6391     7.662     100              277399
+black_padding     phashu8_tmkl1          53.8702    99.898      99.9079         406899
+clip0.2           phashu8_framewise      54.8635    90.741      99.9098         224264
+clip0.2           phashu8_tmkl1          59.0424    99.724      99.9077         324251
+gif               phashu8_framewise      55.4437    68.21       99.9088          82232
+gif               phashu8_tmkl1          55.4887    81.029      99.9103          39757
+noop              phashu8_framewise       0        100         100              282658
+noop              phashu8_tmkl1           0        100         100              408871
+shrink            phashu8_framewise      24.7184   100         100              281731
+shrink            phashu8_tmkl1          49.8999    99.836      99.9078         400650
+slideshow         phashu8_framewise      56.9825    99.713      99.9076         172829
+slideshow         phashu8_tmkl1          56.8683    95.934      99.9035          90684
 ================  =================  ===========  ========  ===========  =============

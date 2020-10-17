@@ -33,4 +33,4 @@ class PDQHashF(PDQHash):
 
     # pylint: disable=no-self-use
     def _compute(self, image):
-        return pdqhash.compute_float(image)
+        return pdqhash.compute_float(image)[0]
