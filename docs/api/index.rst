@@ -8,3 +8,4 @@ API
    hashers
    benchmarking
    tools
+   experimental
