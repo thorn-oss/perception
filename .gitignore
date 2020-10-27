@@ -34,4 +34,5 @@ notebooks
 
 # Extension artifacts
 *.c
+*.cpp
 *.so

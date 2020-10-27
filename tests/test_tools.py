@@ -103,7 +103,7 @@ def test_compute_euclidean_pairwise_duplicates():
     actual = tools.extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype('int32'),
         threshold=1,
-        counts=counts.astype('int32'),
+        counts=counts.astype('uint32'),
         compute_overlap=True)
     assert (expected == actual).all()
 
@@ -112,7 +112,7 @@ def test_compute_euclidean_pairwise_duplicates():
     actual = tools.extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype('int32'),
         threshold=1,
-        counts=counts.astype('int32'),
+        counts=counts.astype('uint32'),
         compute_overlap=False)
     assert (expected == actual).all()
 

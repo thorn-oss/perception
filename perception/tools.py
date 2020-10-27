@@ -131,7 +131,7 @@ def deduplicate_hashes(
         if multiple_hashes_per_id:
             counts = np.zeros(
                 shape=len(set(
-                    hash_id for hash_id, _ in hashes))).astype('int32')
+                    hash_id for hash_id, _ in hashes))).astype('uint32')
             previous_hash_id = None
             counts_idx = 0
             files = [
@@ -146,23 +146,11 @@ def deduplicate_hashes(
             files = np.array(files)
         else:
             counts = None
-        n_files = len(files)
-        iterator = range(n_files)
-        if progress is not None:
-            iterator = progress(iterator, total=n_files, desc='Deduplicating.')
-        duplicated = (extensions.compute_euclidean_pairwise_duplicates(
-            vectors.astype('int32'), threshold=threshold,
-            counts=counts).max(axis=1) > 0)
-        for file_index in iterator:
-            if end_idx is not None:
-                start_idx = end_idx
-            end_idx = start_idx + (n_files - file_index - 1)
-            current_duplicated = duplicated[start_idx:end_idx]
-            current_file = files[file_index]
-            duplicated_files = files[file_index + 1:][current_duplicated]
-            pairs.extend([(current_file, duplicated_file)
-                          for duplicated_file in duplicated_files
-                          if duplicated_file != current_file])
+        pairs = [
+            (files[idx1], files[idx2]) for idx1, idx2 in extensions.
+            compute_euclidean_pairwise_duplicates_simple(
+                vectors.astype('int32'), threshold=threshold, counts=counts)
+        ]
     return list(set(pairs))
 
 
