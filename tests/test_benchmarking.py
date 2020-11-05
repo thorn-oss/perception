@@ -16,6 +16,11 @@ dataset = benchmarking.BenchmarkImageDataset.from_tuples(
 
 
 def test_deduplicate():
+    """
+    Benchuplicated image to the same.
+
+    Args:
+    """
     tempdir = tempfile.TemporaryDirectory()
     new_file = os.path.join(tempdir.name, 'dup_file.jpg')
     shutil.copy(files[0], new_file)
@@ -28,6 +33,11 @@ def test_deduplicate():
 
 
 def test_bad_dataset():
+    """
+    Test for bad bad bad bad bad bad bad datasets.
+
+    Args:
+    """
     bad_files = files + ['tests/images/nonexistent.jpg']
     bad_dataset = benchmarking.BenchmarkImageDataset.from_tuples(
         [(fn, i % 2) for i, fn in enumerate(bad_files)])
@@ -49,6 +59,11 @@ def test_bad_dataset():
 
 
 def test_benchmark_dataset():
+    """
+    Benchmark the dataset as an image isochrone.
+
+    Args:
+    """
     assert len(dataset._df) == len(files)
     assert len(dataset.filter(category=[0])._df) == len(files) / 2
     with pytest.warns(UserWarning, match='Did not find'):
@@ -67,6 +82,11 @@ def test_benchmark_dataset():
 
 
 def test_benchmark_transforms():
+    """
+    Benchmark all samples.
+
+    Args:
+    """
     transformed = dataset.transform(
         transforms={
             'blur0.05': iaa.GaussianBlur(0.05),
@@ -92,6 +112,11 @@ def test_benchmark_transforms():
 
 
 def test_video_benchmark_dataset():
+    """
+    Benchmark video video.
+
+    Args:
+    """
     video_dataset = benchmarking.BenchmarkVideoDataset.from_tuples(
         files=[('perception/testing/videos/v1.m4v',
                 'category1'), ('perception/testing/videos/v2.m4v',
@@ -162,10 +187,23 @@ def test_video_benchmark_dataset():
 
 
 def test_euclidean_extension():
+    """
+    Computes the cross - correlations.
+
+    Args:
+    """
 
     # This function plainly inplements the process of computing
     # the closest positive and negative examples and their indexes.
     def compute_euclidean_metrics_py(X_noop, X_transformed, mask):
+        """
+        Compute the hopclidean distance.
+
+        Args:
+            X_noop: (todo): write your description
+            X_transformed: (bool): write your description
+            mask: (array): write your description
+        """
         distance_matrix = spatial.distance.cdist(
             XA=X_transformed, XB=X_noop, metric='euclidean')
         pos = np.ma.masked_array(distance_matrix, np.logical_not(mask))

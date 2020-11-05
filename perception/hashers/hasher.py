@@ -102,6 +102,14 @@ class Hasher(ABC):
 
     # pylint: disable=no-self-use
     def _compute_distance(self, vector1, vector2):
+        """
+        Compute distance between two vectors.
+
+        Args:
+            self: (todo): write your description
+            vector1: (todo): write your description
+            vector2: (todo): write your description
+        """
         raise ValueError(
             'Called a custom distance function but it is not implemented.')
 
@@ -219,6 +227,15 @@ class ImageHasher(Hasher):
         }
 
     def compute_isometric(self, image: tools.ImageInputType):
+        """
+        Computes an image for the given image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            tools: (todo): write your description
+            ImageInputType: (todo): write your description
+        """
         image = tools.to_image_array(image)
         if hasattr(self, '_compute_isometric'):
             # pylint: disable=no-member
@@ -282,6 +299,15 @@ class ImageHasher(Hasher):
                 ], quality)
 
     def _compute_with_quality(self, image: np.ndarray):
+        """
+        Compute the quality of the image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            np: (todo): write your description
+            ndarray: (array): write your description
+        """
         return self._compute(image), tools.compute_quality(image)
 
 

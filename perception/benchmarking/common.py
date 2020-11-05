@@ -61,6 +61,14 @@ def create_mask(transformed_guids, noop_guids):
 
 
 def compute_threshold_precision_recall(pos, neg, precision_threshold=99.9):
+    """
+    Computes the precision threshold.
+
+    Args:
+        pos: (todo): write your description
+        neg: (todo): write your description
+        precision_threshold: (todo): write your description
+    """
     # Sort both arrays according to the positive distance
     neg = neg[pos.argsort()]
     pos = pos[pos.argsort()]
@@ -99,6 +107,13 @@ class Filterable(ABC):
     expected_columns: typing.List
 
     def __init__(self, df):
+        """
+        Initialize the dataframe.
+
+        Args:
+            self: (todo): write your description
+            df: (todo): write your description
+        """
         # pylint: disable=no-member
         assert sorted(df.columns) == sorted(
             self.expected_columns
@@ -277,26 +292,70 @@ class BenchmarkHashes(Filterable):
     ]
 
     def __init__(self, df: pd.DataFrame):
+        """
+        Initialize the metrics.
+
+        Args:
+            self: (todo): write your description
+            df: (todo): write your description
+            pd: (todo): write your description
+            DataFrame: (todo): write your description
+        """
         super().__init__(df)
         self._metrics: pd.DataFrame = None
 
     def __add__(self, other):
+        """
+        Return a new dataframe to self.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return BenchmarkHashes(
             df=pd.concat([self._df, other._df]).drop_duplicates())
 
     def __radd__(self, other):
+        """
+        Return the set from self from self and other.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return self.__add__(other)
 
     @classmethod
     def load(cls, filepath: str):
+        """
+        Load a data from a csv file.
+
+        Args:
+            cls: (todo): write your description
+            filepath: (str): write your description
+        """
         return cls(pd.read_csv(filepath))
 
     def save(self, filepath):
+        """
+        Saves dataframe to a file.
+
+        Args:
+            self: (todo): write your description
+            filepath: (str): write your description
+        """
         self._df.to_csv(filepath, index=False)
 
     # pylint: disable=too-many-locals
     def compute_metrics(self,
                         custom_distance_metrics: dict = None) -> pd.DataFrame:
+        """
+        Compute metrics for each sample.
+
+        Args:
+            self: (todo): write your description
+            custom_distance_metrics: (todo): write your description
+        """
         if self._metrics is not None:
             return self._metrics
         metrics = []
@@ -516,6 +575,12 @@ class BenchmarkHashes(Filterable):
             grouping = ['category', 'transform_name']
 
         def group_func(subset):
+            """
+            Compute threshold for a threshold.
+
+            Args:
+                subset: (todo): write your description
+            """
             pos, neg = subset.groupby(['guid', 'transform_name'])[[
                 'distance_to_closest_correct_image',
                 'distance_to_closest_incorrect_image'
@@ -561,6 +626,15 @@ class BenchmarkDataset(Saveable):
         return cls(df)
 
     def transform(self, transforms, storage_dir, errors):
+        """
+        Transform the given transforms the given transform.
+
+        Args:
+            self: (array): write your description
+            transforms: (array): write your description
+            storage_dir: (str): write your description
+            errors: (todo): write your description
+        """
         raise NotImplementedError()
 
 
@@ -580,4 +654,12 @@ class BenchmarkTransforms(Saveable):
     ]
 
     def compute_hashes(self, hashers, max_workers):
+        """
+        Compute the hashes of this module.
+
+        Args:
+            self: (todo): write your description
+            hashers: (todo): write your description
+            max_workers: (int): write your description
+        """
         raise NotImplementedError()

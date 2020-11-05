@@ -268,6 +268,21 @@ class SaferMatcher:
                  hasher: perception_hashers.ImageHasher = None,
                  hasher_api_id: str = None,
                  quality_threshold: int = 90):
+        """
+        Initialize an api keypair.
+
+        Args:
+            self: (todo): write your description
+            api_key: (str): write your description
+            username: (str): write your description
+            password: (str): write your description
+            url: (str): write your description
+            hasher: (todo): write your description
+            perception_hashers: (todo): write your description
+            ImageHasher: (todo): write your description
+            hasher_api_id: (str): write your description
+            quality_threshold: (float): write your description
+        """
         if (username is None and password is None and api_key is None and
                 os.environ.get('SAFER_MATCHING_SERVICE_USERNAME') is not None
                 and

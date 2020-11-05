@@ -30,6 +30,15 @@ class QueryDecodingFailure(Exception):
 
 
 def build_query(table, ids, paramstyle, columns):
+    """
+    Build an sql query.
+
+    Args:
+        table: (str): write your description
+        ids: (str): write your description
+        paramstyle: (dict): write your description
+        columns: (list): write your description
+    """
     query = 'SELECT {} FROM {} WHERE id in {}'
     if paramstyle == 'pyformat':
         sql = query.format(','.join(columns), table, '%(ids)s')
@@ -98,6 +107,20 @@ class ApproximateNearestNeighbors:
             dtype='uint8',
             distance_metric='euclidean',
     ):
+        """
+        Initialize table. table
+
+        Args:
+            self: (todo): write your description
+            con: (todo): write your description
+            table: (str): write your description
+            paramstyle: (dict): write your description
+            index: (int): write your description
+            hash_length: (int): write your description
+            metadata_columns: (todo): write your description
+            dtype: (todo): write your description
+            distance_metric: (str): write your description
+        """
         assert dtype == 'uint8', 'Only unsigned 8-bit integer hashes are supported at this time.'
         assert distance_metric == 'euclidean', 'Only euclidean distance is supported at this time.'
         if isinstance(index, str):

@@ -26,6 +26,15 @@ TEST_IMAGES = [
      (hashers.ColorMoment, 10, 0.1, True)])
 def test_image_hashing_common(hasher_class, pil_opencv_threshold,
                               transform_threshold, opencv_hasher):
+    """
+    Test if the pil image hashercv.
+
+    Args:
+        hasher_class: (todo): write your description
+        pil_opencv_threshold: (todo): write your description
+        transform_threshold: (float): write your description
+        opencv_hasher: (todo): write your description
+    """
     testing.test_image_hasher_integrity(
         hasher=hasher_class(),
         pil_opencv_threshold=pil_opencv_threshold,
@@ -34,6 +43,11 @@ def test_image_hashing_common(hasher_class, pil_opencv_threshold,
 
 
 def test_video_hashing_common():
+    """
+    Test if video video isher.
+
+    Args:
+    """
     testing.test_video_hasher_integrity(
         hasher=hashers.FramewiseHasher(
             frame_hasher=hashers.PHash(hash_size=16),
@@ -42,6 +56,11 @@ def test_video_hashing_common():
 
 
 def test_video_reading():
+    """
+    Test for video video.
+
+    Args:
+    """
     # We should get one red, one green, and one blue frame
     for frame, _, timestamp in hashers.tools.read_video(
             filepath='perception/testing/videos/rgb.m4v',
@@ -56,6 +75,11 @@ def test_video_reading():
 
 
 def test_common_framerate():
+    """
+    Calculate the convererate for a.
+
+    Args:
+    """
     assert hashers.tools.get_common_framerates(
         dict(zip(['a', 'b', 'c'], [1 / 3, 1 / 2, 1 / 5]))) == {
             1.0: ('a', 'b', 'c')
@@ -83,6 +107,11 @@ def test_common_framerate():
 
 
 def test_synchronized_hashing():
+    """
+    Test if video has a video video.
+
+    Args:
+    """
     video_hashers = {
         'phashframewise':
         hashers.FramewiseHasher(
@@ -110,6 +139,11 @@ def test_synchronized_hashing():
 
 
 def test_scene_detection():
+    """
+    Calculate scene detection.
+
+    Args:
+    """
     hasher = hashers.SimpleSceneDetection(
         base_hasher=hashers.TMKL1(
             frames_per_second=30,
@@ -129,6 +163,11 @@ def test_scene_detection():
 
 
 def test_scene_detection_batches():
+    """
+    Compute batches of batches.
+
+    Args:
+    """
     hasher = hashers.SimpleSceneDetection(
         base_hasher=hashers.TMKL1(
             frames_per_second=30,
@@ -159,6 +198,11 @@ def test_scene_detection_batches():
 
 
 def test_hex_b64_conversion():
+    """
+    Convert a b64 - friendly conversion.
+
+    Args:
+    """
     b64_string = """
     CFFRABrAaRKCDQigEBIGwAhNBdIISgVZBxQYAgP4fwYNUR0oBgYCPwwIDSqTAmIH
     FRQhCiT/IT9DpHIeIx4cA2hQcBTwISovFkspMxz/MzdnljeCOEs4LnBYNHHBMC4x

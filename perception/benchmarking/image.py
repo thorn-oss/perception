@@ -136,6 +136,13 @@ class BenchmarkImageDataset(BenchmarkDataset):
         files['guid'] = [uuid.uuid4() for n in range(len(files))]
 
         def apply_transform(files, transform_name):
+            """
+            Apply transform_name to image_name.
+
+            Args:
+                files: (todo): write your description
+                transform_name: (str): write your description
+            """
             transform = transforms[transform_name]
             transformed_arr = []
             for _, row in tqdm(

@@ -83,6 +83,13 @@ async def similarity(request):
 
 
 def get_logger(name, log_level):
+    """
+    Get a logger.
+
+    Args:
+        name: (str): write your description
+        log_level: (int): write your description
+    """
     logger = logging.Logger(name=name, level=log_level)
     handler = logging.StreamHandler()
     handler.setFormatter(

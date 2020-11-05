@@ -16,6 +16,11 @@ SIZES = {'float32': 32, 'uint8': 8, 'bool': 1}
 
 
 def get_low_detail_image():
+    """
+    Get the low and low values of an array
+
+    Args:
+    """
     v = np.arange(0, 50, 1)
     v = np.concatenate([v, v[::-1]])[np.newaxis, ]
     image = np.matmul(v.T, v)
@@ -45,6 +50,16 @@ DEFAULT_TEST_VIDEOS = [
 
 @typing.no_type_check
 def test_opencv_hasher(hasher: hashers.ImageHasher, image1: str, image2: str):
+    """
+    Determine ifher_opencv hasher.
+
+    Args:
+        hasher: (todo): write your description
+        hashers: (todo): write your description
+        ImageHasher: (todo): write your description
+        image1: (array): write your description
+        image2: (todo): write your description
+    """
     # For OpenCV hashers we make sure the distance we compute
     # is the same as inside OpenCV
     f1 = image1
@@ -62,6 +77,13 @@ def test_opencv_hasher(hasher: hashers.ImageHasher, image1: str, image2: str):
 
 # pylint: disable=protected-access
 def hash_dicts_to_df(hash_dicts, returns_multiple):
+    """
+    Return a dict of dicts to a pandas
+
+    Args:
+        hash_dicts: (dict): write your description
+        returns_multiple: (bool): write your description
+    """
     assert all(
         h['error'] is None
         for h in hash_dicts), 'An error was found in the hash dictionaries'
@@ -77,6 +99,13 @@ def hash_dicts_to_df(hash_dicts, returns_multiple):
 
 
 def test_hasher_parallelization(hasher, test_filepaths):
+    """
+    Check if parallel parallel parallel hashes are parallel.
+
+    Args:
+        hasher: (todo): write your description
+        test_filepaths: (str): write your description
+    """
     filepaths_10x = test_filepaths * 10
     if not hasher.allow_parallel:
         with pytest.warns(UserWarning, match='cannot be used in parallel'):
@@ -105,6 +134,18 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 def test_video_hasher_integrity(hasher: hashers.VideoHasher,
                                 test_videos: typing.List[str] = None):
+    """
+    Test if the video has video.
+
+    Args:
+        hasher: (todo): write your description
+        hashers: (todo): write your description
+        VideoHasher: (todo): write your description
+        test_videos: (todo): write your description
+        typing: (todo): write your description
+        List: (todo): write your description
+        str: (todo): write your description
+    """
     if test_videos is None:
         test_videos = DEFAULT_TEST_VIDEOS
     test_hasher_parallelization(hasher, test_videos)

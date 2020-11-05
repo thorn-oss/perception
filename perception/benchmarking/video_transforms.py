@@ -56,6 +56,13 @@ def get_simple_transform(width: typing.Union[str, int] = -1,
     """
 
     def transform(input_filepath, output_filepath):
+        """
+        Transform input_filepath to output_filepath.
+
+        Args:
+            input_filepath: (str): write your description
+            output_filepath: (str): write your description
+        """
         output_filepath = sanitize_output_filepath(input_filepath,
                                                    output_filepath, output_ext)
         data = None
@@ -130,6 +137,13 @@ def get_slideshow_transform(frame_input_rate,
     """
 
     def transform(input_filepath, output_filepath):
+        """
+        Transform an input_filepath to a file
+
+        Args:
+            input_filepath: (str): write your description
+            output_filepath: (str): write your description
+        """
         output_filepath = sanitize_output_filepath(
             input_filepath, output_filepath, output_ext='.mov')
         writer = None
@@ -174,6 +188,13 @@ def get_black_frame_padding_transform(duration_s=0, duration_pct=0):
     """
 
     def transform(input_filepath, output_filepath):
+        """
+        Transform input_filepath to output_filepath.
+
+        Args:
+            input_filepath: (str): write your description
+            output_filepath: (str): write your description
+        """
         output_filepath = sanitize_output_filepath(input_filepath,
                                                    output_filepath)
         stream = next(

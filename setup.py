@@ -13,12 +13,25 @@ class BuildFailure(Exception):
 
 class CatchableBuildExt(build_ext):
     def run(self):
+        """
+        Run the build.
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             build_ext.run(self)
         except DistutilsPlatformError:
             raise BuildFailure()
 
     def build_extension(self, ext):
+        """
+        Build an extension to use.
+
+        Args:
+            self: (todo): write your description
+            ext: (str): write your description
+        """
         try:
             build_ext.build_extension(self, ext)
         except (CCompilerError, DistutilsExecError, DistutilsPlatformError):

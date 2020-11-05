@@ -28,6 +28,16 @@ class PHash(ImageHasher):
                  highfreq_factor=4,
                  exclude_first_term=False,
                  freq_shift=0):
+        """
+        Initialize hash.
+
+        Args:
+            self: (todo): write your description
+            hash_size: (int): write your description
+            highfreq_factor: (float): write your description
+            exclude_first_term: (str): write your description
+            freq_shift: (float): write your description
+        """
         assert hash_size >= 2, 'Hash size must be greater than or equal to 2'
         assert freq_shift <= highfreq_factor * hash_size - hash_size, \
             'Frequency shift is too large for this hash size / highfreq_factor combination.'
@@ -40,6 +50,13 @@ class PHash(ImageHasher):
             self.hash_length -= 1
 
     def _compute_dct(self, image):
+        """
+        Compute the dct of the given image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+        """
         img_size = self.hash_size * self.highfreq_factor
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         image = cv2.resize(
@@ -50,16 +67,37 @@ class PHash(ImageHasher):
 
     # pylint: disable=no-self-use
     def _dct_to_hash(self, dct):
+        """
+        Return dct_to_term.
+
+        Args:
+            self: (todo): write your description
+            dct: (todo): write your description
+        """
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]
         return dct > np.median(dct)
 
     def _compute(self, image):
+        """
+        Compute the hash of the image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+        """
         dct = self._compute_dct(image)
         return self._dct_to_hash(dct)
 
     def _compute_isometric(self, image):
+        """
+        Compute the merges of the image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+        """
         return {
             transform_name: self._dct_to_hash(dct)
             for transform_name, dct in tools.get_isometric_dct_transforms(
@@ -75,6 +113,13 @@ class PHashF(PHash):
     distance_metric = 'euclidean'
 
     def _dct_to_hash(self, dct):
+        """
+        Return the dct hash of dct.
+
+        Args:
+            self: (todo): write your description
+            dct: (todo): write your description
+        """
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]
@@ -93,6 +138,13 @@ class PHashU8(PHash):
     distance_metric = 'euclidean'
 
     def _dct_to_hash(self, dct):
+        """
+        Return the dct to dct.
+
+        Args:
+            self: (todo): write your description
+            dct: (todo): write your description
+        """
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]

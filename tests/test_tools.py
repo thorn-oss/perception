@@ -10,6 +10,11 @@ from perception import hashers, tools, testing
 
 
 def test_deduplicate():
+    """
+    Test if a tempfile.
+
+    Args:
+    """
     directory = tempfile.TemporaryDirectory()
     original = testing.DEFAULT_TEST_IMAGES[0]
     duplicate = os.path.join(directory.name, 'image1.jpg')
@@ -28,6 +33,11 @@ def test_deduplicate():
 
 
 def test_deduplicate_u8():
+    """
+    Test if the temp file.
+
+    Args:
+    """
     # This test verifies that extensions.compute_euclidean_pairwise_duplicates
     # works properly.
     directory = tempfile.TemporaryDirectory()
@@ -48,6 +58,11 @@ def test_deduplicate_u8():
 
 
 def test_deduplicate_hashes_multiple():
+    """
+    Determine the hash of hashes.
+
+    Args:
+    """
     # This test verifies that deduplicate_hashes functions properly
     # when there is more than one hash for a file.
     directory = tempfile.TemporaryDirectory()
@@ -75,6 +90,11 @@ def test_deduplicate_hashes_multiple():
 
 
 def test_compute_euclidean_pairwise_duplicates():
+    """
+    Compute pairwise pairwise pairwise pairwise distance.
+
+    Args:
+    """
     # The purpose of this test is to verify that the handling of
     # deduplication with files that have multiple hashes works
     # properly. This is particularly important for video where
@@ -131,6 +151,11 @@ def test_compute_euclidean_pairwise_duplicates():
 
 
 def test_api_is_over_https():
+    """
+    Return true if the api version of the sum of the environment variable.
+
+    Args:
+    """
     matcher_https = tools.SaferMatcher(
         api_key='foo', url='https://www.example.com/')
     assert matcher_https
@@ -147,6 +172,11 @@ def test_api_is_over_https():
 
 
 def test_unletterbox():
+    """
+    Unletter of a 2d
+
+    Args:
+    """
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     padded = np.zeros((image.shape[0] + 100, image.shape[1] + 50, 3),
                       dtype='uint8')
@@ -159,6 +189,11 @@ def test_unletterbox():
 
 
 def test_unletterbox_noblackbars():
+    """
+    Test if a 2d image of the image.
+
+    Args:
+    """
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     (x1, x2), (y1, y2) = hashers.tools.unletterbox(image)
     assert x1 == 0

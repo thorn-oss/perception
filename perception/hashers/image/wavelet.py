@@ -15,6 +15,15 @@ class WaveletHash(ImageHasher):
     dtype = 'bool'
 
     def __init__(self, hash_size=8, image_scale=None, mode='haar'):
+        """
+        Initialize the image
+
+        Args:
+            self: (todo): write your description
+            hash_size: (int): write your description
+            image_scale: (todo): write your description
+            mode: (todo): write your description
+        """
         assert hash_size & (
             hash_size - 1) == 0, "Hash size must be a power of 2."
         if image_scale is not None:
@@ -29,6 +38,13 @@ class WaveletHash(ImageHasher):
         self.hash_length = hash_size * hash_size
 
     def _compute(self, image):
+        """
+        Compute the diff between two images.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+        """
         if self.image_scale is None:
             image_scale = max(2**int(np.log2(min(image.shape[:2]))),
                               self.hash_size)

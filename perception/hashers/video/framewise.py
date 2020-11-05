@@ -13,6 +13,16 @@ class FramewiseHasher(VideoHasher):
                  interframe_threshold: float,
                  frames_per_second: int = 15,
                  quality_threshold: float = None):
+        """
+        Initialize a frame.
+
+        Args:
+            self: (todo): write your description
+            frame_hasher: (todo): write your description
+            interframe_threshold: (float): write your description
+            frames_per_second: (todo): write your description
+            quality_threshold: (float): write your description
+        """
         self.hash_length = frame_hasher.hash_length
         self.frames_per_second = frames_per_second
         self.frame_hasher = frame_hasher
@@ -23,6 +33,16 @@ class FramewiseHasher(VideoHasher):
 
     # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
+        """
+        : parametermine frame
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            frame_index: (todo): write your description
+            frame_timestamp: (todo): write your description
+            state: (todo): write your description
+        """
         if self.quality_threshold is not None:
             current, quality = self.frame_hasher.compute_with_quality(
                 frame, hash_format='vector')
@@ -61,6 +81,12 @@ class FramewiseHasher(VideoHasher):
         """
 
         def format_batch(hashes):
+            """
+            Format a list of hashes.
+
+            Args:
+                hashes: (list): write your description
+            """
             return [
                 self.vector_to_string(vector, hash_format=hash_format)
                 if hash_format != 'vector' else vector for vector in hashes
@@ -83,6 +109,13 @@ class FramewiseHasher(VideoHasher):
             yield format_batch(state['hashes'])
 
     def hash_from_final_state(self, state):
+        """
+        Returns the final state : param state.
+
+        Args:
+            self: (todo): write your description
+            state: (todo): write your description
+        """
         if state is None:
             return []
         return state['hashes']

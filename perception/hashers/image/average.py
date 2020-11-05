@@ -13,11 +13,25 @@ class AverageHash(ImageHasher):
     dtype = 'bool'
 
     def __init__(self, hash_size=8):
+        """
+        Initialize hash_size.
+
+        Args:
+            self: (todo): write your description
+            hash_size: (int): write your description
+        """
         assert hash_size >= 2, "Hash size must be greater than or equal to 2."
         self.hash_size = hash_size
         self.hash_length = hash_size * hash_size
 
     def _compute(self, image):
+        """
+        Compute the crosscv image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+        """
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.resize(
             image,
@@ -27,6 +41,13 @@ class AverageHash(ImageHasher):
         return diff.flatten()
 
     def _compute_isometric_from_hash(self, vector):
+        """
+        Computes hash_size based onometric hash.
+
+        Args:
+            self: (todo): write your description
+            vector: (array): write your description
+        """
         return {
             transform_name: diff.flatten()
             for transform_name, diff in tools.get_isometric_transforms(
