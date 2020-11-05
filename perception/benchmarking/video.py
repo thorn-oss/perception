@@ -12,6 +12,14 @@ from .common import BenchmarkDataset, BenchmarkTransforms, BenchmarkHashes
 
 
 def _process_row(row, hashers, framerates):
+    """
+    Process a row from a row.
+
+    Args:
+        row: (str): write your description
+        hashers: (dict): write your description
+        framerates: (todo): write your description
+    """
     error = None
     try:
         assert not pd.isnull(row['filepath']), 'No filepath provided.'
@@ -92,6 +100,15 @@ class BenchmarkVideoDataset(BenchmarkDataset):
 
         def apply_transform_to_file(input_filepath, guid, transform_name,
                                     category):
+            """
+            Apply transform to input_filepath.
+
+            Args:
+                input_filepath: (str): write your description
+                guid: (str): write your description
+                transform_name: (str): write your description
+                category: (str): write your description
+            """
             if input_filepath is None:
                 # This can happen if the noop transform did not yield
                 # a file. We don't want to drop the records so we
@@ -124,6 +141,13 @@ class BenchmarkVideoDataset(BenchmarkDataset):
             }
 
         def apply_transform_to_files(files, transform_name):
+            """
+            Apply transform_name to transform_name to transform_name.
+
+            Args:
+                files: (todo): write your description
+                transform_name: (str): write your description
+            """
             return pd.DataFrame.from_records([
                 apply_transform_to_file(
                     input_filepath=row['filepath'],

@@ -8,6 +8,11 @@ from perception.hashers.video import tmk
 
 
 def test_tmk_parity():
+    """
+    Computes the model features.
+
+    Args:
+    """
     hasher = tmk.TMKL2()
 
     ours = []

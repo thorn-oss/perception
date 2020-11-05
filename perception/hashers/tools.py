@@ -191,6 +191,13 @@ def b64_to_hex(hash_string: str,
 
 
 def to_image_array(image: ImageInputType, require_color=True):
+    """
+    Convert a numpy array to a numpy array.
+
+    Args:
+        image: (array): write your description
+        require_color: (bool): write your description
+    """
     if isinstance(image, np.ndarray):
         assert image.flags['C_CONTIGUOUS'], (
             'Provided arrays must be contiguous to avoid '
@@ -279,6 +286,13 @@ def get_common_framerates(id_rates: dict):
 
 
 def get_isometric_transforms(image: ImageInputType, require_color=True):
+    """
+    Returns an rgb image as a ndarray.
+
+    Args:
+        image: (array): write your description
+        require_color: (bool): write your description
+    """
     image = to_image_array(image, require_color=require_color)
     return dict(
         r0=image,
@@ -292,6 +306,14 @@ def get_isometric_transforms(image: ImageInputType, require_color=True):
 
 
 def get_isometric_dct_transforms(dct: np.ndarray):
+    """
+    Return dct_dct_dction.
+
+    Args:
+        dct: (todo): write your description
+        np: (todo): write your description
+        ndarray: (array): write your description
+    """
     # pylint: disable=invalid-name
     T1 = np.empty_like(dct)
     T1[::2] = 1
@@ -403,6 +425,21 @@ def read_video_to_generator(
         errors='raise',
         max_duration: float = None,
         max_size: int = None):
+    """
+    Read video video file
+
+    Args:
+        filepath: (str): write your description
+        frames_per_second: (todo): write your description
+        typing: (str): write your description
+        Optional: (todo): write your description
+        typing: (str): write your description
+        Union: (str): write your description
+        str: (str): write your description
+        errors: (todo): write your description
+        max_duration: (int): write your description
+        max_size: (int): write your description
+    """
     # pylint: disable=no-member
     if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
         message = 'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
@@ -504,6 +541,13 @@ def read_video_to_generator(
 
 
 def read_video_into_queue(*args, video_queue, terminate, **kwargs):
+    """
+    Reads a video from a video queue.
+
+    Args:
+        video_queue: (todo): write your description
+        terminate: (bool): write your description
+    """
     # We're inside a thread now and the queue is being read elsewhere.
     try:
         for frame, frame_index, timestamp in read_video_to_generator(

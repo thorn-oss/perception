@@ -345,6 +345,13 @@ def get_config_from_root(root):
     VCS = parser.get("versioneer", "VCS")  # mandatory
 
     def get(parser, name):
+        """
+        Get an option value for the option.
+
+        Args:
+            parser: (todo): write your description
+            name: (str): write your description
+        """
         if parser.has_option("versioneer", name):
             return parser.get("versioneer", name)
         return None
@@ -1508,12 +1515,30 @@ def get_cmdclass():
         boolean_options = []
 
         def initialize_options(self):
+            """
+            Initializes the options.
+
+            Args:
+                self: (todo): write your description
+            """
             pass
 
         def finalize_options(self):
+            """
+            Finalize options. options. options.
+
+            Args:
+                self: (todo): write your description
+            """
             pass
 
         def run(self):
+            """
+            Run all versions
+
+            Args:
+                self: (todo): write your description
+            """
             vers = get_versions(verbose=True)
             print("Version: %s" % vers["version"])
             print(" full-revisionid: %s" % vers.get("full-revisionid"))
@@ -1546,6 +1571,12 @@ def get_cmdclass():
 
     class cmd_build_py(_build_py):
         def run(self):
+            """
+            Run the build.
+
+            Args:
+                self: (todo): write your description
+            """
             root = get_root()
             cfg = get_config_from_root(root)
             versions = get_versions()
@@ -1570,6 +1601,12 @@ def get_cmdclass():
 
         class cmd_build_exe(_build_exe):
             def run(self):
+                """
+                Run the build.
+
+                Args:
+                    self: (todo): write your description
+                """
                 root = get_root()
                 cfg = get_config_from_root(root)
                 versions = get_versions()
@@ -1599,6 +1636,12 @@ def get_cmdclass():
 
         class cmd_py2exe(_py2exe):
             def run(self):
+                """
+                Run the version.
+
+                Args:
+                    self: (todo): write your description
+                """
                 root = get_root()
                 cfg = get_config_from_root(root)
                 versions = get_versions()
@@ -1627,6 +1670,12 @@ def get_cmdclass():
 
     class cmd_sdist(_sdist):
         def run(self):
+            """
+            Returns the versions of installed versions.
+
+            Args:
+                self: (todo): write your description
+            """
             versions = get_versions()
             self._versioneer_generated_versions = versions
             # unless we update this, the command will keep using the old
@@ -1635,6 +1684,14 @@ def get_cmdclass():
             return _sdist.run(self)
 
         def make_release_tree(self, base_dir, files):
+            """
+            Generate a release.
+
+            Args:
+                self: (todo): write your description
+                base_dir: (str): write your description
+                files: (str): write your description
+            """
             root = get_root()
             cfg = get_config_from_root(root)
             _sdist.make_release_tree(self, base_dir, files)

@@ -42,6 +42,17 @@ class SimpleSceneDetection(VideoHasher):
                  min_frame_size=50,
                  similarity_threshold=0.95,
                  max_scene_length=None):
+        """
+        Initialize a gene.
+
+        Args:
+            self: (todo): write your description
+            base_hasher: (str): write your description
+            interscene_threshold: (float): write your description
+            min_frame_size: (int): write your description
+            similarity_threshold: (float): write your description
+            max_scene_length: (int): write your description
+        """
         if base_hasher is None:
             base_hasher = TMKL1(
                 frames_per_second=2,
@@ -84,6 +95,12 @@ class SimpleSceneDetection(VideoHasher):
         """
 
         def convert(scenes):
+            """
+            Convert hash_format into hash_format.
+
+            Args:
+                scenes: (todo): write your description
+            """
             if hash_format == 'vector':
                 return scenes
             if self.base_hasher.returns_multiple:
@@ -115,6 +132,14 @@ class SimpleSceneDetection(VideoHasher):
             yield convert(state['scenes'])
 
     def handle_scene(self, state, frame_timestamp=None):
+        """
+        Handle a scene from the scene.
+
+        Args:
+            self: (todo): write your description
+            state: (todo): write your description
+            frame_timestamp: (todo): write your description
+        """
         subhash = self.base_hasher.hash_from_final_state(state['substate'])
         if subhash is not None and (self.base_hasher.returns_multiple or (
             (self.interscene_threshold is None or not state['scenes']
@@ -129,6 +154,14 @@ class SimpleSceneDetection(VideoHasher):
             state['start'] = frame_timestamp
 
     def crop(self, frame, bounds):
+        """
+        Crop the image.
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            bounds: (todo): write your description
+        """
         # Check to see we have set bounds for this scene yet.
         if not bounds:
             # We don't have bounds, so we'll set them.
@@ -153,6 +186,17 @@ class SimpleSceneDetection(VideoHasher):
                       frame_timestamp,
                       state=None,
                       batch_mode=False):
+        """
+        Process a single frame.
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            frame_index: (todo): write your description
+            frame_timestamp: (todo): write your description
+            state: (todo): write your description
+            batch_mode: (todo): write your description
+        """
         if not state:
             state = {
                 'pre': None,
@@ -201,6 +245,13 @@ class SimpleSceneDetection(VideoHasher):
         return state
 
     def hash_from_final_state(self, state):
+        """
+        Return the hash of the given state.
+
+        Args:
+            self: (todo): write your description
+            state: (todo): write your description
+        """
         if state['substate']:
             self.handle_scene(state)
         if not self.base_hasher.returns_multiple:

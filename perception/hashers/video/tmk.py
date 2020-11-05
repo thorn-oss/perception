@@ -16,6 +16,15 @@ class TMKL2(VideoHasher):
                  frame_hasher: ImageHasher = None,
                  frames_per_second: int = 15,
                  normalization: str = 'matrix'):
+        """
+        Initialize a frame.
+
+        Args:
+            self: (todo): write your description
+            frame_hasher: (todo): write your description
+            frames_per_second: (todo): write your description
+            normalization: (bool): write your description
+        """
         T = np.array([2731, 4391, 9767, 14653]).astype('float32')
         m = 32
         if frame_hasher is None:
@@ -59,6 +68,16 @@ class TMKL2(VideoHasher):
         self.normalization = normalization
 
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
+        """
+        Process a single frame_index.
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            frame_index: (todo): write your description
+            frame_timestamp: (todo): write your description
+            state: (todo): write your description
+        """
         if state is None:
             state = {'features': [], 'timestamps': []}
         state['features'].append(
@@ -67,6 +86,13 @@ class TMKL2(VideoHasher):
         return state
 
     def hash_from_final_state(self, state):
+        """
+        Return a hash of the state.
+
+        Args:
+            self: (todo): write your description
+            state: (todo): write your description
+        """
         timestamps = np.array(state['timestamps'])
         # pylint: disable=unsubscriptable-object
         features = np.array(state['features']).reshape(
@@ -80,6 +106,14 @@ class TMKL2(VideoHasher):
         return y.flatten()
 
     def _compute_distance(self, vector1, vector2):
+        """
+        Compute the distance between two vectors.
+
+        Args:
+            self: (todo): write your description
+            vector1: (array): write your description
+            vector2: (array): write your description
+        """
         shape = (len(self.T), 2 * self.m, self.frame_hasher.hash_length)
         return 1 - self._score_pair(
             fv_a=vector1.reshape(shape),
@@ -88,6 +122,16 @@ class TMKL2(VideoHasher):
             normalization=self.normalization)
 
     def _score_pair(self, fv_a, fv_b, offsets=None, normalization='matrix'):
+        """
+        Compute the pair score.
+
+        Args:
+            self: (todo): write your description
+            fv_a: (int): write your description
+            fv_b: (int): write your description
+            offsets: (int): write your description
+            normalization: (todo): write your description
+        """
         eps = 1e-8
 
         if offsets is None:
@@ -158,6 +202,18 @@ class TMKL1(VideoHasher):
                  distance_metric='cosine',
                  norm=2,
                  quality_threshold=None):
+        """
+        Initialize a frame.
+
+        Args:
+            self: (todo): write your description
+            frame_hasher: (todo): write your description
+            frames_per_second: (todo): write your description
+            dtype: (todo): write your description
+            distance_metric: (str): write your description
+            norm: (todo): write your description
+            quality_threshold: (float): write your description
+        """
         if frame_hasher is None:
             frame_hasher = PHashF(
                 hash_size=16, exclude_first_term=True, freq_shift=1)
@@ -172,6 +228,16 @@ class TMKL1(VideoHasher):
 
     # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
+        """
+        Process a single frame.
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            frame_index: (todo): write your description
+            frame_timestamp: (todo): write your description
+            state: (todo): write your description
+        """
         if state is None:
             state = {
                 'sum': np.zeros(self.frame_hasher.hash_length),
@@ -191,6 +257,13 @@ class TMKL1(VideoHasher):
         return state
 
     def hash_from_final_state(self, state):
+        """
+        Return the hash of the given state.
+
+        Args:
+            self: (todo): write your description
+            state: (todo): write your description
+        """
         if state['frame_count'] == 0:
             return None
         average_vector = state['sum'] / state['frame_count']
