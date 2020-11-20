@@ -8,10 +8,7 @@ import typing_extensions
 import networkx as nx
 import numpy as np
 import pandas as pd
-try:
-    import faiss
-except ImportError:
-    faiss = None
+import faiss
 import cv2
 
 import perception.hashers.tools as pht
