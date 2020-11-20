@@ -2,6 +2,7 @@ include versioneer.py
 include perception/_version.py
 include perception/testing/images/*
 include perception/testing/videos/*
+include perception/testing/logos/*
 include perception/**/*.pyx
 include perception/*.pyx
 exclude tests/*
