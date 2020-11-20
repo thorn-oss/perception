@@ -22,6 +22,7 @@ DEFAULT_INTERSECTION = 0.6
 DEFAULT_INLIERS = 5
 DEFAULT_MAX_SIZE = 256
 DEFAULT_PCT_PROBE = 0
+DEFAULT_MIN_FEATURES = 10
 
 ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
     'cluster': int,
@@ -57,15 +58,18 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
 def generate_image_descriptors(
         filepath: str,
         max_features=DEFAULT_MAX_FEATURES,
+        min_features=DEFAULT_MIN_FEATURES,
         max_size=DEFAULT_MAX_SIZE
 ) -> typing.Optional[typing.Tuple[np.array, np.array, typing.Tuple[int, int]]]:
     """Generate SIFT descriptors for a file.
 
     Args:
         filepath: Path to image file.
-        max_features: The maximum number of features to keep
-        max_size: The maximum size of the image before extracting
-            SIFT descriptors.
+        max_features: The maximum number of features to
+            extract.
+        min_features: The minimum number of features to
+            extract.
+        max_size: The maximum side length for an image.
 
     Returns:
         If successful, returns a tuple of keypoints, descriptors,
@@ -78,18 +82,26 @@ def generate_image_descriptors(
     keypoints, descriptors = sift.detectAndCompute(image, None)
     if descriptors is None:
         return None
+    if descriptors.shape[0] < min_features:
+        return None
     keypoints = np.float32([kp.pt for kp in keypoints])
     return keypoints, descriptors, (image.shape[1], image.shape[0])
 
 
 def build_reference_df(filepaths: typing.List[str],
                        max_features=DEFAULT_MAX_FEATURES,
+                       min_features=DEFAULT_MIN_FEATURES,
                        max_size=DEFAULT_MAX_SIZE) -> pd.DataFrame:
     """Build SIFT descriptors for a list of files.
 
     Args:
         filepaths: A list of filepaths for which descriptors
             are desired.
+        max_features: The maximum number of features to
+            extract.
+        min_features: The minimum number of features to
+            extract.
+        max_size: The maximum side length for an image.
 
     Returns:
         A dataframe, indexed by filepath with columns for descriptors
@@ -98,8 +110,10 @@ def build_reference_df(filepaths: typing.List[str],
     LOGGER.info("Generating descriptors")
     features = [
         generate_image_descriptors(
-            filepath, max_features=max_features, max_size=max_size)
-        for filepath in filepaths
+            filepath,
+            max_features=max_features,
+            min_features=min_features,
+            max_size=max_size) for filepath in filepaths
     ]
     LOGGER.info("Finished computing descriptors.")
     return pd.DataFrame({
@@ -402,10 +416,11 @@ def validate_match(kp1: np.ndarray,
 
 def deduplicate(filepaths: typing.List[str],
                 max_features: int = DEFAULT_MAX_FEATURES,
+                min_features: int = DEFAULT_MIN_FEATURES,
                 max_size: int = DEFAULT_MAX_SIZE,
                 coarse_pct_probe: float = DEFAULT_PCT_PROBE,
+                coarse_threshold: int = DEFAULT_THRESHOLD,
                 minimum_coarse_overlap: float = DEFAULT_OVERLAP,
-                minimum_coarse_threshold: int = DEFAULT_THRESHOLD,
                 minimum_validation_match: float = DEFAULT_MATCH_PCT,
                 minimum_validation_intersection: float = DEFAULT_INTERSECTION,
                 minimum_validation_inliers: int = DEFAULT_INLIERS
@@ -422,16 +437,34 @@ def deduplicate(filepaths: typing.List[str],
 
     Args:
         filepaths: The list of images to deduplicate.
+        max_features: The maximum number of features to
+            extract.
+        min_features: The minimum number of features to
+            extract.
+        max_size: The maximum side length for an image.
+        coarse_pct_probe: The minimum fraction of nearest lists to search. If
+            the product of pct_probe and the number of lists is less
+            than 1, one list will be searched.
+        corase_threshold: The threshold for a match as a euclidean distance.
+        minimum_coarse_overlap: The minimum overlap between two files to qualify as a match.
+        minimum_validation_match: The minimum number of matches passing the ratio test.
+        minimum_validation_intersection: The minimum overlapping area between the keypoints
+            in the filtered set of matches and the original keypoints.
+        minimum_validation_inliers: The minimum number of inliers for the transformation
+            matrix.
 
     Returns:
         A list of pairs of file duplicates.
     """
     reference_df = build_reference_df(
-        filepaths=filepaths, max_features=max_features, max_size=max_size)
+        filepaths=filepaths,
+        max_features=max_features,
+        min_features=min_features,
+        max_size=max_size)
     candidates = compute_pairs(
         reference_df,
         pct_probe=coarse_pct_probe,
-        threshold=minimum_coarse_threshold,
+        threshold=coarse_threshold,
         minimum_overlap=minimum_coarse_overlap)
     keep = []
     for candidate in candidates:
