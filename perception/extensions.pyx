@@ -158,11 +158,13 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
         X: The vectors with shape (N, D). Vectors for the same file need to be
             supplied sequentially so that we can use the counts argument
             to determine which vectors are for the same file.
+        threshold: The maximum distance between to vectors to allow for
+            a match.
         counts: For each of the M files, the number of sequential vectors in X.
             If not provided, each vector is assumed to be for a different file (i.e.,
             this is equivalent to `counts = np.ones(N)` which also implies M == N).
             Otherwise, assumed to have length M. The counts should add up to N.
-        minimum_threshold: The minimum overlap between two groups of hashes to
+        minimum_overlap: The minimum overlap between two groups of hashes to
             call it a match.
     
     Returns:
@@ -194,7 +196,9 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
             offsets[i_1] += counts[i_i]
         expected_n += counts[i_1]
     assert expected_n == n, "Provided value for counts is inconsistent with X."
-    # local_buf will contain distance, flattened array offset, index_offset_1, index_offset_2
+    # local_buf will contain:
+    # distance, flattened array offset,
+    # index_offset_1, index_offset_2
     cdef size_t local_buf_size = 4
     cdef float threshold2 = threshold ** 2
     with nogil, parallel():
@@ -208,8 +212,8 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
         # matched.
         matched_2 = <int *> malloc(sizeof(int) * max_counts)
 
-        # Pair overlap
-        overlap = <float *> malloc(sizeof(float) * 2)
+        # Pair overlap and minimum required overlap
+        overlap = <float *> malloc(sizeof(float) * 4)
 
         if local_buf is NULL or matched_1 is NULL or matched_2 is NULL or overlap is NULL:
             abort()
@@ -223,9 +227,16 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
                 local_buf[1] += m - i_i - 1
             # Iterate over all the other files to compare.
             for i_2 in range(i_1 + 1, m):
+                # Set the current and minimum overlaps
                 overlap[0] = 0
                 overlap[1] = 0
+                overlap[2] = minimum_overlap * counts[i_1]
+                overlap[3] = minimum_overlap * counts[i_2]
                 local_buf[3] = offsets[i_2]
+
+                # Set early termination flag.
+                local_buf[4] = 0
+
                 # Initialize all match flags to zero for
                 # both file 1 and file 2.
                 for i_1_sub in range(counts[i_1]):
@@ -234,6 +245,14 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
                     matched_2[i_2_sub] = 0
                 # Iterate over all the hashes in file1
                 for i_1_sub in range(counts[i_1]):
+                    # Stop early if there's no way to get enough
+                    # matches from i1 to i2
+                    if overlap[0] + counts[i_1] - i_1_sub < overlap[2]:
+                        break
+                    # Stop early if we've already reached the minimum overlap
+                    if overlap[0] > overlap[2] and overlap[1] > overlap[3]:
+                        break
+
                     # Iterate over all the hashes in file2
                     for i_2_sub in range(counts[i_2]):
                         local_buf[0] = 0
@@ -250,19 +269,14 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
                                 break
                         if local_buf[0] < threshold2:
                             # A match was found. Set flags for both vectors
-                            # to 1.
+                            # to 1 and increment the overlap.
+                            if matched_1[i_1_sub] != 1:
+                                overlap[0] += 1
+                            if matched_2[i_2_sub] != 1:
+                                overlap[1] += 1
                             matched_1[i_1_sub] = 1
                             matched_2[i_2_sub] = 1
-                # Add up the number of matches for file 1.
-                for i_1_sub in range(counts[i_1]):
-                    overlap[0] += matched_1[i_1_sub]
-                # Add up the number of matches for file 2.
-                for i_2_sub in range(counts[i_2]):
-                    overlap[1] += matched_2[i_2_sub]
-                # Divide by the total number of vectors for each file.
-                overlap[0] /= <float> counts[i_1]
-                overlap[1] /= <float> counts[i_2]
-                if overlap[0] > minimum_overlap and overlap[1] > minimum_overlap:
+                if overlap[0] > overlap[2] and overlap[1] > overlap[3]:
                     duplicate[local_buf[1]] = 1
                 local_buf[1] += 1
         free(matched_1)
