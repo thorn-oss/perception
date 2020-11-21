@@ -98,7 +98,7 @@ def build_reference_df(filepaths: typing.List[str],
         A dataframe, indexed by filepath with columns for descriptors
         and descriptor counts.
     """
-    LOGGER.info("Generating descriptors")
+    LOGGER.debug("Generating descriptors")
     features = [
         generate_image_descriptors(
             filepath,
@@ -106,7 +106,7 @@ def build_reference_df(filepaths: typing.List[str],
             min_features=min_features,
             max_size=max_size) for filepath in filepaths
     ]
-    LOGGER.info("Finished computing descriptors.")
+    LOGGER.debug("Finished computing descriptors.")
     return pd.DataFrame({
         'descriptors': [f[1] if f is not None else None for f in features],
         'keypoints': [f[0] if f is not None else None for f in features],
@@ -255,7 +255,6 @@ def validate_match(kp1: np.ndarray,
         [distances_A2B, distances_B2A])
     match = min(good_A2B.sum() / good_A2B.shape[0],
                 good_B2A.sum() / good_B2A.shape[0])
-    print('match', minimum_match)
     if match < minimum_match:
         # We didn't get enough good matches.
         return False
@@ -266,7 +265,6 @@ def validate_match(kp1: np.ndarray,
         kp2=kpB,
         filter_arr1=good_A2B,
         filter_arr2=indexes_A2B[good_A2B, 0])
-    print('intersection', intersection)
     if intersection < minimum_intersection:
         return False
     MAB, mask = cv2.findHomography(
