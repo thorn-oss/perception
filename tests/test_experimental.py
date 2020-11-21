@@ -9,6 +9,7 @@ import perception.benchmarking as pb
 import perception.hashers.tools as pht
 import perception.benchmarking.image_transforms as pbit
 import perception.experimental.local_descriptor_deduplication as ldd
+import perception.experimental.approximate_deduplication as ad
 
 
 def test_sift_deduplication():
@@ -32,7 +33,7 @@ def test_sift_deduplication():
                    storage_dir=tdir.name)
     df = transformed._df.set_index('filepath')
     pairs = ldd.deduplicate(filepaths=df.index)
-    clustered = pd.DataFrame(ldd.pairs_to_clusters(
+    clustered = pd.DataFrame(ad.pairs_to_clusters(
         ids=df.index, pairs=pairs)).set_index('id').merge(
             df, left_index=True, right_index=True).reset_index()
     n_clusters = clustered['cluster'].nunique()

@@ -4,11 +4,19 @@ import math
 import typing
 import logging
 
+from networkx.algorithms import approximation
+import typing_extensions
+import networkx as nx
 import numpy as np
 import faiss
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
+
+ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
+    'cluster': int,
+    'id': str
+})
 
 
 def build_index(X: np.ndarray,
@@ -116,3 +124,33 @@ def compute_euclidean_pairwise_duplicates_approx(X,
             if min(overlaps) > minimum_overlap:
                 pairs.append(tuple(sorted([query, match])))
     return list(set(pairs))
+
+
+def pairs_to_clusters(ids: typing.List[str],
+                      pairs: typing.List[typing.Tuple[str, str]]
+                      ) -> typing.List[ClusterAssignment]:
+    """Given a list of pairs of matching files, compute sets
+    of cliques where all files in a clique are connected.
+
+    Args:
+        ids: A list of file identifiers (e.g., filepaths).
+        pairs: A list of pairs of file identifiers.
+
+    Returns:
+        A list of cluster assignments (dicts with id and cluster
+        entries).
+    """
+    graph = nx.Graph()
+    graph.add_nodes_from(ids)
+    graph.add_edges_from(pairs)
+    assignments: typing.List[ClusterAssignment] = []
+    cluster_index = 0
+    for nodes in nx.connected_components(graph):
+        subgraph = graph.subgraph(nodes).copy()
+        while subgraph:
+            clique = approximation.clique.max_clique(subgraph)
+            for entry in clique:
+                assignments.append({"id": entry, "cluster": cluster_index})
+            subgraph.remove_nodes_from(clique)
+            cluster_index += 1
+    return assignments

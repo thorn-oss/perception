@@ -2,9 +2,6 @@
 import typing
 import logging
 
-from networkx.algorithms import approximation
-import typing_extensions
-import networkx as nx
 import numpy as np
 import pandas as pd
 import cv2
@@ -22,11 +19,6 @@ DEFAULT_INLIERS = 5
 DEFAULT_MAX_SIZE = 256
 DEFAULT_MIN_FEATURES = 10
 DEFAULT_RATIO = 0.75
-
-ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
-    'cluster': int,
-    'id': str
-})
 
 
 def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
@@ -382,33 +374,3 @@ def deduplicate(
                 ratio=ratio):
             keep.append(candidate)
     return keep
-
-
-def pairs_to_clusters(ids: typing.List[str],
-                      pairs: typing.List[typing.Tuple[str, str]]
-                      ) -> typing.List[ClusterAssignment]:
-    """Given a list of pairs of matching files, compute sets
-    of cliques where all files in a clique are connected.
-
-    Args:
-        ids: A list of file identifiers (e.g., filepaths).
-        pairs: A list of pairs of file identifiers.
-
-    Returns:
-        A list of cluster assignments (dicts with id and cluster
-        entries).
-    """
-    graph = nx.Graph()
-    graph.add_nodes_from(ids)
-    graph.add_edges_from(pairs)
-    assignments: typing.List[ClusterAssignment] = []
-    cluster_index = 0
-    for nodes in nx.connected_components(graph):
-        subgraph = graph.subgraph(nodes).copy()
-        while subgraph:
-            clique = approximation.clique.max_clique(subgraph)
-            for entry in clique:
-                assignments.append({"id": entry, "cluster": cluster_index})
-            subgraph.remove_nodes_from(clique)
-            cluster_index += 1
-    return assignments
