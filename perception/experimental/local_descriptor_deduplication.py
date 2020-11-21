@@ -1,5 +1,4 @@
 # pylint: disable=no-member,invalid-name,too-many-locals,too-many-arguments,too-many-return-statements
-import math
 import typing
 import logging
 
@@ -8,10 +7,10 @@ import typing_extensions
 import networkx as nx
 import numpy as np
 import pandas as pd
-import faiss
 import cv2
 
 import perception.hashers.tools as pht
+import perception.experimental.approximate_deduplication as ad
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
@@ -21,8 +20,8 @@ DEFAULT_MATCH_PCT = 0.2
 DEFAULT_INTERSECTION = 0.6
 DEFAULT_INLIERS = 5
 DEFAULT_MAX_SIZE = 256
-DEFAULT_PCT_PROBE = 0
 DEFAULT_MIN_FEATURES = 10
+DEFAULT_RATIO = 0.75
 
 ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
     'cluster': int,
@@ -127,113 +126,6 @@ def build_reference_df(filepaths: typing.List[str],
     }).set_index('filepath')
 
 
-def build_index(X: np.ndarray,
-                pct_probe: float = DEFAULT_PCT_PROBE,
-                approximate=True):
-    """Buid a FAISS index from a reference dataframe.
-
-    Args:
-        X: The vectors to add to the index.
-        pct_probe: The minimum fraction of nearest lists to search. If
-            the product of pct_probe and the number of lists is less
-            than 1, one list will be searched.
-        approximate: Whether to build an approximate or exact index.
-
-    Returns:
-        An (index, lookup) tuple where the lookup returns the filepath
-        for a given entry in the index.
-    """
-    if X is None:
-        return None
-    d = X.shape[1]
-    if approximate:
-        ntotal = X.shape[0]
-        nlist = int(min(4 * np.sqrt(ntotal), ntotal / 39))
-        quantizer = faiss.IndexFlatL2(d)
-        index = faiss.IndexIVFFlat(quantizer, d, nlist)
-        gpu = False
-        try:
-            res = faiss.StandardGpuResources()
-            index = faiss.index_cpu_to_gpu(res, 0, index)
-            gpu = True
-        except AttributeError:
-            LOGGER.info("Building approximate FAISS index on CPU.")
-        index.train(X)
-        batch_size = 10_000
-        for i in range(0, X.shape[0], batch_size):
-            index.add(X[i:i + batch_size])
-        if gpu:
-            index = faiss.index_gpu_to_cpu(index)  # pylint: disable=no-member
-        nprobe = max(math.ceil(pct_probe * nlist), 1)
-        faiss.ParameterSpace().set_index_parameter(index, "nprobe", nprobe)
-    else:
-        index = faiss.IndexFlat(d)
-        index.add(X)  # pylint: disable=no-value-for-parameter
-    return index
-
-
-def compute_euclidean_pairwise_duplicates_approx(X,
-                                                 counts,
-                                                 threshold,
-                                                 minimum_overlap,
-                                                 pct_probe=0.1):
-    """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
-    but uses an approximate search instead of an exhaustive search, which can dramatically reduce
-    processing time.
-
-    Args:
-        X: An array of vectors to compute pairs for.
-        counts: A list of counts of vectors for separate files in the
-            in the vectors (should add up to the length of X)
-        threshold: The threshold for a match as a euclidean distance.
-        minimum_overlap: The minimum overlap between two files to qualify as a match.
-        pct_probe: The minimum percentage of sublists to search for matches. The larger the
-            value, the more exhaustive the search.
-
-    Returns:
-        A list of pairs of matching file indexes.
-    """
-    assert counts.sum(
-    ) == X.shape[0], "Length of counts incompatible with vectors shape."
-    if X.dtype != 'float32':
-        # Only make the copy if we have to.
-        X = X.astype('float32')
-    lookup = []
-    for idx, count in enumerate(counts):
-        lookup.extend([idx] * count)
-    lookup = np.array(lookup)
-    index = build_index(X=X, pct_probe=pct_probe, approximate=True)
-    pairs = []
-    for end, length, query in zip(counts.cumsum(), counts, range(len(counts))):
-        if length == 0:
-            continue
-        Xq = X[end - length:end]
-        lims, _, idxs = index.range_search(Xq, threshold**2)
-        lims = lims.astype('int32')
-        matched = [
-            match
-            for match in np.unique(lookup[list(set(idxs))])  # type: ignore
-            if match != query
-        ]
-        query_in_match: typing.Mapping[int, set] = {m: set() for m in matched}
-        match_in_query: typing.Mapping[int, set] = {m: set() for m in matched}
-        for query_idx in range(length):
-            for match_idx in idxs[lims[query_idx]:lims[query_idx + 1]]:
-                match = lookup[match_idx]
-                if match == query:
-                    continue
-                match_in_query[match].add(match_idx)
-                query_in_match[match].add(query_idx)
-        for match in matched:
-            overlaps = [
-                len(query_in_match[match]) / length,
-                len(match_in_query[match]) / counts[match]
-            ]
-            if min(overlaps) > minimum_overlap:
-                pairs.append(tuple(sorted([query, match])))
-    return list(set(pairs))
-
-
 def compute_pairs(reference_df,
                   threshold=DEFAULT_THRESHOLD,
                   minimum_overlap=DEFAULT_OVERLAP,
@@ -250,8 +142,8 @@ def compute_pairs(reference_df,
     """
     reference_df = reference_df.dropna(subset=['descriptors'])
     counts = reference_df['descriptor_count'].values.astype('uint32')
-    descriptors = np.concatenate(reference_df['descriptors'].values.tolist())
-    pairs = compute_euclidean_pairwise_duplicates_approx(
+    descriptors = np.vstack(reference_df['descriptors'].values)
+    pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype('float32'),
         counts=counts,
         threshold=threshold,
@@ -283,7 +175,9 @@ def compute_intersection(kps, filter_arr):
     kps_filtered = kps[filter_arr]
     box_after = np.hstack([kps_filtered.min(axis=0), kps_filtered.max(axis=0)])
     box_before = np.hstack([kps.min(axis=0), kps.max(axis=0)])
-    return compute_area(box_after) / compute_area(box_before)
+    area_before = compute_area(box_before)
+    area_after = compute_area(box_after)
+    return area_after / area_before
 
 
 def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
@@ -296,9 +190,7 @@ def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
         filter_arr1: A filter array for the first set of keypoints
         filter_arr2: A filter array for the second set of keypoints
     """
-    return min(
-        compute_intersection(kp1, filter_arr1),
-        compute_intersection(kp2, filter_arr2))
+    return min(compute_intersection(kp1, filter_arr1), compute_intersection(kp2, filter_arr2))
 
 
 def validate_match(kp1: np.ndarray,
@@ -309,7 +201,8 @@ def validate_match(kp1: np.ndarray,
                    dims2: typing.Tuple[int, int],
                    minimum_match: float = DEFAULT_MATCH_PCT,
                    minimum_intersection: float = DEFAULT_INTERSECTION,
-                   minimum_inliers: int = DEFAULT_INLIERS) -> float:
+                   minimum_inliers: int = DEFAULT_INLIERS,
+                   ratio=DEFAULT_RATIO) -> float:
     """Validate the match between two sets of keypoints and descriptors. The
     validation algorithm is as follows:
 
@@ -343,6 +236,7 @@ def validate_match(kp1: np.ndarray,
             in the filtered set of matches and the original keypoints.
         minimum_inliers: The minimum number of inliers for the transformation
             matrix.
+        ratio: The ratio to use for Lowe's ratio test.
 
     Returns:
         True if the match passes, False otherwise.
@@ -355,18 +249,19 @@ def validate_match(kp1: np.ndarray,
     desA = des2 if swap else des1
     desB = des1 if swap else des2
 
-    indexA = build_index(desA, approximate=False)
-    indexB = build_index(desB, approximate=False)
+    indexA = ad.build_index(desA, approximate=False)
+    indexB = ad.build_index(desB, approximate=False)
     if desA is None or indexA is None or desB is None or indexB is None:
         return False
     # pylint: disable=no-value-for-parameter
     distances_A2B, indexes_A2B = indexB.search(desA.astype('float32'), 2)
     distances_B2A, _ = indexA.search(desB.astype('float32'), 2)
     good_A2B, good_B2A = map(
-        lambda distances: (distances[:, 0] < distances[:, 1] * 0.75),
+        lambda distances: (distances[:, 0] < distances[:, 1] * ratio),
         [distances_A2B, distances_B2A])
     match = min(good_A2B.sum() / good_A2B.shape[0],
                 good_B2A.sum() / good_B2A.shape[0])
+    print('match', minimum_match)
     if match < minimum_match:
         # We didn't get enough good matches.
         return False
@@ -377,6 +272,7 @@ def validate_match(kp1: np.ndarray,
         kp2=kpB,
         filter_arr1=good_A2B,
         filter_arr2=indexes_A2B[good_A2B, 0])
+    print('intersection', intersection)
     if intersection < minimum_intersection:
         return False
     MAB, mask = cv2.findHomography(
@@ -414,17 +310,18 @@ def validate_match(kp1: np.ndarray,
     return True
 
 
-def deduplicate(filepaths: typing.List[str],
-                max_features: int = DEFAULT_MAX_FEATURES,
-                min_features: int = DEFAULT_MIN_FEATURES,
-                max_size: int = DEFAULT_MAX_SIZE,
-                coarse_pct_probe: float = DEFAULT_PCT_PROBE,
-                coarse_threshold: int = DEFAULT_THRESHOLD,
-                minimum_coarse_overlap: float = DEFAULT_OVERLAP,
-                minimum_validation_match: float = DEFAULT_MATCH_PCT,
-                minimum_validation_intersection: float = DEFAULT_INTERSECTION,
-                minimum_validation_inliers: int = DEFAULT_INLIERS
-                ) -> typing.List[typing.Tuple[str, str]]:
+def deduplicate(
+        filepaths: typing.List[str],
+        max_features: int = DEFAULT_MAX_FEATURES,
+        min_features: int = DEFAULT_MIN_FEATURES,
+        max_size: int = DEFAULT_MAX_SIZE,
+        coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
+        coarse_threshold: int = DEFAULT_THRESHOLD,
+        minimum_coarse_overlap: float = DEFAULT_OVERLAP,
+        minimum_validation_match: float = DEFAULT_MATCH_PCT,
+        minimum_validation_intersection: float = DEFAULT_INTERSECTION,
+        minimum_validation_inliers: int = DEFAULT_INLIERS,
+        ratio: float = DEFAULT_RATIO) -> typing.List[typing.Tuple[str, str]]:
     """Deduplicate images by doing the following:
 
     #. Unletterbox all images and resize to some maximum size, preserving
@@ -452,6 +349,7 @@ def deduplicate(filepaths: typing.List[str],
             in the filtered set of matches and the original keypoints.
         minimum_validation_inliers: The minimum number of inliers for the transformation
             matrix.
+        ratio: The ratio to use for Lowe's ratio test.
 
     Returns:
         A list of pairs of file duplicates.
@@ -478,7 +376,8 @@ def deduplicate(filepaths: typing.List[str],
                 dims2=fB['dimensions'],
                 minimum_match=minimum_validation_match,
                 minimum_inliers=minimum_validation_inliers,
-                minimum_intersection=minimum_validation_intersection):
+                minimum_intersection=minimum_validation_intersection,
+                ratio=ratio):
             keep.append(candidate)
     return keep
 
