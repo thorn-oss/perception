@@ -190,7 +190,9 @@ def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
         filter_arr1: A filter array for the first set of keypoints
         filter_arr2: A filter array for the second set of keypoints
     """
-    return min(compute_intersection(kp1, filter_arr1), compute_intersection(kp2, filter_arr2))
+    return min(
+        compute_intersection(kp1, filter_arr1),
+        compute_intersection(kp2, filter_arr2))
 
 
 def validate_match(kp1: np.ndarray,
