@@ -33,6 +33,10 @@ DEFAULT_TEST_IMAGES = [
         'perception', os.path.join('testing', 'images', f'image{n}.jpg'))
     for n in range(1, 11)
 ]
+DEFAULT_TEST_LOGOS = [
+    pkg_resources.resource_filename(
+        'perception', os.path.join('testing', 'logos', 'logoipsum.png'))
+]
 DEFAULT_TEST_VIDEOS = [
     pkg_resources.resource_filename(
         'perception', os.path.join('testing', 'videos', f'v{n}.m4v'))
