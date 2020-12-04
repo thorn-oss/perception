@@ -67,10 +67,18 @@ def generate_image_descriptors(
         and a (width, height) tuple.
     """
     sift = cv2.SIFT_create(nfeatures=max_features)
-    image = load_and_preprocess(filepath, max_size=max_size)
-    if image is None:
+    try:
+        image = load_and_preprocess(filepath, max_size=max_size)
+        if image is None:
+            return None
+        keypoints, descriptors = sift.detectAndCompute(image, None)
+    except FileNotFoundError:
+        LOGGER.warning("Image file %s not found.", filepath)
         return None
-    keypoints, descriptors = sift.detectAndCompute(image, None)
+    except ValueError as e:
+        LOGGER.error("Processing image file %s failed.", filepath, exc_info=e)
+        return None
+
     if descriptors is None:
         return None
     if descriptors.shape[0] < min_features:

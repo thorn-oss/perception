@@ -65,3 +65,37 @@ def test_validation_for_overlapping_case():
     # These images should not match.
     assert not ldd.validate_match(
         kp1=kp1, kp2=kp2, des1=des1, des2=des2, dims1=dims1, dims2=dims2)
+
+
+def test_handling_bad_file_case(caplog):
+    tdir = tempfile.TemporaryDirectory()
+    missing_file = os.path.join(tdir.name, 'missing-file')
+    bad_file_handle = tempfile.NamedTemporaryFile()
+    bad_file = bad_file_handle.name
+    transformed = pb.BenchmarkImageDataset.from_tuples(
+        files=[(filepath, 'test')
+               for filepath in pt.DEFAULT_TEST_IMAGES]).transform(
+                   transforms={
+                       'noop': lambda image: image,
+                   },
+                   storage_dir=tdir.name)
+    df = transformed._df.set_index('filepath')
+    df.loc[missing_file] = df.iloc[0]
+    df.loc[bad_file] = df.iloc[0]
+    pairs = ldd.deduplicate(filepaths=df.index)
+    clustered = pd.DataFrame(ad.pairs_to_clusters(
+        ids=df.index, pairs=pairs)).set_index('id').merge(
+            df, left_index=True, right_index=True).reset_index()
+
+    assert bad_file not in clustered.index
+    assert missing_file not in clustered.index
+
+    bad_file_error = next(
+        record for record in caplog.records if bad_file in record.message)
+    assert bad_file_error
+    assert bad_file_error.levelname == "ERROR"
+
+    missing_file_warning = next(
+        record for record in caplog.records if missing_file in record.message)
+    assert missing_file_warning
+    assert missing_file_warning.levelname == "WARNING"
