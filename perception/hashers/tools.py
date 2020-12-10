@@ -683,19 +683,29 @@ def unletterbox(image) -> typing.Optional[
         typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
     """Return bounds of non-trivial region of image or None.
 
-    Unletterboxing is cropping an image such that large rectangles of
-    non-trivial pixels are removed.
+    Unletterboxing is cropping an image such that trivial edge regions
+    are removed. Trivial in this context means that the majority of
+    the values in that row or column are zero or very close to
+    zero. This is why we don't use the terms "non-blank" or
+    "non-empty."
 
-    Instead of saying "non-blank" or "non-empty" row or column, we use
-    "non-trivial" to imply that some non-zero pixel values may exist
-    and will still be removed.
+    In order to do unletterboxing, this function returns bounds in the
+    form (x1, x2), (y1, y2) where:
 
-    `x` is calculated to be "columns where the number of non-trivial
-    pixels is greater than 10% of the image height".  `y` is
-    calculated similarly, swapping "columns" for "rows" and "height"
-    for "width".  If both `x` and `y` are at least of length 2, then
-    we use the first and last entry of each as the bounds of the
-    cropped image.  Otherwise, we return `None`.
+    - x1 is the index of the first column where over 10% of the pixels
+      have means (average of R, G, B) > 2.
+    - x2 is the index of the last column where over 10% of the pixels
+      have means > 2.
+    - y1 is the index of the first row where over 10% of the pixels
+      have means > 2.
+    - y2 is the index of the last row where over 10% of the pixels
+      have means > 2.
+
+    If there are zero columns or zero rows where over 10% of the
+    pixels have means > 2, this function returns `None`.
+
+    Note that in the case(s) of a single column and/or row of
+    non-trivial pixels that it is possible for x1 = x2 and/or y1 = y2.
 
     Consider these examples to understand edge cases.  Given two
     images, `L` (entire left and bottom edges are 1, all other pixels
@@ -708,10 +718,6 @@ def unletterbox(image) -> typing.Optional[
     rows all 1s. `unletterbox(U1)` returns the bounds of the bottom
     two rows.
 
-    The variable `adj` in the code should be thought of as a boolean
-    at each pixel indicating whether or not that pixel is non-trivial
-    (`True`) or not (`False`).
-
     Args:
         image: The image from which to remove letterboxing.
 
@@ -721,6 +727,8 @@ def unletterbox(image) -> typing.Optional[
         bottom bounds.
 
     """
+    # adj should be thought of as a boolean at each pixel indicating
+    # whether or not that pixel is non-trivial (True) or not (False).
     adj = image.mean(axis=2) > 2
 
     if adj.all():
