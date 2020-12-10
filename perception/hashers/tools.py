@@ -684,6 +684,30 @@ def unletterbox(image) -> typing.Optional[
     """Obtain bounds on an image that remove the black bars
     on the top, right, bottom, and left side of an image.
 
+    Unletterboxing is cropping an image such that large rectangles of
+    non-trivial pixels are removed.
+
+    Instead of saying "non-blank" or "non-empty" row or column, we use
+    "non-trivial" to imply that some non-zero pixel values may exist
+    and will still be removed.
+
+    `x` is calculated to be "columns where the number of non-trivial
+    pixels is greater than 10% of the image height".  `y` is
+    calculated similarly, swapping "columns" for "rows" and "height"
+    for "width".  If both `x` and `y` are at least of length 2, then
+    we use the first and last entry of each as the bounds of the
+    cropped image.  Otherwise, we return the original image.
+
+    For `x`, think of an Oreo cookie: if the frosting is considered
+    non-trivial and is thicker than 10% of the thickness of the entire
+    cookie then it is safe to "crop" the outer chocolate cookies and
+    eat just the frosting because there is still enough sugar content
+    in that yummy cream filling.  If, however, the frosting is so thin
+    that it is less than 10% the thickness of the cookie, then return
+    the original cookie w/out cropping the crispy chocolate outside.
+    Go ahead and return it directly to wherever you bought it and get
+    some Chips Ahoy instead.
+
     Args:
         image: The image from which to remove letterboxing.
 
@@ -691,15 +715,16 @@ def unletterbox(image) -> typing.Optional[
         A pair of coordinates bounds of the form (x1, x2)
         and (y1, y2) representing the left, right, top, and
         bottom bounds.
+
     """
     adj = image.mean(axis=2) > 2
     if adj.all():
         bounds = (0, image.shape[1] + 1), (0, image.shape[0])
     else:
-        y = np.where(adj.sum(axis=1) > 0.1 * image.shape[0])[0]
-        x = np.where(adj.sum(axis=0) > 0.1 * image.shape[1])[0]
+        y = np.where(adj.sum(axis=1) > 0.1 * image.shape[1])[0]
+        x = np.where(adj.sum(axis=0) > 0.1 * image.shape[0])[0]
         if len(y) <= 1 or len(x) <= 1:
-            return None
+            return None  # image is mostly blank
         x1, x2 = x[[0, -1]]
         y1, y2 = y[[0, -1]]
         bounds = (x1, x2 + 1), (y1, y2 + 1)
