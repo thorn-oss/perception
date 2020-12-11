@@ -168,14 +168,10 @@ def test_unletterbox_aspect_ratio():
     base = int(4.5 * h)  # 2 * base + h = 100%
     h_fail, h_pass = base + 10, base - 10
 
-    padded = np.r_[np.zeros((h_fail, w, 3)),
-                   image,
-                   np.zeros((h_fail, w, 3))]
+    padded = np.r_[np.zeros((h_fail, w, 3)), image, np.zeros((h_fail, w, 3))]
     assert None is hashers.tools.unletterbox(padded)
 
-    padded = np.r_[np.zeros((h_pass, w, 3)),
-                   image,
-                   np.zeros((h_pass, w, 3))]
+    padded = np.r_[np.zeros((h_pass, w, 3)), image, np.zeros((h_pass, w, 3))]
     (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded)
 
     assert y1 == h_pass
