@@ -30,6 +30,8 @@ documentation-server:
 test:
 	pipenv run pytest $(TEST_SCOPE)
 lint_check:
+	pipenv run pylint perception --rcfile=setup.cfg
+lint_check_parallel:
 	pipenv run pylint -j 0 perception --rcfile=setup.cfg
 type_check:
 	pipenv run mypy perception

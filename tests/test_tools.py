@@ -158,6 +158,28 @@ def test_unletterbox():
     assert x2 == 25 + image.shape[1]
 
 
+def test_unletterbox_aspect_ratio():
+    """Test the value of .1 in unletterbox()."""
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    h, w, z = image.shape
+
+    # make tall skinny images with non-trivial content just below and
+    # above 10% threshold
+    base = int(4.5 * h)  # 2 * base + h = 100%
+    h_fail, h_pass = base + 10, base - 10
+
+    padded = np.r_[np.zeros((h_fail, w, 3)), image, np.zeros((h_fail, w, 3))]
+    assert None is hashers.tools.unletterbox(padded)
+
+    padded = np.r_[np.zeros((h_pass, w, 3)), image, np.zeros((h_pass, w, 3))]
+    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded)
+
+    assert y1 == h_pass
+    assert y2 == h_pass + image.shape[0]
+    assert x1 == 0
+    assert x2 == image.shape[1]
+
+
 def test_unletterbox_noblackbars():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     (x1, x2), (y1, y2) = hashers.tools.unletterbox(image)

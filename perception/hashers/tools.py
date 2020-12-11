@@ -681,8 +681,42 @@ def compute_synchronized_video_hashes(filepath: str,
 
 def unletterbox(image) -> typing.Optional[
         typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
-    """Obtain bounds on an image that remove the black bars
-    on the top, right, bottom, and left side of an image.
+    """Return bounds of non-trivial region of image or None.
+
+    Unletterboxing is cropping an image such that trivial edge regions
+    are removed. Trivial in this context means that the majority of
+    the values in that row or column are zero or very close to
+    zero. This is why we don't use the terms "non-blank" or
+    "non-empty."
+
+    In order to do unletterboxing, this function returns bounds in the
+    form (x1, x2), (y1, y2) where:
+
+    - x1 is the index of the first column where over 10% of the pixels
+      have means (average of R, G, B) > 2.
+    - x2 is the index of the last column where over 10% of the pixels
+      have means > 2.
+    - y1 is the index of the first row where over 10% of the pixels
+      have means > 2.
+    - y2 is the index of the last row where over 10% of the pixels
+      have means > 2.
+
+    If there are zero columns or zero rows where over 10% of the
+    pixels have means > 2, this function returns `None`.
+
+    Note that in the case(s) of a single column and/or row of
+    non-trivial pixels that it is possible for x1 = x2 and/or y1 = y2.
+
+    Consider these examples to understand edge cases.  Given two
+    images, `L` (entire left and bottom edges are 1, all other pixels
+    0) and `U` (left, bottom and right edges 1, all other pixels 0),
+    `unletterbox(L)` would return the bounds of the single bottom-left
+    pixel and `unletterbox(U)` would return the bounds of the entire
+    bottom row.
+
+    Consider `U1` which is the same as `U` but with the bottom two
+    rows all 1s. `unletterbox(U1)` returns the bounds of the bottom
+    two rows.
 
     Args:
         image: The image from which to remove letterboxing.
@@ -691,16 +725,29 @@ def unletterbox(image) -> typing.Optional[
         A pair of coordinates bounds of the form (x1, x2)
         and (y1, y2) representing the left, right, top, and
         bottom bounds.
+
     """
+    # adj should be thought of as a boolean at each pixel indicating
+    # whether or not that pixel is non-trivial (True) or not (False).
     adj = image.mean(axis=2) > 2
+
     if adj.all():
-        bounds = (0, image.shape[1] + 1), (0, image.shape[0])
+        return (0, image.shape[1] + 1), (0, image.shape[0] + 1)
+
+    y = np.where(adj.sum(axis=1) > 0.1 * image.shape[1])[0]
+    x = np.where(adj.sum(axis=0) > 0.1 * image.shape[0])[0]
+
+    if len(y) == 0 or len(x) == 0:
+        return None
+
+    if len(y) == 1:
+        y1 = y2 = y[0]
     else:
-        y = np.where(adj.sum(axis=1) > 0.1 * image.shape[0])[0]
-        x = np.where(adj.sum(axis=0) > 0.1 * image.shape[1])[0]
-        if len(y) <= 1 or len(x) <= 1:
-            return None
-        x1, x2 = x[[0, -1]]
         y1, y2 = y[[0, -1]]
-        bounds = (x1, x2 + 1), (y1, y2 + 1)
+    if len(x) == 1:
+        x1 = x2 = x[0]
+    else:
+        x1, x2 = x[[0, -1]]
+    bounds = (x1, x2 + 1), (y1, y2 + 1)
+
     return bounds
