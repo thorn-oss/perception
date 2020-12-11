@@ -736,7 +736,7 @@ def unletterbox(image) -> typing.Optional[
 
     y = np.where(adj.sum(axis=1) > 0.1 * image.shape[1])[0]
     x = np.where(adj.sum(axis=0) > 0.1 * image.shape[0])[0]
-    
+
     if len(y) == 0 or len(x) == 0:
         return None
 
