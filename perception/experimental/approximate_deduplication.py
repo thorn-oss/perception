@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name,too-many-locals
+# pylint: disable=invalid-name
 
 import math
 import typing
@@ -40,7 +40,7 @@ def build_index(X: np.ndarray,
     d = X.shape[1]
     if approximate:
         ntotal = X.shape[0]
-        nlist = int(min(4 * np.sqrt(ntotal), ntotal / 39))
+        nlist = int(max(min(4 * np.sqrt(ntotal), ntotal / 39), 1))
         quantizer = faiss.IndexFlatL2(d)
         index = faiss.IndexIVFFlat(quantizer, d, nlist)
         gpu = False
@@ -64,6 +64,7 @@ def build_index(X: np.ndarray,
     return index
 
 
+# pylint: disable=too-many-locals
 def compute_euclidean_pairwise_duplicates_approx(X,
                                                  counts,
                                                  threshold,
@@ -126,31 +127,67 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     return list(set(pairs))
 
 
-def pairs_to_clusters(ids: typing.List[str],
-                      pairs: typing.List[typing.Tuple[str, str]]
-                      ) -> typing.List[ClusterAssignment]:
+def pairs_to_clusters(
+        ids: typing.List[str],
+        pairs: typing.List[typing.Tuple[str, str]],
+        strictness: typing_extensions.
+        Literal["clique", "community", "component"],
+        max_clique_batch_size: int = 1000) -> typing.List[ClusterAssignment]:
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
-
     Args:
         ids: A list of file identifiers (e.g., filepaths).
         pairs: A list of pairs of file identifiers.
-
+        strictness: The level at which groups will be clustered. "component"
+            means that all clusters will be connected components. "community"
+            will select clusters of files within components that are clustered
+            together. "clique" will result in clusters where every file is
+            connected to every other file.
+        max_clique_batch_size: The maximum batch size for identifying
+            cliques.
     Returns:
         A list of cluster assignments (dicts with id and cluster
         entries).
     """
+    assert strictness in ["component", "community",
+                          "clique"], "Invalid strictness."
     graph = nx.Graph()
+    LOGGER.debug("Building graph.")
     graph.add_nodes_from(ids)
     graph.add_edges_from(pairs)
     assignments: typing.List[ClusterAssignment] = []
     cluster_index = 0
-    for nodes in nx.connected_components(graph):
-        subgraph = graph.subgraph(nodes).copy()
-        while subgraph:
-            clique = approximation.clique.max_clique(subgraph)
-            for entry in clique:
-                assignments.append({"id": entry, "cluster": cluster_index})
-            subgraph.remove_nodes_from(clique)
+    for component in nx.connected_components(graph):
+        LOGGER.debug("Got component with size: %s", len(component))
+        if strictness == "component":
+            assignments.extend([{
+                "id": n,
+                "cluster": cluster_index
+            } for n in component])
             cluster_index += 1
+            continue
+        for community in nx.algorithms.community.asyn_lpa_communities(
+                graph.subgraph(component)):
+            LOGGER.debug("Got community with size: %s", len(community))
+            if strictness == "community":
+                assignments.extend([{
+                    "id": n,
+                    "cluster": cluster_index
+                } for n in community])
+                cluster_index += 1
+                continue
+            community = list(community)  # Need to do this to do batching.
+            for start in range(0, len(community), max_clique_batch_size):
+                nodes = community[start:start + max_clique_batch_size]
+                LOGGER.debug("Creating subgraph with %s nodes.", len(nodes))
+                subgraph = graph.subgraph(nodes).copy()
+                while subgraph:
+                    LOGGER.debug("Subgraph size: %s", len(subgraph))
+                    clique = approximation.clique.max_clique(subgraph)
+                    assignments.extend([{
+                        "id": n,
+                        "cluster": cluster_index
+                    } for n in clique])
+                    cluster_index += 1
+                    subgraph.remove_nodes_from(clique)
     return assignments
