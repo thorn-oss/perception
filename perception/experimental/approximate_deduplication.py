@@ -131,7 +131,7 @@ def pairs_to_clusters(
         ids: typing.List[str],
         pairs: typing.List[typing.Tuple[str, str]],
         strictness: typing_extensions.
-        Literal["clique", "community", "component"],
+        Literal["clique", "community", "component"] = "clique",
         max_clique_batch_size: int = 1000) -> typing.List[ClusterAssignment]:
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
