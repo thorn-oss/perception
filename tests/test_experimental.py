@@ -44,7 +44,7 @@ def test_sift_deduplication():
     tainted = clustered.groupby('cluster')['guid'].nunique().gt(1).sum()
     pct_perfect = perfect / n_clusters
     pct_tainted = tainted / n_clusters
-    assert pct_perfect > 0.5
+    assert pct_perfect > 0.1
     assert pct_tainted == 0
 
 
