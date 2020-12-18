@@ -128,8 +128,8 @@ def compute_euclidean_pairwise_duplicates_approx(X,
 
 
 def pairs_to_clusters(
-        ids: typing.List[str],
-        pairs: typing.List[typing.Tuple[str, str]],
+        ids: typing.Iterable[str],
+        pairs: typing.Iterable[typing.Tuple[str, str]],
         strictness: typing_extensions.
         Literal["clique", "community", "component"] = "clique",
         max_clique_batch_size: int = 1000) -> typing.List[ClusterAssignment]:

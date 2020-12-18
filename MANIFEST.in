@@ -5,4 +5,5 @@ include perception/testing/videos/*
 include perception/testing/logos/*
 include perception/**/*.pyx
 include perception/*.pyx
+include perception/py.typed
 exclude tests/*

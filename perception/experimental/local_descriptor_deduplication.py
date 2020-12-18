@@ -87,7 +87,7 @@ def generate_image_descriptors(
     return keypoints, descriptors, (image.shape[1], image.shape[0])
 
 
-def build_reference_df(filepaths: typing.List[str],
+def build_reference_df(filepaths: typing.Iterable[str],
                        max_features=DEFAULT_MAX_FEATURES,
                        min_features=DEFAULT_MIN_FEATURES,
                        max_size=DEFAULT_MAX_SIZE) -> pd.DataFrame:
@@ -311,7 +311,7 @@ def validate_match(kp1: np.ndarray,
 
 
 def deduplicate(
-        filepaths: typing.List[str],
+        filepaths: typing.Iterable[str],
         max_features: int = DEFAULT_MAX_FEATURES,
         min_features: int = DEFAULT_MIN_FEATURES,
         max_size: int = DEFAULT_MAX_SIZE,
