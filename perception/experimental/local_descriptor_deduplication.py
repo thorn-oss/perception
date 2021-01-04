@@ -1,9 +1,11 @@
 # pylint: disable=no-member,invalid-name,too-many-locals,too-many-arguments,too-many-return-statements
 import typing
 import logging
+import concurrent.futures
 
 import numpy as np
 import pandas as pd
+import tqdm
 import cv2
 
 import perception.hashers.tools as pht
@@ -321,7 +323,8 @@ def deduplicate(
         minimum_validation_match: float = DEFAULT_MATCH_PCT,
         minimum_validation_intersection: float = DEFAULT_INTERSECTION,
         minimum_validation_inliers: int = DEFAULT_INLIERS,
-        ratio: float = DEFAULT_RATIO) -> typing.List[typing.Tuple[str, str]]:
+        ratio: float = DEFAULT_RATIO,
+        max_workers: int = None) -> typing.List[typing.Tuple[str, str]]:
     """Deduplicate images by doing the following:
 
     #. Unletterbox all images and resize to some maximum size, preserving
@@ -350,6 +353,8 @@ def deduplicate(
         minimum_validation_inliers: The minimum number of inliers for the transformation
             matrix.
         ratio: The ratio to use for Lowe's ratio test.
+        max_workers: The maximum number of threads to use for doing the final validation
+            step.
 
     Returns:
         A list of pairs of file duplicates.
@@ -365,18 +370,26 @@ def deduplicate(
         threshold=coarse_threshold,
         minimum_overlap=minimum_coarse_overlap)
     keep = []
-    for candidate in candidates:
-        fA, fB = map(lambda p: reference_df.loc[p], candidate)
-        if validate_match(
-                des1=fA['descriptors'],
-                kp1=fA['keypoints'],
-                des2=fB['descriptors'],
-                kp2=fB['keypoints'],
-                dims1=fA['dimensions'],
-                dims2=fB['dimensions'],
-                minimum_match=minimum_validation_match,
-                minimum_inliers=minimum_validation_inliers,
-                minimum_intersection=minimum_validation_intersection,
-                ratio=ratio):
-            keep.append(candidate)
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers) as executor:
+        batch_size = 10_000
+        for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
+            futures = {
+                executor.submit(
+                    validate_match,
+                    des1=reference_df.loc[c1]['descriptors'],
+                    kp1=reference_df.loc[c1]['keypoints'],
+                    des2=reference_df.loc[c2]['descriptors'],
+                    kp2=reference_df.loc[c2]['keypoints'],
+                    dims1=reference_df.loc[c1]['dimensions'],
+                    dims2=reference_df.loc[c2]['dimensions'],
+                    minimum_match=minimum_validation_match,
+                    minimum_inliers=minimum_validation_inliers,
+                    minimum_intersection=minimum_validation_intersection,
+                    ratio=ratio): (c1, c2)
+                for c1, c2 in candidates[start:start + batch_size]
+            }
+            for future in concurrent.futures.as_completed(futures):
+                if future.result():
+                    keep.append(futures[future])
     return keep
