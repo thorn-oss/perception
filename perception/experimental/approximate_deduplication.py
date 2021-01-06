@@ -118,11 +118,11 @@ def compute_euclidean_pairwise_duplicates_approx(X,
                 match_in_query[match].add(match_idx)
                 query_in_match[match].add(query_idx)
         for match in matched:
-            overlaps = [
+            overlap = min([
                 len(query_in_match[match]) / length,
                 len(match_in_query[match]) / counts[match]
-            ]
-            if min(overlaps) > minimum_overlap:
+            ])
+            if overlap >= minimum_overlap and overlap > 0:
                 pairs.append(tuple(sorted([query, match])))
     return list(set(pairs))
 

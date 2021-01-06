@@ -250,7 +250,7 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
                     if overlap[0] + counts[i_1] - i_1_sub < overlap[2]:
                         break
                     # Stop early if we've already reached the minimum overlap
-                    if overlap[0] > overlap[2] and overlap[1] > overlap[3]:
+                    if overlap[0] >= overlap[2] and overlap[1] >= overlap[3] and overlap[0] > 0 and overlap[1] > 0:
                         break
 
                     # Iterate over all the hashes in file2
@@ -276,7 +276,7 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
                                 overlap[1] += 1
                             matched_1[i_1_sub] = 1
                             matched_2[i_2_sub] = 1
-                if overlap[0] > overlap[2] and overlap[1] > overlap[3]:
+                if overlap[0] >= overlap[2] and overlap[1] >= overlap[3] and overlap[0] > 0 and overlap[1] > 0:
                     duplicate[local_buf[1]] = 1
                 local_buf[1] += 1
         free(matched_1)
