@@ -40,3 +40,22 @@ jobs:
               with:
                 name: wheels
                 path: dist/*manylinux1_x86_64.whl
+    publish:
+        needs: build
+        runs-on: ubuntu-latest
+        if: ${{ github.repository_owner == 'wearethorn' }}
+        env:
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.7'
+        - name: Download wheels
+          uses: actions/download-artifact@v2
+          with:
+            name: wheels
+            path: dist
+        - name: Publish package
+          run: make publish
