@@ -51,3 +51,6 @@ precommit:
 precommit_docker:
 	make build
 	$(IN_DOCKER) $(IMAGE_NAME) make precommit
+publish:
+	pip install twine
+	twine upload dist/*

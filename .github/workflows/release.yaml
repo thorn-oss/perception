@@ -5,19 +5,19 @@ on:
         - v*
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v2
-        - name: Run precommit
-          run: make precommit_docker
+    # test:
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #     - uses: actions/checkout@v2
+    #     - name: Run precommit
+    #       run: make precommit_docker
     build:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
               os: [ubuntu-latest, windows-latest, macos-latest]
         name: Build for ${{ matrix.os }}
-        needs: test
+        # needs: test
         steps:
             - uses: actions/checkout@v2
             - run: git fetch --prune --unshallow
@@ -40,3 +40,24 @@ jobs:
               with:
                 name: wheels
                 path: dist/*manylinux1_x86_64.whl
+    publish:
+        needs: build
+        runs-on: ubuntu-latest
+        if: ${{ github.repository_owner == 'wearethorn' }}
+        env:
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.7'
+        - name: Download wheels
+          uses: actions/download-artifact@v2
+          with:
+            name: wheels
+            path: dist
+        - name: Setup tmate session
+          uses: mxschmitt/action-tmate@v3
+        - name: Run precommit
+          run: make publish
