@@ -293,8 +293,8 @@ class VideoHasher(Hasher):
     @abstractmethod
     def process_frame(self,
                       frame: np.ndarray,
-                      frame_index: int,
-                      frame_timestamp: float,
+                      frame_index: typing.Optional[int],
+                      frame_timestamp: typing.Optional[float],
                       state: dict = None) -> dict:
         """Called for each frame in the video. For all
         but the first frame, a state is provided recording the state from

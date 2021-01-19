@@ -3,11 +3,14 @@ import os
 import io
 import math
 import json
+import shlex
 import queue
 import base64
 import typing
 import hashlib
 import warnings
+import logging
+import fractions
 import threading
 import functools
 import itertools
@@ -25,9 +28,37 @@ try:
 except ImportError:  # pragma: no cover
     PIL = None
 
+LOGGER = logging.getLogger(__name__)
+
 ImageInputType = typing.Union[str, np.ndarray, 'PIL.Image.Image', io.BytesIO]
 
 SIZES = {'float32': 32, 'uint8': 8, 'bool': 1}
+
+# Map codec names to the CUDA-accelerated version. Obtain
+# from ffmpeg -codecs after building using CUDA.
+CUDA_CODECS = {
+    "h264": "h264_cuvid",
+    "hevc": "hevc_cuvid",
+    "mjpeg": "mjpeg_cuvid",
+    "mpeg1video": "mpeg1_cuvid",
+    "mpeg2video": "mpeg2_cuvid",
+    "mpeg4": "mpeg4_cuvid",
+    "vc1": "vc1_cuvid",
+    "vp8": "vp8_cuvid",
+    "vp9": "vp9_cuvid",
+}
+
+FramesWithIndexesAndTimestamps = typing.Generator[
+    typing.Tuple[np.ndarray, typing.Optional[int], typing.
+                 Optional[float]], None, None]
+
+
+def get_ffprobe():
+    return os.environ.get("PERCEPTION_FFPROBE_BINARY", "ffprobe")
+
+
+def get_ffmpeg():
+    return os.environ.get("PERCEPTION_FFMPEG_BINARY", "ffmpeg")
 
 
 # pylint: disable=invalid-name
@@ -347,31 +378,6 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
-def _get_frame_types(filepath):
-    """Get the frame types for the frames in a video.
-
-    Args:
-        filepath: Path to the target file
-
-    Returns:
-        A list of dictionaries with pict_type
-        (values are 'I', 'P', or 'B') and
-        coded_picture_number (which represents the
-        frame).
-    """
-    args = [
-        'ffprobe', '-select_streams', 'v', '-i', filepath, '-print_format',
-        'json', '-show_entries', 'frame=pict_type,coded_picture_number'
-    ]
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    if p.returncode != 0:
-        raise ValueError("{out}: {err}".format(out=str(out), err=str(err)))
-    frames = json.loads(out.decode('utf-8'))['frames']
-    frames.sort(key=lambda f: f['coded_picture_number'])
-    return frames
-
-
 def _get_keyframes(filepath):
     """Get the keyframes for a video.
 
@@ -382,18 +388,218 @@ def _get_keyframes(filepath):
         A list of frame indexes.
     """
     args = [
-        'ffprobe', '-select_streams', 'v', '-i', filepath, '-print_format',
-        'json', '-show_entries', 'frame=pict_type,coded_picture_number'
+        get_ffprobe(), '-select_streams', 'v', '-i', f"'{filepath}'",
+        '-print_format', 'json', '-show_entries',
+        'frame=pict_type,coded_picture_number'
     ]
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    if p.returncode != 0:
-        raise ValueError("{out}: {err}".format(out=str(out), err=str(err)))
-    data = json.loads(out.decode('utf-8'))['frames']
-    frames = [f['coded_picture_number'] for f in data if f['pict_type'] == 'I']
-    frames = list(set(frames))
-    frames.sort()
+    with subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
+        out, err = p.communicate()
+        if p.returncode != 0:
+            raise ValueError("{out}: {err}".format(out=str(out), err=str(err)))
+        data = json.loads(out.decode('utf-8'))['frames']
+        frames = [
+            f['coded_picture_number'] for f in data if f['pict_type'] == 'I'
+        ]
+        frames = list(set(frames))
+        frames.sort()
     return frames
+
+
+def get_video_properties(filepath):
+    cmd = f"""
+    {get_ffprobe()} -select_streams v:0 -i '{filepath}'
+    -print_format json -show_entries stream=width,height,avg_frame_rate,codec_name,start_time
+    """
+    with subprocess.Popen(
+            shlex.split(cmd), stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE) as p:
+        out, err = p.communicate()
+        if p.returncode != 0:
+            raise ValueError("{out}: {err}".format(out=str(out), err=str(err)))
+        data = json.loads(out.decode("utf-8"))["streams"][0]
+        numerator, denominator = tuple(
+            map(int, data["avg_frame_rate"].split("/")[:2]))
+        avg_frame_rate: typing.Optional[fractions.Fraction]
+        if numerator > 0 and denominator > 0:
+            avg_frame_rate = fractions.Fraction(
+                numerator=numerator, denominator=denominator)
+        else:
+            avg_frame_rate = None
+        return data["width"], data["height"], avg_frame_rate, data[
+            "codec_name"], float(data["start_time"])
+
+
+# pylint: disable=too-many-branches,too-many-statements,too-many-arguments
+def read_video_to_generator_ffmpeg(
+        filepath,
+        frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+        errors="raise",
+        max_duration: float = None,
+        max_size: int = None,
+        interp: str = None,
+        frame_rounding: str = "up",
+        draw_timestamps=False,
+        use_cuda=False) -> FramesWithIndexesAndTimestamps:
+    """This is used by :code:`read_video` when :code:`use_ffmpeg` is True. It
+    differs from :code:`read_video_to_generator` in that it uses FFMPEG instead of
+    OpenCV and, optionally, allows for CUDA acceleration. CUDA acceleration
+    can be faster for larger videos (>1080p) where downsampling is desired.
+    For other videos, CUDA may be slower, but the decoding load will still be
+    taken off the CPU, which may still be advantageous. You can specify which
+    FFMPEG binary to use by setting PERCEPTION_FFMPEG_BINARY.
+
+    Args:
+        filepath: See read_video
+        frames_per_second: See read_video
+        errors: See read_video
+        max_duration: See read_video
+        max_size: See read_video
+        interp: The interpolation method to use. When not using CUDA, you must choose one
+            of the `interpolation options <https://ffmpeg.org/ffmpeg-scaler.html#sws_005fflags>`_
+            (default: area). When using CUDA, you must choose from the
+            `interp_algo options <http://underpop.online.fr/f/ffmpeg/help/scale_005fnpp.htm.gz>`_
+            (default: super).
+        frame_rounding: The frame rounding method.
+        draw_timestamps: Draw original timestamps onto the frames (for debugging only)
+        use_cuda: Whether to enable CUDA acceleration. Requires a
+            CUDA-accelerated version of ffmpeg.
+
+    To build FFMPEG with CUDA, do the following in a Docker
+    container based on nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04. The
+    FFMPEG binary will be ffmpeg/ffmpeg.
+
+    .. code-block:: bash
+
+        git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
+        cd nv-codec-headers
+        sudo make install
+        cd ..
+        git clone --branch release/4.3 https://git.ffmpeg.org/ffmpeg.git
+        cd ffmpeg
+        sudo apt-get update && sudo apt-get -y install yasm
+        export PATH=$PATH:/usr/local/cuda/bin
+        ./configure --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-nvdec \
+                    --enable-libnpp --enable-nonfree --extra-cflags=-I/usr/local/cuda/include \
+                    --extra-ldflags=-L/usr/local/cuda/lib64
+        make -j 10
+
+    Returns:
+        See :code:`read_video`
+    """
+    if interp is None:
+        interp = "super" if use_cuda else "area"
+    try:
+        raw_width, raw_height, avg_frame_rate, codec_name, start_time = get_video_properties(
+            filepath)
+        start_time_offset = 0.0 if avg_frame_rate is None else float(
+            (1 / (2 * avg_frame_rate)))
+        LOGGER.debug(
+            "raw_width: %s, raw_height: %s, avg_frame_rate: %s, codec_name: %s, start_time: %s",
+            raw_width, raw_height, avg_frame_rate, codec_name, start_time)
+        channels = 3
+        scale = (min(max_size / raw_width, max_size / raw_height, 1)
+                 if max_size is not None else 1)
+        width, height = map(lambda d: int(round(scale * d)),
+                            [raw_width, raw_height])
+        # If there is no average frame rate, the offset tends to be unreliable.
+        offset = max(start_time,
+                     start_time_offset) if avg_frame_rate is not None else 0
+        cmd = (f"{get_ffmpeg()} -hide_banner -an -vsync 0 -loglevel fatal "
+               f"-itsoffset -{offset}")
+        filters = []
+        if draw_timestamps:
+            pattern = "%{pts}-%{frame_num}"
+            filters.append(f"drawtext=fontsize={int(raw_height * 0.1)}:"
+                           f"fontcolor=yellow:text={pattern}"
+                           ":x=(w-text_w):y=(h-text_h)")
+        # Add frame rate filters.
+        if frames_per_second is None:
+            seconds_per_frame = float(
+                1 / avg_frame_rate) if avg_frame_rate is not None else None
+        elif frames_per_second == "keyframes":
+            seconds_per_frame = None
+            filters.append(r"select=eq(pict_type\,I)")
+        else:
+            assert isinstance(
+                frames_per_second,
+                (float, int)), f"Invalid framerate: {frames_per_second}"
+            seconds_per_frame = 1 / frames_per_second
+            filters.append(f"fps={frames_per_second}:"
+                           f"round={frame_rounding}:"
+                           f"start_time={offset}")
+        # Add resizing filters.
+        if use_cuda and codec_name in CUDA_CODECS:
+            cuda_codec = CUDA_CODECS[codec_name]
+            cmd += f" -hwaccel cuda -c:v {cuda_codec}"
+            filters.append("hwupload_cuda")
+            if scale != 1:
+                filters.append(
+                    f"scale_npp={width}:{height}:interp_algo={interp}")
+            filters.extend([
+                "hwdownload",
+                "format=nv12",
+            ])
+        elif scale != 1:
+            filters.append(f"scale={width}:{height}:flags={interp}")
+        cmd += f" -i '{filepath}'"
+        if filters:
+            cmd += " -vf '{fstring}'".format(fstring=",".join(filters))
+        cmd += " -pix_fmt rgb24 -f image2pipe -vcodec rawvideo -"
+        LOGGER.debug("running ffmpeg with: %s", cmd)
+        framebytes = width * height * channels
+        bufsize = framebytes * int(
+            os.environ.get("PERCEPTION_FFMPEG_BUFSIZE", "5"))
+        with subprocess.Popen(
+                shlex.split(cmd),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=bufsize) as p:
+            assert p.stdout is not None, "Could not launch subprocess pipe."
+            timestamp: typing.Optional[float] = 0
+            frame_index: typing.Optional[int] = 0
+            while True:
+                batch = p.stdout.read(bufsize)
+                if not batch:
+                    break
+                for image in np.frombuffer(
+                        batch, dtype="uint8").reshape((-1, height, width,
+                                                       channels)):
+                    if frames_per_second != "keyframes":
+                        yield (image, frame_index, timestamp)
+                        if seconds_per_frame is not None:
+                            assert timestamp is not None
+                            timestamp += seconds_per_frame
+                            frame_index = math.ceil(
+                                avg_frame_rate * timestamp
+                            ) if avg_frame_rate is not None else None
+                        else:
+                            timestamp = None
+                            frame_index = None
+                    else:
+                        # Obtaining the keyframe indexes with ffprobe is very slow (slower
+                        # than reading the video sometimes). We don't *have* to do it
+                        # when using ffmpeg, so we don't. The OpenCV approach *does*
+                        # get the keyframe indexes, but only because they're required
+                        # in order to select them.
+                        yield (image, None, None)
+                    if (max_duration is not None and timestamp is not None
+                            and timestamp > max_duration):
+                        break
+            stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                raise ValueError(
+                    f"Error parsing video: {stdout.decode('utf-8')} {stderr.decode('utf-8')}"
+                )
+    # pylint: disable=broad-except
+    except Exception as e:
+        if errors not in ["warn", "ignore"]:
+            raise e
+        if errors == "warn":
+            warnings.warn(
+                message=
+                f"An error occurred while reading {filepath}. Processing may be truncated."
+            )
 
 
 # pylint: disable=too-many-branches,too-many-locals,too-many-statements
@@ -402,7 +608,19 @@ def read_video_to_generator(
         frames_per_second: typing.Optional[typing.Union[str, float]] = None,
         errors='raise',
         max_duration: float = None,
-        max_size: int = None):
+        max_size: int = None) -> FramesWithIndexesAndTimestamps:
+    """This is used by :code:`read_video` when :code:`use_ffmpeg` is False (default).
+
+    Args:
+        filepath: See :code:`read_video`.
+        frames_per_second: See :code:`read_video`.
+        errors: See :code:`read_video`.
+        max_duration: See :code:`read_video`.
+        max_size: See :code:`read_video`.
+
+    Returns:
+        See :code:`read_video`.
+    """
     # pylint: disable=no-member
     if cv2.__version__ < '4.1.1' and filepath.lower().endswith('gif'):
         message = 'Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended.'
@@ -503,11 +721,10 @@ def read_video_to_generator(
         cap.release()
 
 
-def read_video_into_queue(*args, video_queue, terminate, **kwargs):
+def read_video_into_queue(*args, video_queue, terminate, func, **kwargs):
     # We're inside a thread now and the queue is being read elsewhere.
     try:
-        for frame, frame_index, timestamp in read_video_to_generator(
-                *args, **kwargs):
+        for frame, frame_index, timestamp in func(*args, **kwargs):
             if not terminate.isSet():
                 video_queue.put((frame, frame_index, timestamp))
             else:
@@ -523,7 +740,8 @@ def read_video(
         max_queue_size=128,
         use_queue=True,
         errors='raise',
-        **kwargs):
+        use_ffmpeg=False,
+        **kwargs) -> FramesWithIndexesAndTimestamps:
     """Provides a generator of RGB frames, frame indexes, and timestamps from a
     video. This function requires you to have installed ffmpeg. All other
     arguments passed to read_video_to_generator.
@@ -539,10 +757,28 @@ def read_video(
         max_duration: The maximum length of the video to hash.
         max_size: The maximum size of frames to queue
         errors: Whether to 'raise', 'warn', or 'ignore' errors
+        use_ffmpeg: Whether to use the FFMPEG CLI to read videos. If True, other
+            kwargs (e.g., :code:`use_cuda`) are passed to
+            :code:`read_video_to_generator_ffmpeg`.
 
     Yields:
         (frame, frame_index, timestamp) tuples
     """
+    for ffmpeg_kwarg in [
+            "interp", "frame_rounding", "draw_timestamps", "use_cuda"
+    ]:
+        if not use_ffmpeg and ffmpeg_kwarg in kwargs:
+            warnings.warn(
+                f"{ffmpeg_kwarg} is ignored when use_ffmpeg is False.",
+                UserWarning)
+            del kwargs[ffmpeg_kwarg]
+    generator: typing.Callable[..., FramesWithIndexesAndTimestamps]
+    if use_ffmpeg:
+        generator = read_video_to_generator_ffmpeg
+    else:
+        generator = read_video_to_generator
+    frame_index: typing.Optional[int]
+    timestamp: typing.Optional[float]
     if use_queue:
         video_queue = queue.Queue(
             maxsize=max_queue_size
@@ -552,6 +788,7 @@ def read_video(
             target=read_video_into_queue,
             kwargs={
                 'frames_per_second': frames_per_second,
+                'func': generator,
                 'video_queue': video_queue,
                 'filepath': filepath,
                 'errors': errors,
@@ -586,7 +823,7 @@ def read_video(
             # Wait for the background thread to terminate.
             thread.join()
     else:
-        for frame, frame_index, timestamp in read_video_to_generator(
+        for frame, frame_index, timestamp in generator(
                 filepath=filepath,
                 frames_per_second=frames_per_second,
                 errors=errors,

@@ -187,3 +187,24 @@ def test_unletterbox_noblackbars():
     assert y1 == 0
     assert x2 == image.shape[1]
     assert y2 == image.shape[0]
+
+
+def test_ffmpeg_video():
+    """Check that the FFMPEG video parsing code provides substantially similar
+    results to the OpenCV approach (which also uses FFMPEG under the hood but
+    also has different frame selection logic)."""
+    frames_per_second = 2.3
+    for filepath in testing.DEFAULT_TEST_VIDEOS:
+        filename = os.path.basename(filepath)
+        for (frame1, index1, timestamp1), (frame2, index2, timestamp2) in zip(
+                hashers.tools.read_video_to_generator_ffmpeg(
+                    filepath, frames_per_second=frames_per_second),
+                hashers.tools.read_video_to_generator(
+                    filepath, frames_per_second=frames_per_second)):
+            diff = np.abs(frame1.astype("int32") -
+                          frame2.astype("int32")).flatten()
+            assert index1 == index2, f"Index mismatch for {filename}"
+            np.testing.assert_allclose(
+                timestamp1, timestamp2), f"Timestamp mismatch for {filename}"
+            assert np.percentile(diff,
+                                 75) < 25, f"Frame mismatch for {filename}"
