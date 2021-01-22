@@ -427,7 +427,7 @@ def get_video_properties(filepath):
         else:
             avg_frame_rate = None
         return data["width"], data["height"], avg_frame_rate, data[
-            "codec_name"], float(data["start_time"])
+            "codec_name"], float(data.get("start_time", "0"))
 
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-arguments
