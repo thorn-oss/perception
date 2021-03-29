@@ -35,10 +35,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2.3.3
-      with: 
-        token: ${{ secrets.ACCESS_TOKEN }}
-
+      uses: actions/checkout@v2
 
     ###############################
     # installing the dependencies #
@@ -63,6 +60,7 @@ jobs:
       uses: github/codeql-action/init@v1
       with:
         setup-python-dependencies: false
+        external-repository-token: ${{ secrets.ACCESS_TOKEN }}
         queries: +security-and-quality,octo-org/python-qlpack/show_ifs.ql@main
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
