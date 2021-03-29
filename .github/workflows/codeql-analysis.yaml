@@ -48,9 +48,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pipenv
-        # make build
-        # Set the `CODEQL-PYTHON` environment variable to the Python executable
-        # that includes the dependencies
+        make build
+    
+    - name: Set python path
+      run: |
         echo "CODEQL_PYTHON=/usr/src/.venv/bin/python" >> $GITHUB_ENV
         pipenv run which python
     
