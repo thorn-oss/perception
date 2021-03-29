@@ -40,7 +40,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-         python-version: '3.x'
+         python-version: '3.7'
 
     # Note: if this workflow were combined with an existing GitHub actions workflow, the `make` commands could be skipped
     # and this step could be simplified to setting CODEQL_PYTHON
@@ -53,7 +53,7 @@ jobs:
     - name: Set python path
       run: |
         echo "CODEQL_PYTHON=/usr/src/.venv/bin/python" >> $GITHUB_ENV
-        pipenv run which python
+        echo "CODEQL_PYTHON_IDEALLY=$(pipenv run which python)" >> $GITHUB_ENV
     
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
