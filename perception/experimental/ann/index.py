@@ -246,7 +246,8 @@ class ApproximateNearestNeighbors:
             dtype=self.dtype,
             hash_length=self.hash_length)
 
-    def vector_to_string(self, vector, hash_format='base64') -> str:
+    def vector_to_string(self, vector,
+                         hash_format='base64') -> typing.Optional[str]:
         """Convert a vector back to string
 
         Args:
@@ -331,7 +332,8 @@ class ApproximateNearestNeighbors:
         ids = np.random.choice(
             np.arange(1, self.ntotal + 1), size=n_query, replace=False)
         df = self.query_by_id(ids, include_metadata=False, include_hashes=True)
-        xq = np.uint8([np.frombuffer(v, dtype=self.dtype) for v in df['hash']])
+        xq = np.array([np.frombuffer(v, dtype=self.dtype) for v in df['hash']],
+                      dtype=np.uint8)
 
         noise = np.random.randint(
             low=(-xq.astype('int32')).clip(-max_noise, max_noise),

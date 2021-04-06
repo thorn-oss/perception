@@ -1,3 +1,4 @@
+import numpy as np
 from ..hasher import VideoHasher, ImageHasher
 from .. import tools
 
@@ -27,13 +28,14 @@ class FramewiseHasher(VideoHasher):
 
     # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
-        if self.quality_threshold is not None:
+        if self.quality_threshold is None:
+            current = self.frame_hasher.compute(frame, hash_format='vector')
+        else:
             current, quality = self.frame_hasher.compute_with_quality(
                 frame, hash_format='vector')
             if quality < self.quality_threshold:
                 return state or {'previous': None, 'hashes': []}
-        else:
-            current = self.frame_hasher.compute(frame, hash_format='vector')
+        assert isinstance(current, np.ndarray)  # help type checking below
         if state is None or state['previous'] is None:
             # We keep a separate reference to the previous hash instead of using
             # the last entry in the hashes list because `compute_batches` may

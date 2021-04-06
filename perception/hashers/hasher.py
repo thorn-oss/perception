@@ -57,7 +57,7 @@ class Hasher(ABC):
             hash_format=hash_format)
 
     def vector_to_string(self, vector: np.ndarray,
-                         hash_format: str = 'base64'):
+                         hash_format: str = 'base64') -> typing.Optional[str]:
         """Convert vector to hash string.
 
         Args:
@@ -79,10 +79,10 @@ class Hasher(ABC):
             hash_format: If either or both of the hashes are hash strings,
                 what format the string is encoded in.
         """
-        if isinstance(hash1, str):
-            hash1 = self.string_to_vector(hash1, hash_format=hash_format)
-        if isinstance(hash2, str):
-            hash2 = self.string_to_vector(hash2, hash_format=hash_format)
+        hash1 = (self.string_to_vector(hash1, hash_format=hash_format)
+                 if isinstance(hash1, str) else hash1)  # makes mypy happy
+        hash2 = (self.string_to_vector(hash2, hash_format=hash_format)
+                 if isinstance(hash2, str) else hash2)
 
         if self.distance_metric == 'sqeuclidean':
             return scipy.spatial.distance.sqeuclidean(
@@ -177,7 +177,7 @@ class Hasher(ABC):
 
 class ImageHasher(Hasher):
     @abstractmethod
-    def _compute(self, image: np.ndarray):
+    def _compute(self, image: np.ndarray) -> np.ndarray:
         """Compute hash from an image.
 
         Args:
@@ -237,8 +237,9 @@ class ImageHasher(Hasher):
             for transform_name, vector in hashes.items()
         }
 
-    def compute(self, image: tools.ImageInputType,
-                hash_format='base64') -> typing.Union[str, np.ndarray]:
+    def compute(self, image: tools.ImageInputType, hash_format='base64'
+                ) -> typing.Union[np.ndarray, typing.Optional[str], typing.
+                                  List[typing.Optional[str]]]:
         """Compute a hash from an image.
 
         Args:
@@ -249,16 +250,22 @@ class ImageHasher(Hasher):
             hash_format: One 'base64', 'hex', or 'vector'
         """
         vector = self._compute(tools.to_image_array(image))
-        return self.vector_to_string(
-            vector,
-            hash_format=hash_format) if not self.returns_multiple else [
+        if hash_format == 'vector':
+            # Take care of this separately because we took out `vector`
+            # as valid return type to vector_to_string().
+            # Regardless of self.returns_multiple being True or False?
+            return vector
+        if self.returns_multiple:
+            return [
                 self.vector_to_string(v, hash_format=hash_format)
                 for v in vector
             ]
+        return self.vector_to_string(vector, hash_format=hash_format)
 
-    def compute_with_quality(self,
-                             image: tools.ImageInputType,
-                             hash_format='base64') -> typing.Tuple[str, int]:
+    def compute_with_quality(
+            self, image: tools.ImageInputType, hash_format='base64'
+    ) -> typing.Tuple[typing.Union[np.ndarray, typing.Optional[str], typing.
+                                   List[typing.Optional[str]]], int]:
         """Compute hash and hash quality from image.
 
         Args:
@@ -266,7 +273,7 @@ class ImageHasher(Hasher):
                 or as an np.ndarray object. If it is an np.ndarray object,
                 it must be in RGB color order (note the OpenCV default is
                 BGR).
-            hash_format: One 'base64' or 'hex'
+            hash_format: One 'base64', 'hex', or 'vector'
 
         Returns:
             A tuple of (hash, quality)
@@ -275,13 +282,16 @@ class ImageHasher(Hasher):
             tools.to_image_array(image))
         if hash_format == 'vector':
             return vector, quality
+        if self.returns_multiple:
+            return ([
+                self.vector_to_string(v, hash_format=hash_format)
+                for v in vector
+            ], quality)
         return (self.vector_to_string(vector, hash_format=hash_format),
-                quality) if not self.returns_multiple else ([
-                    self.vector_to_string(v, hash_format=hash_format)
-                    for v in vector
-                ], quality)
+                quality)
 
-    def _compute_with_quality(self, image: np.ndarray):
+    def _compute_with_quality(
+            self, image: np.ndarray) -> typing.Tuple[np.ndarray, int]:
         return self._compute(image), tools.compute_quality(image)
 
 

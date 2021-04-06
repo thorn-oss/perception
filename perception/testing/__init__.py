@@ -136,12 +136,12 @@ def test_image_hasher_integrity(hasher: hashers.ImageHasher,
     assert len(test_images) >= 2, 'You must provide at least two test images.'
     image1 = test_images[0]
     image2 = test_images[1]
-    hash1_1 = hasher.compute(image1)
-    hash1_2 = hasher.compute(Image.open(image1))
-    hash1_3 = hasher.compute(
-        cv2.cvtColor(cv2.imread(image1), cv2.COLOR_BGR2RGB))
+    hash1_1 = str(hasher.compute(image1))  # str() games for mypy, not proud
+    hash1_2 = str(hasher.compute(Image.open(image1)))
+    hash1_3 = str(
+        hasher.compute(cv2.cvtColor(cv2.imread(image1), cv2.COLOR_BGR2RGB)))
 
-    hash2_1 = hasher.compute(image2)
+    hash2_1 = str(hasher.compute(image2))
 
     # There is a small distance because PIL and OpenCV read
     # JPEG images a little differently (e.g., libjpeg-turbo vs. libjpeg)
@@ -153,8 +153,9 @@ def test_image_hasher_integrity(hasher: hashers.ImageHasher,
     assert hasher.vector_to_string(hasher.string_to_vector(hash2_1)) == hash2_1
     assert hasher.vector_to_string(
         hasher.string_to_vector(
-            hasher.vector_to_string(
-                hasher.string_to_vector(hash2_1), hash_format='hex'),
+            str(
+                hasher.vector_to_string(
+                    hasher.string_to_vector(hash2_1), hash_format='hex')),
             hash_format='hex')) == hash2_1
 
     # Ensure parallelization works properly.
@@ -164,7 +165,7 @@ def test_image_hasher_integrity(hasher: hashers.ImageHasher,
     for image in test_images:
         transforms = hashers.tools.get_isometric_transforms(image)
         hashes_exp = {
-            key: hasher.compute(value)
+            key: str(hasher.compute(value))
             for key, value in transforms.items()
         }
         hashes_act = hasher.compute_isometric(transforms['r0'])
@@ -186,11 +187,13 @@ def test_image_hasher_integrity(hasher: hashers.ImageHasher,
         hash_bits / 8)  # Hex uses 16 bits for every 8 bits
     words_hex += 0 if words_hex % 2 == 0 else 1  # Two characters for every one character.
     assert len(
-        hasher.vector_to_string(
-            hasher.string_to_vector(hash2_1), hash_format='hex')) == words_hex
+        str(
+            hasher.vector_to_string(
+                hasher.string_to_vector(hash2_1),
+                hash_format='hex'))) == words_hex
 
     # Verify that low quality images yield zero quality
-    image = np.zeros((100, 100, 3)).astype('uint8')
+    image = np.zeros((100, 100, 3)).astype('uint8')  # type: ignore
     _, quality = hasher.compute_with_quality(image)
     assert quality == 0
 

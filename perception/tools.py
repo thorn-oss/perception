@@ -134,18 +134,18 @@ def deduplicate_hashes(
                     hash_id for hash_id, _ in hashes))).astype('uint32')
             previous_hash_id = None
             counts_idx = 0
-            files = [
+            files_ = [  # make type check happy
             ]  # We're going to re-build the IDs with deduplicated files.
             for hash_id, _ in hashes:
                 if hash_id != previous_hash_id:
-                    files.append(hash_id)
+                    files_.append(hash_id)
                 if previous_hash_id is not None and hash_id != previous_hash_id:
                     counts_idx += 1
                 counts[counts_idx] += 1
                 previous_hash_id = hash_id
-            files = np.array(files)
+            files = np.array(files_)
         else:
-            counts = None
+            counts = None  # type: ignore
         pairs = [
             (files[idx1], files[idx2]) for idx1, idx2 in extensions.
             compute_euclidean_pairwise_duplicates_simple(

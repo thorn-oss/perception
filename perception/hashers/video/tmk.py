@@ -177,7 +177,7 @@ class TMKL1(VideoHasher):
                 'sum': np.zeros(self.frame_hasher.hash_length),
                 'frame_count': 0
             }
-        if not self.quality_threshold:
+        if self.quality_threshold is None:
             hash_vector = self.frame_hasher.compute(
                 frame, hash_format='vector')
         else:
@@ -185,8 +185,9 @@ class TMKL1(VideoHasher):
                 frame, hash_format='vector')
             if quality < self.quality_threshold:
                 return state
+        assert isinstance(hash_vector, np.ndarray)  # help type checking below
         if hash_vector is not None:
-            state['sum'] += np.float32(hash_vector)
+            state['sum'] += hash_vector.astype(np.float32)
             state['frame_count'] += 1
         return state
 
