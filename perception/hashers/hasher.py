@@ -253,8 +253,12 @@ class ImageHasher(Hasher):
         if hash_format == 'vector':
             # Take care of this separately because we took out `vector`
             # as valid return type to vector_to_string().
-            # Regardless of self.returns_multiple being True or False?
-            return vector
+            # The .tolist() might seem unnecessary for the
+            # ndarray `vector` but downstream expects a list and it
+            # stays consistent with original, so keeping for now.
+            # return (vector.tolist() if self.returns_multiple
+            #        else vector)
+            return vector  # should iterate the same as vector.tolist()
         if self.returns_multiple:
             return [
                 self.vector_to_string(v, hash_format=hash_format)
@@ -353,9 +357,18 @@ class VideoHasher(Hasher):
                 state=state)
         assert state is not None
         vector = self.hash_from_final_state(state=state)
-        return self.vector_to_string(
-            vector,
-            hash_format=hash_format) if not self.returns_multiple else [
+        if hash_format == 'vector':
+            # Take care of this separately because we took out `vector`
+            # as valid return type to vector_to_string().
+            # The .tolist() might seem unnecessary for the
+            # ndarray `vector` but downstream expects a list and it
+            # stays consistent with original, so keeping for now.
+            # return (vector.tolist() if self.returns_multiple
+            #        else vector)
+            return vector  # should iterate the same as vector.tolist()
+        if self.returns_multiple:
+            return [
                 self.vector_to_string(v, hash_format=hash_format)
                 for v in vector
             ]
+        return self.vector_to_string(vector, hash_format=hash_format)
