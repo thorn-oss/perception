@@ -477,6 +477,7 @@ def read_video_to_generator_ffmpeg(
 
         git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
         cd nv-codec-headers
+        make
         sudo make install
         cd ..
         git clone --branch release/4.3 https://git.ffmpeg.org/ffmpeg.git
