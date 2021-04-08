@@ -1,4 +1,4 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-lines
 import os
 import io
 import math
@@ -62,7 +62,7 @@ def get_ffmpeg():
 
 
 # pylint: disable=invalid-name
-def compute_quality(image):
+def compute_quality(image) -> int:
     """Compute a quality metric, using the calculation proposed by
     `Facebook <https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf/>`_
     for their PDQ hash algorithm."""
@@ -74,7 +74,7 @@ def compute_quality(image):
     dy = 100 * np.abs(image[1:] - image[:-1]) / 255
     dx = dx.astype('int').sum()
     dy = dy.astype('int').sum()
-    return np.clip(a=int((dx + dy) / 90), a_min=0, a_max=100)
+    return int(np.clip(a=int((dx + dy) / 90), a_min=0, a_max=100))
 
 
 def compute_md5(filepath) -> str:
@@ -108,7 +108,8 @@ def get_string_length(hash_length: int, dtype: str, hash_format='hex') -> int:
     raise NotImplementedError('Unknown hash format: ' + hash_format)
 
 
-def vector_to_string(vector: np.ndarray, dtype: str, hash_format: str):
+def vector_to_string(vector: np.ndarray, dtype: str,
+                     hash_format: str) -> typing.Optional[str]:
     """Convert vector to hash.
 
     Args:
@@ -119,9 +120,10 @@ def vector_to_string(vector: np.ndarray, dtype: str, hash_format: str):
     # we need to just return None, which is the least surprising outcome
     # because after all, the string representation of None is None.
     if vector is None:
-        return vector
+        return None
     if hash_format == 'vector':
-        return vector.astype(dtype)
+        # return vector.astype(dtype)  # old behavior
+        raise DeprecationWarning("`hash_format` `vector` has been removed.")
     if dtype == 'uint8':
         vector_bytes = vector.astype('uint8')
     elif dtype == 'float32':
@@ -131,7 +133,7 @@ def vector_to_string(vector: np.ndarray, dtype: str, hash_format: str):
     else:
         raise NotImplementedError(f'Cannot convert hash of type {dtype}.')
     if hash_format == 'base64':
-        return base64.b64encode(vector_bytes).decode('utf-8')
+        return base64.b64encode(vector_bytes.tobytes()).decode('utf-8')
     if hash_format == 'hex':
         return vector_bytes.tobytes().hex()
     raise NotImplementedError(
@@ -142,7 +144,7 @@ def string_to_vector(hash_string: str,
                      dtype: str,
                      hash_length: int,
                      hash_format: str,
-                     verify_length: bool = True):
+                     verify_length: bool = True) -> np.ndarray:
     """Convert hash back to vector.
 
     Args:
@@ -360,14 +362,16 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
         image = np.asarray(
             bytearray(filepath_or_buffer.read()), dtype=np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
-    elif (isinstance(filepath_or_buffer, str)
-          and validators.url(filepath_or_buffer)):
-        return read(request.urlopen(filepath_or_buffer, timeout=timeout))
-    else:
+    elif isinstance(filepath_or_buffer, str):
+        if validators.url(filepath_or_buffer):
+            return read(request.urlopen(filepath_or_buffer, timeout=timeout))
         if not os.path.isfile(filepath_or_buffer):
             raise FileNotFoundError('Could not find image at path: ' +
                                     filepath_or_buffer)
         image = cv2.imread(filepath_or_buffer)
+    else:
+        raise RuntimeError("Unhandled filepath_or_buffer type: " +
+                           str(type(filepath_or_buffer)))
     if image is None:
         raise ValueError(f'An error occurred reading {filepath_or_buffer}.')
     # We use cvtColor here instead of just ret[..., ::-1]

@@ -52,8 +52,8 @@ def generate_image_descriptors(
         filepath: str,
         max_features=DEFAULT_MAX_FEATURES,
         min_features=DEFAULT_MIN_FEATURES,
-        max_size=DEFAULT_MAX_SIZE
-) -> typing.Optional[typing.Tuple[np.array, np.array, typing.Tuple[int, int]]]:
+        max_size=DEFAULT_MAX_SIZE) -> typing.Optional[
+            typing.Tuple[np.ndarray, np.ndarray, typing.Tuple[int, int]]]:
     """Generate SIFT descriptors for a file.
 
     Args:
@@ -85,7 +85,7 @@ def generate_image_descriptors(
         return None
     if descriptors.shape[0] < min_features:
         return None
-    keypoints = np.float32([kp.pt for kp in keypoints])
+    keypoints = np.array([kp.pt for kp in keypoints], dtype=np.float32)
     return keypoints, descriptors, (image.shape[1], image.shape[0])
 
 
@@ -120,8 +120,9 @@ def build_reference_df(filepaths: typing.Iterable[str],
     return pd.DataFrame({
         'descriptors': [f[1] if f is not None else None for f in features],
         'keypoints': [f[0] if f is not None else None for f in features],
-        'descriptor_count':
-        [f[1].shape[0] if f is not None else None for f in features],
+        'descriptor_count': [
+            f[1].shape[0] if f is not None else None for f in features
+        ],  # type: ignore
         'dimensions': [f[2] if f is not None else None for f in features],
         'filepath':
         filepaths

@@ -91,10 +91,10 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     if X.dtype != 'float32':
         # Only make the copy if we have to.
         X = X.astype('float32')
-    lookup = []
+    lookup_ = []
     for idx, count in enumerate(counts):
-        lookup.extend([idx] * count)
-    lookup = np.array(lookup)
+        lookup_.extend([idx] * count)
+    lookup = np.array(lookup_)
     index = build_index(X=X, pct_probe=pct_probe, approximate=True)
     pairs = []
     for end, length, query in zip(counts.cumsum(), counts, range(len(counts))):
