@@ -119,21 +119,11 @@ def vector_to_string(vector: np.ndarray, dtype: str,
     # that depend on the image not being featureless). In those cases,
     # we need to just return None, which is the least surprising outcome
     # because after all, the string representation of None is None.
-    #
-    # Note:  this function being able to return None creates a massive
-    #        downstream ripple effect for type checking.  Being able to
-    #        account for hash_format `vector` (ndarray!) causes other
-    #        headaches.  Removing `vector` because, well, the function name
-    #        is `vector_to_string` and the calling function should figure
-    #        it out as opposed to making this one do all the thinking.
     if vector is None:
         return None
-    # Why is 'vector' an option for a function that returns string (implied by name)?
-    # ImageHasher.compute() returns (or did) vector_to_string() even for
-    # hash_format `vector`.
-    # DEPRECATED, left intact until no downstream impact reported
-    # if hash_format == 'vector':
-    #     return vector.astype(dtype)
+    if hash_format == 'vector':
+        # return vector.astype(dtype)  # old behavior
+        raise DeprecationWarning("`hash_format` `vector` has been removed.")
     if dtype == 'uint8':
         vector_bytes = vector.astype('uint8')
     elif dtype == 'float32':
@@ -143,8 +133,7 @@ def vector_to_string(vector: np.ndarray, dtype: str,
     else:
         raise NotImplementedError(f'Cannot convert hash of type {dtype}.')
     if hash_format == 'base64':
-        return base64.b64encode(vector_bytes.tobytes()).decode(
-            'utf-8')  # PR reviewer:  triple check, please.
+        return base64.b64encode(vector_bytes.tobytes()).decode('utf-8')
     if hash_format == 'hex':
         return vector_bytes.tobytes().hex()
     raise NotImplementedError(
