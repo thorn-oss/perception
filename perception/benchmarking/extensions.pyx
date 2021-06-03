@@ -96,7 +96,9 @@ def compute_euclidean_metrics(int[:, :] X_noop, int[:, :] X_tran, uint8[:, :] ma
                 if not is_pos and (local_buf[0] < local_buf[1]):
                     local_buf[1] = local_buf[0]
                     local_buf[3] = i_noop
-            if local_buf[3] < INT_MAX:
+            # I do not think that an <int *> can ever actually be
+            # greater than INT_MAX but we'll leave the check in.
+            if local_buf[1] < INT_MAX:
                 distances_view[i_tran, i_closest_fp] = sqrt(local_buf[1])
             else:
                 distances_view[i_tran, i_closest_fp] = NAN

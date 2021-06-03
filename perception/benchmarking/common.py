@@ -160,17 +160,22 @@ class Saveable(Filterable):
                 index['filepath'] = index['filename'].apply(
                     lambda fn: os.path.join(storage_dir, fn) if not pd.isnull(fn) else None
                 )
-                if index['filepath'].apply(os.path.isfile).all() and (
-                        not verify_md5
-                        or all(row['md5'] == compute_md5(row['filepath']))
-                        for _, row in tqdm.tqdm(
-                            index.iterrows(), desc='Checking cache.')):
+                do_zip_extraction = True
+                if index['filepath'].apply(os.path.isfile).all():
+                    if verify_md5:
+                        do_zip_extraction = not all(
+                            row['md5'] == compute_md5(row['filepath'])
+                            for _, row in tqdm.tqdm(
+                                index.iterrows(), desc='Checking cache'))
+                    else:
+                        do_zip_extraction = False
+                if do_zip_extraction:
+                    z.extractall(storage_dir)
+                else:
                     log.info(
                         'Found all files already extracted. Skipping extraction.'
                     )
                     verify_md5 = False
-                else:
-                    z.extractall(storage_dir)
         else:
             assert storage_dir is None, 'Storage directory only valid if path is to ZIP file.'
             index = pd.read_csv(
