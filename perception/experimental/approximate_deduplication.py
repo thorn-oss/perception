@@ -21,7 +21,8 @@ ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
 
 def build_index(X: np.ndarray,
                 pct_probe: float = DEFAULT_PCT_PROBE,
-                approximate=True):
+                approximate: bool = True,
+                use_gpu: bool = True):
     """Buid a FAISS index from a reference dataframe.
 
     Args:
@@ -44,12 +45,13 @@ def build_index(X: np.ndarray,
         quantizer = faiss.IndexFlatL2(d)
         index = faiss.IndexIVFFlat(quantizer, d, nlist)
         gpu = False
-        try:
-            res = faiss.StandardGpuResources()
-            index = faiss.index_cpu_to_gpu(res, 0, index)
-            gpu = True
-        except AttributeError:
-            LOGGER.info("Building approximate FAISS index on CPU.")
+        if use_gpu:
+            try:
+                res = faiss.StandardGpuResources()
+                index = faiss.index_cpu_to_gpu(res, 0, index)
+                gpu = True
+            except AttributeError:
+                LOGGER.info("Building approximate FAISS index on CPU.")
         index.train(X)
         batch_size = 10_000
         for i in range(0, X.shape[0], batch_size):
@@ -64,12 +66,13 @@ def build_index(X: np.ndarray,
     return index
 
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-arguments
 def compute_euclidean_pairwise_duplicates_approx(X,
                                                  counts,
                                                  threshold,
                                                  minimum_overlap,
-                                                 pct_probe=0.1):
+                                                 pct_probe=0.1,
+                                                 use_gpu: bool = True):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
     but uses an approximate search instead of an exhaustive search, which can dramatically reduce
     processing time.
@@ -95,7 +98,8 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     for idx, count in enumerate(counts):
         lookup_.extend([idx] * count)
     lookup = np.array(lookup_)
-    index = build_index(X=X, pct_probe=pct_probe, approximate=True)
+    index = build_index(
+        X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
     pairs = []
     for end, length, query in zip(counts.cumsum(), counts, range(len(counts))):
         if length == 0:

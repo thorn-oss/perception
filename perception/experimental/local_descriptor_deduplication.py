@@ -132,7 +132,8 @@ def build_reference_df(filepaths: typing.Iterable[str],
 def compute_pairs(reference_df,
                   threshold=DEFAULT_THRESHOLD,
                   minimum_overlap=DEFAULT_OVERLAP,
-                  pct_probe=0.1):
+                  pct_probe=0.1,
+                  use_gpu: bool = True):
     """Compute pairs of matching images from a reference
     dataframe.
 
@@ -151,7 +152,8 @@ def compute_pairs(reference_df,
         counts=counts,
         threshold=threshold,
         pct_probe=pct_probe,
-        minimum_overlap=minimum_overlap)
+        minimum_overlap=minimum_overlap,
+        use_gpu=use_gpu)
     return [(reference_df.iloc[p1].name, reference_df.iloc[p2].name)
             for p1, p2 in pairs]
 
@@ -313,19 +315,19 @@ def validate_match(kp1: np.ndarray,
     return True
 
 
-def deduplicate(
-        filepaths: typing.Iterable[str],
-        max_features: int = DEFAULT_MAX_FEATURES,
-        min_features: int = DEFAULT_MIN_FEATURES,
-        max_size: int = DEFAULT_MAX_SIZE,
-        coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
-        coarse_threshold: int = DEFAULT_THRESHOLD,
-        minimum_coarse_overlap: float = DEFAULT_OVERLAP,
-        minimum_validation_match: float = DEFAULT_MATCH_PCT,
-        minimum_validation_intersection: float = DEFAULT_INTERSECTION,
-        minimum_validation_inliers: int = DEFAULT_INLIERS,
-        ratio: float = DEFAULT_RATIO,
-        max_workers: int = None) -> typing.List[typing.Tuple[str, str]]:
+def deduplicate(filepaths: typing.Iterable[str],
+                max_features: int = DEFAULT_MAX_FEATURES,
+                min_features: int = DEFAULT_MIN_FEATURES,
+                max_size: int = DEFAULT_MAX_SIZE,
+                coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
+                coarse_threshold: int = DEFAULT_THRESHOLD,
+                minimum_coarse_overlap: float = DEFAULT_OVERLAP,
+                minimum_validation_match: float = DEFAULT_MATCH_PCT,
+                minimum_validation_intersection: float = DEFAULT_INTERSECTION,
+                minimum_validation_inliers: int = DEFAULT_INLIERS,
+                ratio: float = DEFAULT_RATIO,
+                max_workers: int = None,
+                use_gpu: bool = True) -> typing.List[typing.Tuple[str, str]]:
     """Deduplicate images by doing the following:
 
     #. Unletterbox all images and resize to some maximum size, preserving
@@ -369,7 +371,8 @@ def deduplicate(
         reference_df,
         pct_probe=coarse_pct_probe,
         threshold=coarse_threshold,
-        minimum_overlap=minimum_coarse_overlap)
+        minimum_overlap=minimum_coarse_overlap,
+        use_gpu=use_gpu)
     keep = []
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers) as executor:
