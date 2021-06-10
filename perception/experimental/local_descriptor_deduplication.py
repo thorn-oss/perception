@@ -307,8 +307,8 @@ def validate_match(kp1: np.ndarray,
     ptsBt = cv2.perspectiveTransform(ptsB.reshape((-1, 1, 2)), MBA).reshape(
         -1, 2).clip(0, dimsA)
     bounds_intersection = min(
-        np.prod(ptsBt[1] - ptsBt[0]) / np.prod(dimsA),
-        np.prod(ptsAt[1] - ptsAt[0]) / np.prod(dimsB),
+        abs(np.prod(ptsBt[1] - ptsBt[0]) / np.prod(dimsA)),
+        abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(dimsB)),
     )
     if bounds_intersection < minimum_intersection:
         return False
