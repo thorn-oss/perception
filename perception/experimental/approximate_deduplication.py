@@ -71,6 +71,8 @@ def compute_euclidean_pairwise_duplicates_approx(X,
                                                  counts,
                                                  threshold,
                                                  minimum_overlap,
+                                                 Y=None,
+                                                 y_counts=None,
                                                  pct_probe=0.1,
                                                  use_gpu: bool = True):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
@@ -79,6 +81,7 @@ def compute_euclidean_pairwise_duplicates_approx(X,
 
     Args:
         X: An array of vectors to compute pairs for.
+        Y: if provided we search in X for Y vectors.
         counts: A list of counts of vectors for separate files in the
             in the vectors (should add up to the length of X)
         threshold: The threshold for a match as a euclidean distance.
@@ -98,26 +101,38 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     for idx, count in enumerate(counts):
         lookup_.extend([idx] * count)
     lookup = np.array(lookup_)
+    
     index = build_index(
         X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
+    
     pairs = []
-    for end, length, query in zip(counts.cumsum(), counts, range(len(counts))):
+
+    # Only use y_counts if present.
+    if y_counts is None:
+        iterator_counts = counts
+        M = X
+    else:
+        iterator_counts = y_counts
+        M = Y
+
+
+    for end, length, query in zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))):
         if length == 0:
             continue
-        Xq = X[end - length:end]
+        Xq = M[end - length:end]
         lims, _, idxs = index.range_search(Xq, threshold**2)
         lims = lims.astype('int32')
         matched = [
             match
             for match in np.unique(lookup[list(set(idxs))])  # type: ignore
-            if match != query
+            if match != query or Y is not None  # Protect self matches if Y is not present.
         ]
         query_in_match: typing.Mapping[int, set] = {m: set() for m in matched}
         match_in_query: typing.Mapping[int, set] = {m: set() for m in matched}
         for query_idx in range(length):
             for match_idx in idxs[lims[query_idx]:lims[query_idx + 1]]:
                 match = lookup[match_idx]
-                if match == query:
+                if match == query and Y is None: # Protect self matches if Y is not present.
                     continue
                 match_in_query[match].add(match_idx)
                 query_in_match[match].add(query_idx)
@@ -127,7 +142,10 @@ def compute_euclidean_pairwise_duplicates_approx(X,
                 len(match_in_query[match]) / counts[match]
             ])
             if overlap >= minimum_overlap and overlap > 0:
-                pairs.append(tuple(sorted([query, match])))
+                if Y is None:
+                    pairs.append(tuple(sorted([query, match])))
+                else:
+                    pairs.append(tuple([query, match]))
     return list(set(pairs))
 
 

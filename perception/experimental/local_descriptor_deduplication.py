@@ -128,33 +128,49 @@ def build_reference_df(filepaths: typing.Iterable[str],
         filepaths
     }).set_index('filepath')
 
-
-def compute_pairs(reference_df,
+def compute_pairs(match_df,
+                  query_df, 
                   threshold=DEFAULT_THRESHOLD,
                   minimum_overlap=DEFAULT_OVERLAP,
                   pct_probe=0.1,
                   use_gpu: bool = True):
     """Compute pairs of matching images from a reference
     dataframe.
-
     Args:
-        reference_df: A dataframe, as computed by build_reference_df.
+        query_df: A dataframe, as computed by build_reference_df, will compute pairs against self, unless match_df is provided.
+        match_df: optional, if provided will be the second set to match query_df against
         threshold: The match threshold between two vectors.
         minimum_overlap: The minimum overlap between a pair of files.
         pct_probe: The percentage of the dataset to search for approximate
             search.
     """
-    reference_df = reference_df.dropna(subset=['descriptors'])
-    counts = reference_df['descriptor_count'].values.astype('uint32')
-    descriptors = np.vstack(reference_df['descriptors'].values)
+    match_df = match_df.dropna(subset=['descriptors'])
+    counts = match_df['descriptor_count'].values.astype('uint32')
+    descriptors = np.vstack(match_df['descriptors'].values)
+    
+    if query_df is None:
+        y_counts = None
+        y_descriptors = None
+    else:
+        query_df = query_df.dropna(subset=['descriptors'])
+        y_counts = query_df['descriptor_count'].values.astype('uint32')
+        y_descriptors = np.vstack(query_df['descriptors'].values).astype('float32')
+    
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype('float32'),
         counts=counts,
         threshold=threshold,
-        pct_probe=pct_probe,
         minimum_overlap=minimum_overlap,
+        pct_probe=pct_probe,
+        Y=y_descriptors,
+        y_counts=y_counts,
         use_gpu=use_gpu)
-    return [(reference_df.iloc[p1].name, reference_df.iloc[p2].name)
+    
+    print('len pairs', len(pairs), pairs[:2])
+    if query_df is None:
+        query_df=match_df # Assign query_df to be able to lookup matches.
+    
+    return [(query_df.iloc[p1].name, match_df.iloc[p2].name)
             for p1, p2 in pairs]
 
 
@@ -314,11 +330,8 @@ def validate_match(kp1: np.ndarray,
         return False
     return True
 
-
-def deduplicate(filepaths: typing.Iterable[str],
-                max_features: int = DEFAULT_MAX_FEATURES,
-                min_features: int = DEFAULT_MIN_FEATURES,
-                max_size: int = DEFAULT_MAX_SIZE,
+def _deduplicate(match_df:  pd.DataFrame,
+                query_df: typing.Union[pd.DataFrame, None] = None,
                 coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
                 coarse_threshold: int = DEFAULT_THRESHOLD,
                 minimum_coarse_overlap: float = DEFAULT_OVERLAP,
@@ -328,56 +341,32 @@ def deduplicate(filepaths: typing.Iterable[str],
                 ratio: float = DEFAULT_RATIO,
                 max_workers: int = None,
                 use_gpu: bool = True) -> typing.List[typing.Tuple[str, str]]:
-    """Deduplicate images by doing the following:
-
-    #. Unletterbox all images and resize to some maximum size, preserving
-       aspect ratio.
-    #. Compute the SIFT descriptors and keypoints for all the resulting images.
-    #. Perform a coarse, approximate search for images with common features.
-    #. For each candidate pair, validate it pairwise by checking the features
-       and keypoints with the traditional approach using the ratio test. See
-       validate_match for more information.
-
-    Args:
-        filepaths: The list of images to deduplicate.
-        max_features: The maximum number of features to
-            extract.
-        min_features: The minimum number of features to
-            extract.
-        max_size: The maximum side length for an image.
-        coarse_pct_probe: The minimum fraction of nearest lists to search. If
-            the product of pct_probe and the number of lists is less
-            than 1, one list will be searched.
-        corase_threshold: The threshold for a match as a euclidean distance.
-        minimum_coarse_overlap: The minimum overlap between two files to qualify as a match.
-        minimum_validation_match: The minimum number of matches passing the ratio test.
-        minimum_validation_intersection: The minimum overlapping area between the keypoints
-            in the filtered set of matches and the original keypoints.
-        minimum_validation_inliers: The minimum number of inliers for the transformation
-            matrix.
-        ratio: The ratio to use for Lowe's ratio test.
-        max_workers: The maximum number of threads to use for doing the final validation
-            step.
-
-    Returns:
-        A list of pairs of file duplicates.
-    """
-    reference_df = build_reference_df(
-        filepaths=filepaths,
-        max_features=max_features,
-        min_features=min_features,
-        max_size=max_size)
-    candidates = compute_pairs(
-        reference_df,
+    print('about to compute pairs ',match_df.shape[0])
+    if query_df is not None:
+        print('match df provided::',query_df.shape[0],)
+    candidates = compute_pairs(match_df,
+        query_df,        
         pct_probe=coarse_pct_probe,
         threshold=coarse_threshold,
-        minimum_overlap=minimum_coarse_overlap,
-        use_gpu=use_gpu)
+        minimum_overlap=minimum_coarse_overlap,)
+    print('candidates',len(candidates))
+    if query_df is None:
+        reference_df = match_df
+    else:
+        candidate_filepath_set = set()
+        for c1, c2 in candidates:
+            candidate_filepath_set.add(c1)
+            candidate_filepath_set.add(c2)
+
+        # May not be necessary if c1 and c2 are always in the same set
+        reference_df = pd.concat([query_df[query_df.index.isin(candidate_filepath_set)],
+                                    match_df[match_df.index.isin(candidate_filepath_set)]])
+
     keep = []
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers) as executor:
         batch_size = 10_000
-        for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
+        for start in tqdm.tqdm(range(0, len(candidates), batch_size)):            
             futures = {
                 executor.submit(
                     validate_match,
@@ -397,3 +386,50 @@ def deduplicate(filepaths: typing.Iterable[str],
                 if future.result():
                     keep.append(futures[future])
     return keep
+  
+
+def deduplicate_across_set(match_filepaths_or_df: typing.Union[typing.Iterable[str],  pd.DataFrame],
+                query_filepaths_or_df: typing.Union[typing.Iterable[str],  pd.DataFrame],                
+                max_features: int = DEFAULT_MAX_FEATURES,
+                min_features: int = DEFAULT_MIN_FEATURES,
+                max_size: int = DEFAULT_MAX_SIZE,
+                 **kwargs):
+    print('y')
+    if isinstance(query_filepaths_or_df, pd.DataFrame): 
+        query_df = query_filepaths_or_df
+    else:
+        query_df = build_reference_df(
+            filepaths=query_filepaths_or_df,
+            max_features=max_features,
+            min_features=min_features,
+            max_size=max_size)
+            
+    if isinstance(match_filepaths_or_df, pd.DataFrame): 
+        match_df = match_filepaths_or_df
+    else:
+        match_df = build_reference_df(
+            filepaths=match_filepaths_or_df,
+            max_features=max_features,
+            min_features=min_features,
+            max_size=max_size)
+
+    
+    return _deduplicate(match_df=match_df, query_df=query_df,  **kwargs)
+
+
+def deduplicate(filepaths_or_reference_df: typing.Union[typing.Iterable[str],  pd.DataFrame],
+                max_features: int = DEFAULT_MAX_FEATURES,
+                min_features: int = DEFAULT_MIN_FEATURES,
+                max_size: int = DEFAULT_MAX_SIZE,
+                 **kwargs) -> typing.List[typing.Tuple[str, str]]:
+
+    if isinstance(filepaths_or_reference_df, pd.DataFrame): 
+        reference_df = filepaths_or_reference_df
+    else:
+        reference_df = build_reference_df(
+            filepaths=filepaths_or_reference_df,
+            max_features=max_features,
+            min_features=min_features,
+            max_size=max_size)
+
+    return _deduplicate(reference_df, **kwargs)

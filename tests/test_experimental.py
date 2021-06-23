@@ -32,7 +32,8 @@ def test_sift_deduplication():
                    },
                    storage_dir=tdir.name)
     df = transformed._df.set_index('filepath')
-    pairs = ldd.deduplicate(filepaths=df.index)
+    pairs = ldd.deduplicate(filepaths_or_reference_df=df.index, 
+                            max_workers=2) #  Test throws errors if unset.
     clustered = pd.DataFrame(ad.pairs_to_clusters(
         ids=df.index, pairs=pairs)).set_index('id').merge(
             df, left_index=True, right_index=True).reset_index()
@@ -46,6 +47,39 @@ def test_sift_deduplication():
     pct_tainted = tainted / n_clusters
     assert pct_perfect > 0.1
     assert pct_tainted == 0
+
+
+def test_sift_deduplication_across_sets():
+    tdir = tempfile.TemporaryDirectory()
+    watermark = cv2.cvtColor(
+        cv2.imread(pt.DEFAULT_TEST_LOGOS[0], cv2.IMREAD_UNCHANGED),
+        cv2.COLOR_BGRA2RGBA)
+    transformed = pb.BenchmarkImageDataset.from_tuples(
+        files=[(filepath, 'test')
+               for filepath in pt.DEFAULT_TEST_IMAGES]).transform(
+                   transforms={
+                       'noop':
+                       lambda image: image,
+                       'pad':
+                       imgaug.augmenters.Pad(percent=0.1),
+                       'crop':
+                       imgaug.augmenters.Crop(percent=0.1),
+                       'watermark':
+                       pbit.apply_watermark(watermark, alpha=1, size=0.8)
+                   },
+                   storage_dir=tdir.name)
+
+    df = transformed._df.set_index('filepath')
+    query_images = list(df[df.transform_name=='noop'].index.values)
+    images_to_match_to = list(df[~(df.transform_name=='noop')].index.values)
+
+    pairs = ldd.deduplicate_across_set(match_filepaths_or_df = images_to_match_to, 
+                            query_filepaths_or_df = query_images,
+                            max_workers=2) #  Test throws errors if unset.
+
+    assert len(pairs) == 28, "Wrong # of pairs."
+    only_one_noop = [p for p in pairs if (('noop' in p[0]) != ('noop' in p[1]) )]
+    assert len(only_one_noop) == len(pairs), "All pairs must be between a noop and non-noop file"
 
 
 def test_validation_for_overlapping_case():
@@ -82,7 +116,7 @@ def test_handling_bad_file_case(caplog):
     df = transformed._df.set_index('filepath')
     df.loc[missing_file] = df.iloc[0]
     df.loc[bad_file] = df.iloc[0]
-    pairs = ldd.deduplicate(filepaths=df.index)
+    pairs = ldd.deduplicate(filepaths_or_reference_df=df.index)
     clustered = pd.DataFrame(ad.pairs_to_clusters(
         ids=df.index, pairs=pairs)).set_index('id').merge(
             df, left_index=True, right_index=True).reset_index()
