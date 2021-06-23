@@ -137,8 +137,8 @@ def compute_pairs(match_df,
     """Compute pairs of matching images from a reference
     dataframe.
     Args:
-        query_df: A dataframe, as computed by build_reference_df, will compute pairs against self, unless match_df is provided.
-        match_df: optional, if provided will be the second set to match query_df against
+        match_df: A dataframe, as computed by build_reference_df, will compute pairs against self, unless query_df is provided.
+        query_df: optional, if provided will be used to query against match_df for matches.
         threshold: The match threshold between two vectors.
         minimum_overlap: The minimum overlap between a pair of files.
         pct_probe: The percentage of the dataset to search for approximate
