@@ -348,7 +348,7 @@ class BenchmarkHashes(Filterable):
                     distance_to_closest_image = distance_matrix.min(axis=1)
                     distance_to_correct_image = np.ma.masked_array(
                         distance_matrix, np.logical_not(mask)).min(axis=1)
-                    distance_matrix_incorrect_image = np.ma.masked_array(
+                    distance_matrix_incorrect_image: np.ndarray = np.ma.masked_array(
                         distance_matrix, mask)
                     distance_to_incorrect_image = distance_matrix_incorrect_image.min(
                         axis=1)

@@ -95,7 +95,7 @@ def get_logger(name, log_level):
 async def serve(
         index: ApproximateNearestNeighbors,
         default_threshold: int = None,
-        default_threshold_func: typing.Callable[[np.ndarray], float] = None,
+        default_threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
         default_k: int = 1,
         concurrency: int = 2,
         log_level=logging.INFO,

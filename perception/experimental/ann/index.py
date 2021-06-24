@@ -261,7 +261,7 @@ class ApproximateNearestNeighbors:
     def search(self,
                queries: typing.List[QueryInput],
                threshold: int = None,
-               threshold_func: typing.Callable[[np.ndarray], int] = None,
+               threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
                hash_format='base64',
                k=1):
         """Search the index and return matches.
@@ -287,6 +287,8 @@ class ApproximateNearestNeighbors:
             ]).astype('float32')
         except Exception as exc:
             raise QueryDecodingFailure('Failed to parse hash query.') from exc
+
+        thresholds: np.ndarray = np.ones((len(xq), 1)) * np.inf
         if threshold:
             thresholds = np.ones((len(xq), 1)) * threshold
         if not threshold and threshold_func:
