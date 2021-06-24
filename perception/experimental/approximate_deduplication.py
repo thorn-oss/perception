@@ -66,7 +66,7 @@ def build_index(X: np.ndarray,
     return index
 
 
-# pylint: disable=too-many-locals,too-many-arguments
+# pylint: disable=too-many-locals,too-many-arguments,too-many-branches
 def compute_euclidean_pairwise_duplicates_approx(X,
                                                  counts,
                                                  threshold,
@@ -101,10 +101,10 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     for idx, count in enumerate(counts):
         lookup_.extend([idx] * count)
     lookup = np.array(lookup_)
-    
+
     index = build_index(
         X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
-    
+
     pairs = []
 
     # Only use y_counts if present.
@@ -115,8 +115,8 @@ def compute_euclidean_pairwise_duplicates_approx(X,
         iterator_counts = y_counts
         M = Y
 
-
-    for end, length, query in zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))):
+    for end, length, query in zip(iterator_counts.cumsum(), iterator_counts,
+                                  range(len(iterator_counts))):
         if length == 0:
             continue
         Xq = M[end - length:end]
@@ -125,14 +125,15 @@ def compute_euclidean_pairwise_duplicates_approx(X,
         matched = [
             match
             for match in np.unique(lookup[list(set(idxs))])  # type: ignore
-            if match != query or Y is not None  # Protect self matches if Y is not present.
+            if match != query
+            or Y is not None  # Protect self matches if Y is not present.
         ]
         query_in_match: typing.Mapping[int, set] = {m: set() for m in matched}
         match_in_query: typing.Mapping[int, set] = {m: set() for m in matched}
         for query_idx in range(length):
             for match_idx in idxs[lims[query_idx]:lims[query_idx + 1]]:
                 match = lookup[match_idx]
-                if match == query and Y is None: # Protect self matches if Y is not present.
+                if match == query and Y is None:  # Protect self matches if Y is not present.
                     continue
                 match_in_query[match].add(match_idx)
                 query_in_match[match].add(query_idx)

@@ -32,8 +32,9 @@ def test_sift_deduplication():
                    },
                    storage_dir=tdir.name)
     df = transformed._df.set_index('filepath')
-    pairs = ldd.deduplicate(filepaths_or_reference_df=df.index, 
-                            max_workers=2) #  Test throws errors if unset.
+    pairs = ldd.deduplicate(
+        filepaths_or_reference_df=df.index,
+        max_workers=2)  #  Test throws errors if unset.
     clustered = pd.DataFrame(ad.pairs_to_clusters(
         ids=df.index, pairs=pairs)).set_index('id').merge(
             df, left_index=True, right_index=True).reset_index()
@@ -70,16 +71,20 @@ def test_sift_deduplication_across_sets():
                    storage_dir=tdir.name)
 
     df = transformed._df.set_index('filepath')
-    query_images = list(df[df.transform_name=='noop'].index.values)
-    images_to_match_to = list(df[~(df.transform_name=='noop')].index.values)
+    query_images = list(df[df.transform_name == 'noop'].index.values)
+    images_to_match_to = list(df[~(df.transform_name == 'noop')].index.values)
 
-    pairs = ldd.deduplicate_across_set(match_filepaths_or_df = images_to_match_to, 
-                            query_filepaths_or_df = query_images,
-                            max_workers=2) #  Test throws errors if unset.
+    pairs = ldd.deduplicate(
+        filepaths_or_reference_df=images_to_match_to,
+        query_filepaths_or_df=query_images,
+        max_workers=2)  #  Test throws errors if unset.
 
     assert len(pairs) == 28, "Wrong # of pairs."
-    only_one_noop = [p for p in pairs if (('noop' in p[0]) != ('noop' in p[1]) )]
-    assert len(only_one_noop) == len(pairs), "All pairs must be between a noop and non-noop file"
+    only_one_noop = [
+        p for p in pairs if (('noop' in p[0]) != ('noop' in p[1]))
+    ]
+    assert len(only_one_noop) == len(
+        pairs), "All pairs must be between a noop and non-noop file"
 
 
 def test_validation_for_overlapping_case():
