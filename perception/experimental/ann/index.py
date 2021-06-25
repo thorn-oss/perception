@@ -258,12 +258,13 @@ class ApproximateNearestNeighbors:
         return pht.vector_to_string(
             vector, dtype=self.dtype, hash_format=hash_format)
 
-    def search(self,
-               queries: typing.List[QueryInput],
-               threshold: int = None,
-               threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
-               hash_format='base64',
-               k=1):
+    def search(
+            self,
+            queries: typing.List[QueryInput],
+            threshold: int = None,
+            threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
+            hash_format='base64',
+            k=1):
         """Search the index and return matches.
 
         Args:

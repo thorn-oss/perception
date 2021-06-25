@@ -169,7 +169,6 @@ def compute_pairs(match_df,
         y_counts=y_counts,
         use_gpu=use_gpu)
 
-    print('len pairs', len(pairs), pairs[:2])
     if query_df is None:
         query_df = match_df  # Assign query_df to be able to lookup matches.
 
@@ -346,12 +345,32 @@ def deduplicate_sift_dfs(
         ratio: float = DEFAULT_RATIO,
         max_workers: int = None,
         use_gpu: bool = True) -> typing.List[typing.Tuple[str, str]]:
-    print('about to compute pairs ', match_df.shape[0])
-    if query_df is not None:
-        print(
-            'match df provided::',
-            query_df.shape[0],
-        )
+    """Deduplicate images within one set of images or between two sets of images:
+        #. Given a dataframe (or two) of SIFT descriptors and keypoints for images.
+        #. Perform a coarse, approximate search for images with common features.
+        #. For each candidate pair, validate it pairwise by checking the features
+        and keypoints with the traditional approach using the ratio test. See
+        validate_match for more information.
+        Args:
+            match_df: Dataframe of sift features to dedup within.
+            query_df: If provided will search for matches between this and match_df, if None will
+                just search match_df against itself.
+            coarse_pct_probe: The minimum fraction of nearest lists to search. If
+                the product of pct_probe and the number of lists is less
+                than 1, one list will be searched.
+            corase_threshold: The threshold for a match as a euclidean distance.
+            minimum_coarse_overlap: The minimum overlap between two files to qualify as a match.
+            minimum_validation_match: The minimum number of matches passing the ratio test.
+            minimum_validation_intersection: The minimum overlapping area between the keypoints
+                in the filtered set of matches and the original keypoints.
+            minimum_validation_inliers: The minimum number of inliers for the transformation
+                matrix.
+            ratio: The ratio to use for Lowe's ratio test.
+            max_workers: The maximum number of threads to use for doing the final validation
+                step.
+        Returns:
+            A list of pairs of file duplicates.
+        """
     candidates = compute_pairs(
         match_df,
         query_df,
@@ -359,7 +378,7 @@ def deduplicate_sift_dfs(
         threshold=coarse_threshold,
         minimum_overlap=minimum_coarse_overlap,
         use_gpu=use_gpu)
-    print('candidates', len(candidates))
+
     if query_df is None:
         reference_df = match_df
     else:
@@ -408,7 +427,24 @@ def deduplicate(filepaths_or_reference_df: typing.
                 min_features: int = DEFAULT_MIN_FEATURES,
                 max_size: int = DEFAULT_MAX_SIZE,
                 **kwargs) -> typing.List[typing.Tuple[str, str]]:
-
+    """Deduplicate images by doing the following:
+    #. Unletterbox all images and resize to some maximum size, preserving
+       aspect ratio.
+    #. Compute the SIFT descriptors and keypoints for all the resulting images.
+    #. See `deduplicate_sift_dfs` for remaining steps.
+    Args:
+        filepaths_or_reference_df: The list of images to deduplicate, or a precomputed
+            SIFT DataFrame.
+        query_filepaths_or_df: If provided will look for matches between these files and
+            the files in the first param.
+        max_features: The maximum number of features to
+            extract.
+        min_features: The minimum number of features to
+            extract.
+        max_size: The maximum side length for an image.
+    Returns:
+        A list of pairs of file duplicates.
+    """
     if isinstance(filepaths_or_reference_df, pd.DataFrame):
         reference_df = filepaths_or_reference_df
     else:

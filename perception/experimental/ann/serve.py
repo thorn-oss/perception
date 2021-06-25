@@ -92,15 +92,15 @@ def get_logger(name, log_level):
     return logger
 
 
-async def serve(
-        index: ApproximateNearestNeighbors,
-        default_threshold: int = None,
-        default_threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
-        default_k: int = 1,
-        concurrency: int = 2,
-        log_level=logging.INFO,
-        host='localhost',
-        port=8080):
+async def serve(index: ApproximateNearestNeighbors,
+                default_threshold: int = None,
+                default_threshold_func: typing.Callable[[np.ndarray], np.
+                                                        ndarray] = None,
+                default_k: int = 1,
+                concurrency: int = 2,
+                log_level=logging.INFO,
+                host='localhost',
+                port=8080):
     """Serve an index as a web API. This function does not block.
     If you wish to use the function in a blocking manner, you can
     do something like
