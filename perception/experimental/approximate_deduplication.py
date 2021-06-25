@@ -94,9 +94,16 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     """
     assert counts.sum(
     ) == X.shape[0], "Length of counts incompatible with vectors shape."
+    assert (Y is None) == (
+        y_counts is None), "Must provide both or neither for y, y_counts."
     if X.dtype != 'float32':
         # Only make the copy if we have to.
         X = X.astype('float32')
+
+    if Y is not None and Y.dtype != 'float32':
+        # Only make the copy if we have to.
+        Y = Y.astype('float32')
+
     lookup_ = []
     for idx, count in enumerate(counts):
         lookup_.extend([idx] * count)
