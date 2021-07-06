@@ -146,7 +146,7 @@ def compute_pairs(match_df,
         minimum_overlap: The minimum overlap between a pair of files.
         pct_probe: The percentage of the dataset to search for approximate
             search.
-        faiss_cache_path: If provided load any existing faiss index from this path, and if 
+        faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path.
     """
     match_df = match_df.dropna(subset=['descriptors'])
@@ -373,7 +373,7 @@ def deduplicate_sift_dfs(
             ratio: The ratio to use for Lowe's ratio test.
             max_workers: The maximum number of threads to use for doing the final validation
                 step.
-            faiss_cache_path: If provided load any existing faiss index from this path, and if 
+            faiss_cache_path: If provided load any existing faiss index from this path, and if
                 it does not exist then save the generated faiss index to the path. Most helpful if
                 doing multiple queries against the same match_df.
         Returns:
@@ -385,7 +385,8 @@ def deduplicate_sift_dfs(
         pct_probe=coarse_pct_probe,
         threshold=coarse_threshold,
         minimum_overlap=minimum_coarse_overlap,
-        use_gpu=use_gpu)
+        use_gpu=use_gpu,
+        faiss_cache_path=faiss_cache_path)
 
     if query_df is None:
         reference_df = match_df

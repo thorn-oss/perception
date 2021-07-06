@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 
 import math
+import os.path as op
 import typing
 import logging
 
@@ -89,7 +90,7 @@ def compute_euclidean_pairwise_duplicates_approx(X,
         minimum_overlap: The minimum overlap between two files to qualify as a match.
         pct_probe: The minimum percentage of sublists to search for matches. The larger the
             value, the more exhaustive the search.
-        faiss_cache_path: If provided load any existing faiss index from this path, and if 
+        faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path.
     Returns:
         A list of pairs of matching file indexes.
@@ -114,9 +115,9 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     if faiss_cache_path is not None and op.exists(faiss_cache_path):
         index = faiss.read_index(faiss_cache_path)
         assert X.shape[
-            0] == index.ntotal, "Cache length does not appear to match provided X. Try deleting cache."
+            0] == index.ntotal, "Cached FAISS index does not match provided X."
     else:
-        index = ad.build_index(
+        index = build_index(
             X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
         if faiss_cache_path is not None:
             faiss.write_index(index, faiss_cache_path)
