@@ -38,7 +38,7 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
     if res is None:
         return None
     (x1, x2), (y1, y2) = res
-    image = image[y1:y2, x1:x2]
+    image = np.ascontiguousarray(image[y1:y2, x1:x2])
     image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     max_dimension = max(image.shape[:2])
     if max_dimension > max_size:
