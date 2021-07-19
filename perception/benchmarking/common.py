@@ -156,7 +156,8 @@ class Saveable(Filterable):
                 # Try extracting only the index at first so we can
                 # compare md5.
                 z.extract('index.csv', os.path.join(storage_dir))
-                index = pd.read_csv(os.path.join(storage_dir, 'index.csv'))
+                index: pd.DataFrame = pd.read_csv(
+                    os.path.join(storage_dir, 'index.csv'))
                 index['filepath'] = index['filename'].apply(
                     lambda fn: os.path.join(storage_dir, fn) if not pd.isnull(fn) else None
                 )
@@ -190,8 +191,8 @@ class Saveable(Filterable):
                 for _, row in tqdm.tqdm(
                     index.iterrows(),
                     desc='Performing final md5 integrity check.',
-                    total=len(index.index))), 'An md5 mismatch has occurred.'
-        return cls(index.drop(['filename', 'md5'], axis=1))
+                    total=len(index.index))), 'An md5 mismatch has occurred.'  # pylint: disable=no-member
+        return cls(index.drop(['filename', 'md5'], axis=1))  # pylint: disable=no-member
 
     def save(self, path_to_zip_or_directory):
         """Save a dataset to a directory or ZIP file.
