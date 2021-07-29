@@ -297,7 +297,7 @@ def validate_match(kp1: np.ndarray,
     kpBM = kpB[indexes_A2B[good_A2B, 0]]
 
     # findHomography requires 4 points from each to work.
-    if max(kpAM.shape) < 4 or max(kpBM.shape) < 4:
+    if len(kpAM) < 4 or len(kpBM) < 4:
         return False
 
     intersection = compute_minimum_intersection(
@@ -307,6 +307,7 @@ def validate_match(kp1: np.ndarray,
         filter_arr2=indexes_A2B[good_A2B, 0])
     if intersection < minimum_intersection:
         return False
+
     MAB, mask = cv2.findHomography(
         kpAM.reshape(-1, 1, 2),
         kpBM.reshape(-1, 1, 2),
