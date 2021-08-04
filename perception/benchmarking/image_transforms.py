@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 
-def apply_watermark(watermark, alpha: float = 1., size: float = 1.):
+def apply_watermark(watermark, alpha: float = 1.0, size: float = 1.0):
     """Apply a watermark to the bottom right of
     images. Based on the work provided at
     https://www.pyimagesearch.com/2016/04/25/watermarking-images-with-opencv-and-python/
@@ -35,7 +35,7 @@ def apply_watermark(watermark, alpha: float = 1., size: float = 1.):
         overlay = np.zeros((h, w, 4), dtype="uint8")
         scaled = cv2.resize(watermark, (int(scale * ww), int(scale * wh)))
         sh, sw = scaled.shape[:2]
-        overlay[max(h - sh, 0):, max(w - sw, 0):w] = scaled
+        overlay[max(h - sh, 0) :, max(w - sw, 0) : w] = scaled
         # Blend the two images together using transparent overlays
         output = image.copy()
         cv2.addWeighted(overlay, alpha, output, 1.0, 0, output)

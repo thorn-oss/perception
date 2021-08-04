@@ -9,8 +9,9 @@ class AverageHash(ImageHasher):
     pixel in a resized version of the image to the mean.
     Implementation based on that of
     `ImageHash <https://github.com/JohannesBuchner/imagehash>`_."""
-    distance_metric = 'hamming'
-    dtype = 'bool'
+
+    distance_metric = "hamming"
+    dtype = "bool"
 
     def __init__(self, hash_size=8):
         assert hash_size >= 2, "Hash size must be greater than or equal to 2."
@@ -20,9 +21,8 @@ class AverageHash(ImageHasher):
     def _compute(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.resize(
-            image,
-            dsize=(self.hash_size, self.hash_size),
-            interpolation=cv2.INTER_AREA)
+            image, dsize=(self.hash_size, self.hash_size), interpolation=cv2.INTER_AREA
+        )
         diff = image > image.mean()
         return diff.flatten()
 
@@ -30,6 +30,6 @@ class AverageHash(ImageHasher):
         return {
             transform_name: diff.flatten()
             for transform_name, diff in tools.get_isometric_transforms(
-                vector.reshape(self.hash_size, self.hash_size, 1),
-                require_color=False).items()
+                vector.reshape(self.hash_size, self.hash_size, 1), require_color=False
+            ).items()
         }

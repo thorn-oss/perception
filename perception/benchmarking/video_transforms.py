@@ -29,15 +29,17 @@ def sanitize_output_filepath(input_filepath, output_filepath, output_ext=None):
     return output_filepath
 
 
-def get_simple_transform(width: typing.Union[str, int] = -1,
-                         height: typing.Union[str, int] = -1,
-                         pad: str = None,
-                         codec: str = None,
-                         clip_pct: typing.Tuple[float, float] = None,
-                         clip_s: typing.Tuple[float, float] = None,
-                         sar=None,
-                         fps=None,
-                         output_ext=None):
+def get_simple_transform(
+    width: typing.Union[str, int] = -1,
+    height: typing.Union[str, int] = -1,
+    pad: str = None,
+    codec: str = None,
+    clip_pct: typing.Tuple[float, float] = None,
+    clip_s: typing.Tuple[float, float] = None,
+    sar=None,
+    fps=None,
+    output_ext=None,
+):
     """Resize to a specific size and re-encode.
 
     Args:
@@ -56,17 +58,18 @@ def get_simple_transform(width: typing.Union[str, int] = -1,
     """
 
     def transform(input_filepath, output_filepath):
-        output_filepath = sanitize_output_filepath(input_filepath,
-                                                   output_filepath, output_ext)
+        output_filepath = sanitize_output_filepath(
+            input_filepath, output_filepath, output_ext
+        )
         data = None
         if codec is None:
-            data = (data or probe(input_filepath))
-            output_codec = [
-                s for s in data['streams'] if s['codec_type'] == 'video'
-            ][0]['codec_name']
+            data = data or probe(input_filepath)
+            output_codec = [s for s in data["streams"] if s["codec_type"] == "video"][
+                0
+            ]["codec_name"]
         else:
             output_codec = codec
-        format_kwargs = {'codec:v': output_codec}
+        format_kwargs = {"codec:v": output_codec}
         if clip_pct is not None or clip_s is not None:
             pct_start, pct_end, pos_start, pos_end = None, None, None, None
             if clip_pct is not None:
@@ -74,35 +77,32 @@ def get_simple_transform(width: typing.Union[str, int] = -1,
             if clip_s is not None:
                 pos_start, pos_end = clip_s
             if pct_start is not None:
-                assert 0 <= pct_start <= 1, 'Start position must be between 0 and 1.'
+                assert 0 <= pct_start <= 1, "Start position must be between 0 and 1."
             if pct_end is not None:
-                assert 0 <= pct_end <= 1, 'End position must be between 0 and 1.'
+                assert 0 <= pct_end <= 1, "End position must be between 0 and 1."
             if pct_start is not None and pct_end is not None:
-                assert pct_start < pct_end, 'End must be greater than start.'
-            if (pct_start is not None
-                    and pos_start is None) or (pct_end is not None
-                                               and pos_end is None):
+                assert pct_start < pct_end, "End must be greater than start."
+            if (pct_start is not None and pos_start is None) or (
+                pct_end is not None and pos_end is None
+            ):
                 # We only want to get the duration for the video if we need
                 # it.
                 data = data or probe(input_filepath)
-                duration = float(data['streams'][0]['duration'])
+                duration = float(data["streams"][0]["duration"])
             if pct_start is not None or pos_start is not None:
-                format_kwargs[
-                    'ss'] = pos_start or pct_start * duration  # type: ignore
+                format_kwargs["ss"] = pos_start or pct_start * duration  # type: ignore
             if pct_end is not None or pos_end is not None:
-                format_kwargs[
-                    't'] = pos_end or pct_end * duration  # type: ignore
+                format_kwargs["t"] = pos_end or pct_end * duration  # type: ignore
         stream = ffmpeg.input(input_filepath)
         if not (width == -1 and height == -1):
-            stream = stream.filter('scale', width, height)
+            stream = stream.filter("scale", width, height)
         if pad is not None:
-            stream = stream.filter('pad', *pad.split(':'))
+            stream = stream.filter("pad", *pad.split(":"))
         if fps is not None:
-            stream = stream.filter('fps', fps)
+            stream = stream.filter("fps", fps)
         if sar is not None:
-            stream = stream.filter('setsar', sar)
-        stream = stream.output(output_filepath, **format_kwargs) \
-                    .overwrite_output()
+            stream = stream.filter("setsar", sar)
+        stream = stream.output(output_filepath, **format_kwargs).overwrite_output()
         ffmpeg.run(stream)
         if os.path.isfile(output_filepath):
             return output_filepath
@@ -111,10 +111,9 @@ def get_simple_transform(width: typing.Union[str, int] = -1,
     return transform
 
 
-def get_slideshow_transform(frame_input_rate,
-                            frame_output_rate,
-                            max_frames=None,
-                            offset=0):
+def get_slideshow_transform(
+    frame_input_rate, frame_output_rate, max_frames=None, offset=0
+):
     """Get a slideshow transform to create slideshows from
     videos.
 
@@ -131,22 +130,24 @@ def get_slideshow_transform(frame_input_rate,
 
     def transform(input_filepath, output_filepath):
         output_filepath = sanitize_output_filepath(
-            input_filepath, output_filepath, output_ext='.mov')
+            input_filepath, output_filepath, output_ext=".mov"
+        )
         writer = None
         frame_count = 0
         try:
             for frame, _, timestamp in read_video(
-                    filepath=input_filepath,
-                    frames_per_second=frame_input_rate):
+                filepath=input_filepath, frames_per_second=frame_input_rate
+            ):
                 if timestamp < offset:
                     continue
                 if writer is None:
                     writer = cv2.VideoWriter(
                         filename=output_filepath,
-                        fourcc=cv2.VideoWriter_fourcc(*'mjpg'),
+                        fourcc=cv2.VideoWriter_fourcc(*"mjpg"),
                         fps=frame_output_rate,
                         frameSize=tuple(frame.shape[:2][::-1]),
-                        isColor=True)
+                        isColor=True,
+                    )
                 writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 frame_count += 1
                 if max_frames is not None and frame_count >= max_frames:
@@ -174,22 +175,24 @@ def get_black_frame_padding_transform(duration_s=0, duration_pct=0):
     """
 
     def transform(input_filepath, output_filepath):
-        output_filepath = sanitize_output_filepath(input_filepath,
-                                                   output_filepath)
+        output_filepath = sanitize_output_filepath(input_filepath, output_filepath)
         stream = next(
-            stream for stream in probe(input_filepath)['streams']
-            if stream['codec_type'] == 'video')
-        assert stream['sample_aspect_ratio'] == '1:1', 'SAR is not 1:1.'
-        width = stream['width']
-        height = stream['height']
-        duration = max(duration_s, duration_pct * float(stream['duration']))
+            stream
+            for stream in probe(input_filepath)["streams"]
+            if stream["codec_type"] == "video"
+        )
+        assert stream["sample_aspect_ratio"] == "1:1", "SAR is not 1:1."
+        width = stream["width"]
+        height = stream["height"]
+        duration = max(duration_s, duration_pct * float(stream["duration"]))
         ffmpeg.input(input_filepath).output(
             output_filepath,
-            vf=("color=c=black:s={width}x{height}:d={duration} [pre] ; "
+            vf=(
+                "color=c=black:s={width}x{height}:d={duration} [pre] ; "
                 "color=c=black:s={width}x{height}:d={duration} [post] ; "
-                "[pre] [in] [post] concat=n=3").format(
-                    width=width, height=height,
-                    duration=duration)).overwrite_output().run()
+                "[pre] [in] [post] concat=n=3"
+            ).format(width=width, height=height, duration=duration),
+        ).overwrite_output().run()
         if os.path.isfile(output_filepath):
             return output_filepath
         return None

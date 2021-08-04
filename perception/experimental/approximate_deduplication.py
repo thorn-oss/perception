@@ -14,16 +14,17 @@ import faiss
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
 
-ClusterAssignment = typing_extensions.TypedDict('ClusterAssignment', {
-    'cluster': int,
-    'id': str
-})
+ClusterAssignment = typing_extensions.TypedDict(
+    "ClusterAssignment", {"cluster": int, "id": str}
+)
 
 
-def build_index(X: np.ndarray,
-                pct_probe: float = DEFAULT_PCT_PROBE,
-                approximate: bool = True,
-                use_gpu: bool = True):
+def build_index(
+    X: np.ndarray,
+    pct_probe: float = DEFAULT_PCT_PROBE,
+    approximate: bool = True,
+    use_gpu: bool = True,
+):
     """Buid a FAISS index from a reference dataframe.
 
     Args:
@@ -56,7 +57,7 @@ def build_index(X: np.ndarray,
         index.train(X)
         batch_size = 10_000
         for i in range(0, X.shape[0], batch_size):
-            index.add(X[i:i + batch_size])
+            index.add(X[i : i + batch_size])
         if gpu:
             index = faiss.index_gpu_to_cpu(index)  # pylint: disable=no-member
         nprobe = max(math.ceil(pct_probe * nlist), 1)
@@ -68,15 +69,17 @@ def build_index(X: np.ndarray,
 
 
 # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
-def compute_euclidean_pairwise_duplicates_approx(X,
-                                                 counts,
-                                                 threshold,
-                                                 minimum_overlap,
-                                                 Y=None,
-                                                 y_counts=None,
-                                                 pct_probe=0.1,
-                                                 use_gpu: bool = True,
-                                                 faiss_cache_path: str = None):
+def compute_euclidean_pairwise_duplicates_approx(
+    X,
+    counts,
+    threshold,
+    minimum_overlap,
+    Y=None,
+    y_counts=None,
+    pct_probe=0.1,
+    use_gpu: bool = True,
+    faiss_cache_path: str = None,
+):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
     but uses an approximate search instead of an exhaustive search, which can dramatically reduce
     processing time.
@@ -95,17 +98,19 @@ def compute_euclidean_pairwise_duplicates_approx(X,
     Returns:
         A list of pairs of matching file indexes.
     """
-    assert counts.sum(
-    ) == X.shape[0], "Length of counts incompatible with vectors shape."
+    assert (
+        counts.sum() == X.shape[0]
+    ), "Length of counts incompatible with vectors shape."
     assert (Y is None) == (
-        y_counts is None), "Must provide both or neither for y, y_counts."
-    if X.dtype != 'float32':
+        y_counts is None
+    ), "Must provide both or neither for y, y_counts."
+    if X.dtype != "float32":
         # Only make the copy if we have to.
-        X = X.astype('float32')
+        X = X.astype("float32")
 
-    if Y is not None and Y.dtype != 'float32':
+    if Y is not None and Y.dtype != "float32":
         # Only make the copy if we have to.
-        Y = Y.astype('float32')
+        Y = Y.astype("float32")
 
     lookup_ = []
     for idx, count in enumerate(counts):
@@ -114,16 +119,15 @@ def compute_euclidean_pairwise_duplicates_approx(X,
 
     if faiss_cache_path is not None and op.exists(faiss_cache_path):
         index = faiss.read_index(faiss_cache_path)
-        assert X.shape[
-            0] == index.ntotal, "Cached FAISS index does not match provided X."
+        assert (
+            X.shape[0] == index.ntotal
+        ), "Cached FAISS index does not match provided X."
     else:
-        index = build_index(
-            X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
+        index = build_index(X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
         if faiss_cache_path is not None:
             faiss.write_index(index, faiss_cache_path)
 
-    index = build_index(
-        X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
+    index = build_index(X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
 
     pairs = []
 
@@ -135,13 +139,14 @@ def compute_euclidean_pairwise_duplicates_approx(X,
         iterator_counts = y_counts
         M = Y
 
-    for end, length, query in zip(iterator_counts.cumsum(), iterator_counts,
-                                  range(len(iterator_counts))):
+    for end, length, query in zip(
+        iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))
+    ):
         if length == 0:
             continue
-        Xq = M[end - length:end]
-        lims, _, idxs = index.range_search(Xq, threshold**2)
-        lims = lims.astype('int32')
+        Xq = M[end - length : end]
+        lims, _, idxs = index.range_search(Xq, threshold ** 2)
+        lims = lims.astype("int32")
         matched = [
             match
             for match in np.unique(lookup[list(set(idxs))])  # type: ignore
@@ -151,17 +156,21 @@ def compute_euclidean_pairwise_duplicates_approx(X,
         query_in_match: typing.Mapping[int, set] = {m: set() for m in matched}
         match_in_query: typing.Mapping[int, set] = {m: set() for m in matched}
         for query_idx in range(length):
-            for match_idx in idxs[lims[query_idx]:lims[query_idx + 1]]:
+            for match_idx in idxs[lims[query_idx] : lims[query_idx + 1]]:
                 match = lookup[match_idx]
-                if match == query and Y is None:  # Protect self matches if Y is not present.
+                if (
+                    match == query and Y is None
+                ):  # Protect self matches if Y is not present.
                     continue
                 match_in_query[match].add(match_idx)
                 query_in_match[match].add(query_idx)
         for match in matched:
-            overlap = min([
-                len(query_in_match[match]) / length,
-                len(match_in_query[match]) / counts[match]
-            ])
+            overlap = min(
+                [
+                    len(query_in_match[match]) / length,
+                    len(match_in_query[match]) / counts[match],
+                ]
+            )
             if overlap >= minimum_overlap and overlap > 0:
                 if Y is None:
                     pairs.append(tuple(sorted([query, match])))
@@ -171,11 +180,13 @@ def compute_euclidean_pairwise_duplicates_approx(X,
 
 
 def pairs_to_clusters(
-        ids: typing.Iterable[str],
-        pairs: typing.Iterable[typing.Tuple[str, str]],
-        strictness: typing_extensions.
-        Literal["clique", "community", "component"] = "clique",
-        max_clique_batch_size: int = 1000) -> typing.List[ClusterAssignment]:
+    ids: typing.Iterable[str],
+    pairs: typing.Iterable[typing.Tuple[str, str]],
+    strictness: typing_extensions.Literal[
+        "clique", "community", "component"
+    ] = "clique",
+    max_clique_batch_size: int = 1000,
+) -> typing.List[ClusterAssignment]:
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
     Args:
@@ -192,8 +203,7 @@ def pairs_to_clusters(
         A list of cluster assignments (dicts with id and cluster
         entries).
     """
-    assert strictness in ["component", "community",
-                          "clique"], "Invalid strictness."
+    assert strictness in ["component", "community", "clique"], "Invalid strictness."
     graph = nx.Graph()
     LOGGER.debug("Building graph.")
     graph.add_nodes_from(ids)
@@ -203,34 +213,30 @@ def pairs_to_clusters(
     for component in nx.connected_components(graph):
         LOGGER.debug("Got component with size: %s", len(component))
         if strictness == "component":
-            assignments.extend([{
-                "id": n,
-                "cluster": cluster_index
-            } for n in component])
+            assignments.extend([{"id": n, "cluster": cluster_index} for n in component])
             cluster_index += 1
             continue
         for community in nx.algorithms.community.asyn_lpa_communities(
-                graph.subgraph(component)):
+            graph.subgraph(component)
+        ):
             LOGGER.debug("Got community with size: %s", len(community))
             if strictness == "community":
-                assignments.extend([{
-                    "id": n,
-                    "cluster": cluster_index
-                } for n in community])
+                assignments.extend(
+                    [{"id": n, "cluster": cluster_index} for n in community]
+                )
                 cluster_index += 1
                 continue
             community = list(community)  # Need to do this to do batching.
             for start in range(0, len(community), max_clique_batch_size):
-                nodes = community[start:start + max_clique_batch_size]
+                nodes = community[start : start + max_clique_batch_size]
                 LOGGER.debug("Creating subgraph with %s nodes.", len(nodes))
                 subgraph = graph.subgraph(nodes).copy()
                 while subgraph:
                     LOGGER.debug("Subgraph size: %s", len(subgraph))
                     clique = approximation.clique.max_clique(subgraph)
-                    assignments.extend([{
-                        "id": n,
-                        "cluster": cluster_index
-                    } for n in clique])
+                    assignments.extend(
+                        [{"id": n, "cluster": cluster_index} for n in clique]
+                    )
                     cluster_index += 1
                     subgraph.remove_nodes_from(clique)
     return assignments

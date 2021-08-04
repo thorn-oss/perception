@@ -9,7 +9,17 @@ from .video.scenes import SimpleSceneDetection
 from .video.tmk import TMKL1, TMKL2
 
 __all__ = [
-    'AverageHash', 'PHash', 'WaveletHash', 'MarrHildreth', 'BlockMean',
-    'ColorMoment', 'DHash', 'FramewiseHasher', 'TMKL1', 'TMKL2', 'PHashU8',
-    'PHashF', 'SimpleSceneDetection'
+    "AverageHash",
+    "PHash",
+    "WaveletHash",
+    "MarrHildreth",
+    "BlockMean",
+    "ColorMoment",
+    "DHash",
+    "FramewiseHasher",
+    "TMKL1",
+    "TMKL2",
+    "PHashU8",
+    "PHashF",
+    "SimpleSceneDetection",
 ]

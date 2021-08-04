@@ -17,8 +17,10 @@ import versioneer
 # os.environ["LDFLAGS"] = (os.environ.get("LDFLAGS", "") +
 # " -Wl,-rpath,/usr/local/opt/libomp/lib -L/usr/local/opt/libomp/lib -lomp")
 
+
 class BuildFailure(Exception):
     pass
+
 
 class CatchableBuildExt(build_ext):
     def run(self):
@@ -33,13 +35,19 @@ class CatchableBuildExt(build_ext):
         except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
             raise BuildFailure()
 
+
 try:
-    setup(version=versioneer.get_version(),
-          cmdclass={**versioneer.get_cmdclass(), 'build_ext': CatchableBuildExt},
-          ext_modules=cythonize(
-              "perception/**/extensions.pyx",
-          ), include_dirs=[numpy.get_include()])
+    setup(
+        version=versioneer.get_version(),
+        cmdclass={**versioneer.get_cmdclass(), "build_ext": CatchableBuildExt},
+        ext_modules=cythonize(
+            "perception/**/extensions.pyx",
+        ),
+        include_dirs=[numpy.get_include()],
+    )
 except BuildFailure as err:
-    warnings.warn(str(err) + '\nFailed to build Cython extensions. They will not be available at runtime.')
-    setup(version=versioneer.get_version(),
-          cmdclass=versioneer.get_cmdclass())
+    warnings.warn(
+        str(err)
+        + "\nFailed to build Cython extensions. They will not be available at runtime."
+    )
+    setup(version=versioneer.get_version(), cmdclass=versioneer.get_cmdclass())

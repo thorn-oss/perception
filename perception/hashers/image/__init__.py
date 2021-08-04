@@ -5,6 +5,13 @@ from .opencv import MarrHildreth, BlockMean, ColorMoment
 from .dhash import DHash
 
 __all__ = [
-    'AverageHash', 'PHash', 'WaveletHash', 'MarrHildreth', 'BlockMean',
-    'ColorMoment', 'DHash', 'PHashF', 'PHashU8'
+    "AverageHash",
+    "PHash",
+    "WaveletHash",
+    "MarrHildreth",
+    "BlockMean",
+    "ColorMoment",
+    "DHash",
+    "PHashF",
+    "PHashU8",
 ]

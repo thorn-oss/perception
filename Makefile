@@ -36,10 +36,9 @@ lint_check_parallel:
 type_check:
 	pipenv run mypy perception
 format:
-	pipenv run yapf --recursive --in-place --exclude=perception/_version.py tests perception
+	pipenv run black .
 format_check:
-	pipenv run yapf --recursive --diff --exclude=perception/_version.py tests perception\
-		|| (echo '\nUnexpected format.' && exit 1)
+	pipenv run black --check . || (echo '\nUnexpected format.' && exit 1)
 build_ext:
 	pipenv run python setup.py build_ext --inplace
 precommit:

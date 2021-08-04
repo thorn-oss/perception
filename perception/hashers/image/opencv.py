@@ -10,9 +10,9 @@ class OpenCVHasher(ImageHasher):  # pylint: disable=abstract-method
     allow_parallel = False
 
     def __init__(self):
-        if not hasattr(cv2, 'img_hash'):
+        if not hasattr(cv2, "img_hash"):
             raise Exception(
-                'You do not appear to have opencv-contrib installed. It is required for pure OpenCV hashers.'  # pylint: disable=line-too-long
+                "You do not appear to have opencv-contrib installed. It is required for pure OpenCV hashers."  # pylint: disable=line-too-long
             )
 
 
@@ -20,13 +20,15 @@ class MarrHildreth(OpenCVHasher):
     """A wrapper around OpenCV's Marr-Hildreth hash.
     See `paper <https://www.phash.org/docs/pubs/thesis_zauner.pdf>`_ for details."""
 
-    dtype = 'bool'
-    distance_metric = 'hamming'
+    dtype = "bool"
+    distance_metric = "hamming"
     hash_length = 576
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash_MarrHildrethHash.create()  # pylint: disable=no-member
+        self.hasher = (
+            cv2.img_hash_MarrHildrethHash.create()
+        )  # pylint: disable=no-member
 
     def _compute(self, image):
         return np.unpackbits(self.hasher.compute(image)[0])
@@ -36,8 +38,8 @@ class ColorMoment(OpenCVHasher):
     """A wrapper around OpenCV's Color Moments hash.
     See `paper <https://www.phash.org/docs/pubs/thesis_zauner.pdf>`_ for details."""
 
-    dtype = 'float32'
-    distance_metric = 'euclidean'
+    dtype = "float32"
+    distance_metric = "euclidean"
     hash_length = 42
 
     def __init__(self):
@@ -51,8 +53,9 @@ class ColorMoment(OpenCVHasher):
 class BlockMean(OpenCVHasher):
     """A wrapper around OpenCV's Block Mean hash.
     See `paper <https://www.phash.org/docs/pubs/thesis_zauner.pdf>`_ for details."""
-    dtype = 'bool'
-    distance_metric = 'hamming'
+
+    dtype = "bool"
+    distance_metric = "hamming"
     hash_length = 968
 
     def __init__(self):

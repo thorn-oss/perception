@@ -20,17 +20,17 @@ class PHash(ImageHasher):
         exclude_first_term: WHether to exclude the first term of the DCT
         freq_shift: The number of DCT low frequency elements to skip.
     """
-    distance_metric = 'hamming'
-    dtype = 'bool'
 
-    def __init__(self,
-                 hash_size=8,
-                 highfreq_factor=4,
-                 exclude_first_term=False,
-                 freq_shift=0):
-        assert hash_size >= 2, 'Hash size must be greater than or equal to 2'
-        assert freq_shift <= highfreq_factor * hash_size - hash_size, \
-            'Frequency shift is too large for this hash size / highfreq_factor combination.'
+    distance_metric = "hamming"
+    dtype = "bool"
+
+    def __init__(
+        self, hash_size=8, highfreq_factor=4, exclude_first_term=False, freq_shift=0
+    ):
+        assert hash_size >= 2, "Hash size must be greater than or equal to 2"
+        assert (
+            freq_shift <= highfreq_factor * hash_size - hash_size
+        ), "Frequency shift is too large for this hash size / highfreq_factor combination."
         self.hash_size = hash_size
         self.highfreq_factor = highfreq_factor
         self.exclude_first_term = exclude_first_term
@@ -43,10 +43,13 @@ class PHash(ImageHasher):
         img_size = self.hash_size * self.highfreq_factor
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         image = cv2.resize(
-            image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA)
+            image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA
+        )
         dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=0), axis=1)
-        return dct[self.freq_shift:self.hash_size + self.freq_shift, self.
-                   freq_shift:self.hash_size + self.freq_shift]
+        return dct[
+            self.freq_shift : self.hash_size + self.freq_shift,
+            self.freq_shift : self.hash_size + self.freq_shift,
+        ]
 
     # pylint: disable=no-self-use
     def _dct_to_hash(self, dct):
@@ -63,7 +66,8 @@ class PHash(ImageHasher):
         return {
             transform_name: self._dct_to_hash(dct)
             for transform_name, dct in tools.get_isometric_dct_transforms(
-                self._compute_dct(image)).items()
+                self._compute_dct(image)
+            ).items()
         }
 
 
@@ -71,8 +75,9 @@ class PHashF(PHash):
     """A real-valued version of PHash. It
     returns the raw 32-bit floats in the DCT.
     For a more compact approach, see PHashU8."""
-    dtype = 'float32'
-    distance_metric = 'euclidean'
+
+    dtype = "float32"
+    distance_metric = "euclidean"
 
     def _dct_to_hash(self, dct):
         dct = dct.flatten()
@@ -89,8 +94,9 @@ class PHashU8(PHash):
     DCT values to unsigned 8-bit integers (more
     compact than the 32-bit floats used by PHashF at
     the cost of precision)."""
-    dtype = 'uint8'
-    distance_metric = 'euclidean'
+
+    dtype = "uint8"
+    distance_metric = "euclidean"
 
     def _dct_to_hash(self, dct):
         dct = dct.flatten()

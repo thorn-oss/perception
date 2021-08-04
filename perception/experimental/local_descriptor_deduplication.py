@@ -44,16 +44,17 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
     if max_dimension > max_size:
         scale = max_size / max_dimension
         image = cv2.resize(
-            image, (int(image.shape[1] * scale), int(image.shape[0] * scale)))
+            image, (int(image.shape[1] * scale), int(image.shape[0] * scale))
+        )
     return image
 
 
 def generate_image_descriptors(
-        filepath: str,
-        max_features=DEFAULT_MAX_FEATURES,
-        min_features=DEFAULT_MIN_FEATURES,
-        max_size=DEFAULT_MAX_SIZE) -> typing.Optional[
-            typing.Tuple[np.ndarray, np.ndarray, typing.Tuple[int, int]]]:
+    filepath: str,
+    max_features=DEFAULT_MAX_FEATURES,
+    min_features=DEFAULT_MIN_FEATURES,
+    max_size=DEFAULT_MAX_SIZE,
+) -> typing.Optional[typing.Tuple[np.ndarray, np.ndarray, typing.Tuple[int, int]]]:
     """Generate SIFT descriptors for a file.
 
     Args:
@@ -89,10 +90,12 @@ def generate_image_descriptors(
     return keypoints, descriptors, (image.shape[1], image.shape[0])
 
 
-def build_reference_df(filepaths: typing.Iterable[str],
-                       max_features=DEFAULT_MAX_FEATURES,
-                       min_features=DEFAULT_MIN_FEATURES,
-                       max_size=DEFAULT_MAX_SIZE) -> pd.DataFrame:
+def build_reference_df(
+    filepaths: typing.Iterable[str],
+    max_features=DEFAULT_MAX_FEATURES,
+    min_features=DEFAULT_MIN_FEATURES,
+    max_size=DEFAULT_MAX_SIZE,
+) -> pd.DataFrame:
     """Build SIFT descriptors for a list of files.
 
     Args:
@@ -114,28 +117,33 @@ def build_reference_df(filepaths: typing.Iterable[str],
             filepath,
             max_features=max_features,
             min_features=min_features,
-            max_size=max_size) for filepath in filepaths
+            max_size=max_size,
+        )
+        for filepath in filepaths
     ]
     LOGGER.debug("Finished computing descriptors.")
-    return pd.DataFrame({
-        'descriptors': [f[1] if f is not None else None for f in features],
-        'keypoints': [f[0] if f is not None else None for f in features],
-        'descriptor_count': [
-            f[1].shape[0] if f is not None else None for f in features
-        ],  # type: ignore
-        'dimensions': [f[2] if f is not None else None for f in features],
-        'filepath':
-        filepaths
-    }).set_index('filepath')
+    return pd.DataFrame(
+        {
+            "descriptors": [f[1] if f is not None else None for f in features],
+            "keypoints": [f[0] if f is not None else None for f in features],
+            "descriptor_count": [
+                f[1].shape[0] if f is not None else None for f in features
+            ],  # type: ignore
+            "dimensions": [f[2] if f is not None else None for f in features],
+            "filepath": filepaths,
+        }
+    ).set_index("filepath")
 
 
-def compute_pairs(match_df,
-                  query_df=None,
-                  threshold=DEFAULT_THRESHOLD,
-                  minimum_overlap=DEFAULT_OVERLAP,
-                  pct_probe=0.1,
-                  use_gpu: bool = True,
-                  faiss_cache_path: str = None):
+def compute_pairs(
+    match_df,
+    query_df=None,
+    threshold=DEFAULT_THRESHOLD,
+    minimum_overlap=DEFAULT_OVERLAP,
+    pct_probe=0.1,
+    use_gpu: bool = True,
+    faiss_cache_path: str = None,
+):
     """Compute pairs of matching images from a reference
     dataframe.
     Args:
@@ -149,21 +157,20 @@ def compute_pairs(match_df,
         faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path.
     """
-    match_df = match_df.dropna(subset=['descriptors'])
-    counts = match_df['descriptor_count'].values.astype('uint32')
-    descriptors = np.vstack(match_df['descriptors'].values)
+    match_df = match_df.dropna(subset=["descriptors"])
+    counts = match_df["descriptor_count"].values.astype("uint32")
+    descriptors = np.vstack(match_df["descriptors"].values)
 
     if query_df is None:
         y_counts = None
         y_descriptors = None
     else:
-        query_df = query_df.dropna(subset=['descriptors'])
-        y_counts = query_df['descriptor_count'].values.astype('uint32')
-        y_descriptors = np.vstack(
-            query_df['descriptors'].values).astype('float32')
+        query_df = query_df.dropna(subset=["descriptors"])
+        y_counts = query_df["descriptor_count"].values.astype("uint32")
+        y_descriptors = np.vstack(query_df["descriptors"].values).astype("float32")
 
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
-        X=descriptors.astype('float32'),
+        X=descriptors.astype("float32"),
         counts=counts,
         threshold=threshold,
         minimum_overlap=minimum_overlap,
@@ -171,13 +178,13 @@ def compute_pairs(match_df,
         Y=y_descriptors,
         y_counts=y_counts,
         use_gpu=use_gpu,
-        faiss_cache_path=faiss_cache_path)
+        faiss_cache_path=faiss_cache_path,
+    )
 
     if query_df is None:
         query_df = match_df  # Assign query_df to be able to lookup matches.
 
-    return [(query_df.iloc[p1].name, match_df.iloc[p2].name)
-            for p1, p2 in pairs]
+    return [(query_df.iloc[p1].name, match_df.iloc[p2].name) for p1, p2 in pairs]
 
 
 def compute_area(box):
@@ -218,20 +225,22 @@ def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
         filter_arr2: A filter array for the second set of keypoints
     """
     return min(
-        compute_intersection(kp1, filter_arr1),
-        compute_intersection(kp2, filter_arr2))
+        compute_intersection(kp1, filter_arr1), compute_intersection(kp2, filter_arr2)
+    )
 
 
-def validate_match(kp1: np.ndarray,
-                   des1: np.ndarray,
-                   kp2: np.ndarray,
-                   des2: np.ndarray,
-                   dims1: typing.Tuple[int, int],
-                   dims2: typing.Tuple[int, int],
-                   minimum_match: float = DEFAULT_MATCH_PCT,
-                   minimum_intersection: float = DEFAULT_INTERSECTION,
-                   minimum_inliers: int = DEFAULT_INLIERS,
-                   ratio=DEFAULT_RATIO) -> float:
+def validate_match(
+    kp1: np.ndarray,
+    des1: np.ndarray,
+    kp2: np.ndarray,
+    des2: np.ndarray,
+    dims1: typing.Tuple[int, int],
+    dims2: typing.Tuple[int, int],
+    minimum_match: float = DEFAULT_MATCH_PCT,
+    minimum_intersection: float = DEFAULT_INTERSECTION,
+    minimum_inliers: int = DEFAULT_INLIERS,
+    ratio=DEFAULT_RATIO,
+) -> float:
     """Validate the match between two sets of keypoints and descriptors. The
     validation algorithm is as follows:
 
@@ -283,13 +292,13 @@ def validate_match(kp1: np.ndarray,
     if desA is None or indexA is None or desB is None or indexB is None:
         return False
     # pylint: disable=no-value-for-parameter
-    distances_A2B, indexes_A2B = indexB.search(desA.astype('float32'), 2)
-    distances_B2A, _ = indexA.search(desB.astype('float32'), 2)
+    distances_A2B, indexes_A2B = indexB.search(desA.astype("float32"), 2)
+    distances_B2A, _ = indexA.search(desB.astype("float32"), 2)
     good_A2B, good_B2A = map(
         lambda distances: (distances[:, 0] < distances[:, 1] * ratio),
-        [distances_A2B, distances_B2A])
-    match = min(good_A2B.sum() / good_A2B.shape[0],
-                good_B2A.sum() / good_B2A.shape[0])
+        [distances_A2B, distances_B2A],
+    )
+    match = min(good_A2B.sum() / good_A2B.shape[0], good_B2A.sum() / good_B2A.shape[0])
     if match < minimum_match:
         # We didn't get enough good matches.
         return False
@@ -301,10 +310,8 @@ def validate_match(kp1: np.ndarray,
         return False
 
     intersection = compute_minimum_intersection(
-        kp1=kpA,
-        kp2=kpB,
-        filter_arr1=good_A2B,
-        filter_arr2=indexes_A2B[good_A2B, 0])
+        kp1=kpA, kp2=kpB, filter_arr1=good_A2B, filter_arr2=indexes_A2B[good_A2B, 0]
+    )
     if intersection < minimum_intersection:
         return False
 
@@ -314,7 +321,8 @@ def validate_match(kp1: np.ndarray,
         cv2.RANSAC,
         1.0,
         maxIters=50_000,
-        confidence=0.9999)
+        confidence=0.9999,
+    )
     if MAB is None:
         # We didn't get a transformation matrix.
         return False
@@ -328,12 +336,18 @@ def validate_match(kp1: np.ndarray,
     except np.linalg.LinAlgError:
         # We couldn't compute the matrix inverse.
         return False
-    ptsA = np.array([[0, 0], dimsA]).astype('float32')
-    ptsB = np.array([[0, 0], dimsB]).astype('float32')
-    ptsAt = cv2.perspectiveTransform(ptsA.reshape((-1, 1, 2)), MAB).reshape(
-        -1, 2).clip(0, dimsB)
-    ptsBt = cv2.perspectiveTransform(ptsB.reshape((-1, 1, 2)), MBA).reshape(
-        -1, 2).clip(0, dimsA)
+    ptsA = np.array([[0, 0], dimsA]).astype("float32")
+    ptsB = np.array([[0, 0], dimsB]).astype("float32")
+    ptsAt = (
+        cv2.perspectiveTransform(ptsA.reshape((-1, 1, 2)), MAB)
+        .reshape(-1, 2)
+        .clip(0, dimsB)
+    )
+    ptsBt = (
+        cv2.perspectiveTransform(ptsB.reshape((-1, 1, 2)), MBA)
+        .reshape(-1, 2)
+        .clip(0, dimsA)
+    )
     bounds_intersection = min(
         abs(np.prod(ptsBt[1] - ptsBt[0]) / np.prod(dimsA)),
         abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(dimsB)),
@@ -344,47 +358,48 @@ def validate_match(kp1: np.ndarray,
 
 
 def deduplicate_sift_dfs(
-        match_df: pd.DataFrame,
-        query_df: typing.Optional[pd.DataFrame] = None,
-        coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
-        coarse_threshold: int = DEFAULT_THRESHOLD,
-        minimum_coarse_overlap: float = DEFAULT_OVERLAP,
-        minimum_validation_match: float = DEFAULT_MATCH_PCT,
-        minimum_validation_intersection: float = DEFAULT_INTERSECTION,
-        minimum_validation_inliers: int = DEFAULT_INLIERS,
-        ratio: float = DEFAULT_RATIO,
-        max_workers: int = None,
-        use_gpu: bool = True,
-        faiss_cache_path: str = None) -> typing.List[typing.Tuple[str, str]]:
+    match_df: pd.DataFrame,
+    query_df: typing.Optional[pd.DataFrame] = None,
+    coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
+    coarse_threshold: int = DEFAULT_THRESHOLD,
+    minimum_coarse_overlap: float = DEFAULT_OVERLAP,
+    minimum_validation_match: float = DEFAULT_MATCH_PCT,
+    minimum_validation_intersection: float = DEFAULT_INTERSECTION,
+    minimum_validation_inliers: int = DEFAULT_INLIERS,
+    ratio: float = DEFAULT_RATIO,
+    max_workers: int = None,
+    use_gpu: bool = True,
+    faiss_cache_path: str = None,
+) -> typing.List[typing.Tuple[str, str]]:
     """Deduplicate images within one set of images or between two sets of images:
-        #. Given a dataframe (or two) of SIFT descriptors and keypoints for images.
-        #. Perform a coarse, approximate search for images with common features.
-        #. For each candidate pair, validate it pairwise by checking the features
-        and keypoints with the traditional approach using the ratio test. See
-        validate_match for more information.
-        Args:
-            match_df: Dataframe of sift features to dedup within.
-            query_df: If provided will search for matches between this and match_df, if None will
-                just search match_df against itself.
-            coarse_pct_probe: The minimum fraction of nearest lists to search. If
-                the product of pct_probe and the number of lists is less
-                than 1, one list will be searched.
-            corase_threshold: The threshold for a match as a euclidean distance.
-            minimum_coarse_overlap: The minimum overlap between two files to qualify as a match.
-            minimum_validation_match: The minimum number of matches passing the ratio test.
-            minimum_validation_intersection: The minimum overlapping area between the keypoints
-                in the filtered set of matches and the original keypoints.
-            minimum_validation_inliers: The minimum number of inliers for the transformation
-                matrix.
-            ratio: The ratio to use for Lowe's ratio test.
-            max_workers: The maximum number of threads to use for doing the final validation
-                step.
-            faiss_cache_path: If provided load any existing faiss index from this path, and if
-                it does not exist then save the generated faiss index to the path. Most helpful if
-                doing multiple queries against the same match_df.
-        Returns:
-            A list of pairs of file duplicates.
-        """
+    #. Given a dataframe (or two) of SIFT descriptors and keypoints for images.
+    #. Perform a coarse, approximate search for images with common features.
+    #. For each candidate pair, validate it pairwise by checking the features
+    and keypoints with the traditional approach using the ratio test. See
+    validate_match for more information.
+    Args:
+        match_df: Dataframe of sift features to dedup within.
+        query_df: If provided will search for matches between this and match_df, if None will
+            just search match_df against itself.
+        coarse_pct_probe: The minimum fraction of nearest lists to search. If
+            the product of pct_probe and the number of lists is less
+            than 1, one list will be searched.
+        corase_threshold: The threshold for a match as a euclidean distance.
+        minimum_coarse_overlap: The minimum overlap between two files to qualify as a match.
+        minimum_validation_match: The minimum number of matches passing the ratio test.
+        minimum_validation_intersection: The minimum overlapping area between the keypoints
+            in the filtered set of matches and the original keypoints.
+        minimum_validation_inliers: The minimum number of inliers for the transformation
+            matrix.
+        ratio: The ratio to use for Lowe's ratio test.
+        max_workers: The maximum number of threads to use for doing the final validation
+            step.
+        faiss_cache_path: If provided load any existing faiss index from this path, and if
+            it does not exist then save the generated faiss index to the path. Most helpful if
+            doing multiple queries against the same match_df.
+    Returns:
+        A list of pairs of file duplicates.
+    """
     candidates = compute_pairs(
         match_df,
         query_df,
@@ -392,7 +407,8 @@ def deduplicate_sift_dfs(
         threshold=coarse_threshold,
         minimum_overlap=minimum_coarse_overlap,
         use_gpu=use_gpu,
-        faiss_cache_path=faiss_cache_path)
+        faiss_cache_path=faiss_cache_path,
+    )
 
     if query_df is None:
         reference_df = match_df
@@ -403,30 +419,32 @@ def deduplicate_sift_dfs(
             candidate_filepath_set.add(c2)
 
         # May not be necessary if c1 and c2 are always in the same set
-        reference_df = pd.concat([
-            query_df[query_df.index.isin(candidate_filepath_set)],
-            match_df[match_df.index.isin(candidate_filepath_set)]
-        ])
+        reference_df = pd.concat(
+            [
+                query_df[query_df.index.isin(candidate_filepath_set)],
+                match_df[match_df.index.isin(candidate_filepath_set)],
+            ]
+        )
 
     keep = []
-    with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         batch_size = 10_000
         for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
             futures = {
                 executor.submit(
                     validate_match,
-                    des1=reference_df.loc[c1]['descriptors'],
-                    kp1=reference_df.loc[c1]['keypoints'],
-                    des2=reference_df.loc[c2]['descriptors'],
-                    kp2=reference_df.loc[c2]['keypoints'],
-                    dims1=reference_df.loc[c1]['dimensions'],
-                    dims2=reference_df.loc[c2]['dimensions'],
+                    des1=reference_df.loc[c1]["descriptors"],
+                    kp1=reference_df.loc[c1]["keypoints"],
+                    des2=reference_df.loc[c2]["descriptors"],
+                    kp2=reference_df.loc[c2]["keypoints"],
+                    dims1=reference_df.loc[c1]["dimensions"],
+                    dims2=reference_df.loc[c2]["dimensions"],
                     minimum_match=minimum_validation_match,
                     minimum_inliers=minimum_validation_inliers,
                     minimum_intersection=minimum_validation_intersection,
-                    ratio=ratio): (c1, c2)
-                for c1, c2 in candidates[start:start + batch_size]
+                    ratio=ratio,
+                ): (c1, c2)
+                for c1, c2 in candidates[start : start + batch_size]
             }
             for future in concurrent.futures.as_completed(futures):
                 if future.result():
@@ -434,14 +452,16 @@ def deduplicate_sift_dfs(
     return keep
 
 
-def deduplicate(filepaths_or_reference_df: typing.
-                Union[typing.Iterable[str], pd.DataFrame],
-                query_filepaths_or_df: typing.Optional[
-                    typing.Union[typing.Iterable[str], pd.DataFrame]] = None,
-                max_features: int = DEFAULT_MAX_FEATURES,
-                min_features: int = DEFAULT_MIN_FEATURES,
-                max_size: int = DEFAULT_MAX_SIZE,
-                **kwargs) -> typing.List[typing.Tuple[str, str]]:
+def deduplicate(
+    filepaths_or_reference_df: typing.Union[typing.Iterable[str], pd.DataFrame],
+    query_filepaths_or_df: typing.Optional[
+        typing.Union[typing.Iterable[str], pd.DataFrame]
+    ] = None,
+    max_features: int = DEFAULT_MAX_FEATURES,
+    min_features: int = DEFAULT_MIN_FEATURES,
+    max_size: int = DEFAULT_MAX_SIZE,
+    **kwargs,
+) -> typing.List[typing.Tuple[str, str]]:
     """Deduplicate images by doing the following:
     #. Unletterbox all images and resize to some maximum size, preserving
        aspect ratio.
@@ -467,7 +487,8 @@ def deduplicate(filepaths_or_reference_df: typing.
             filepaths=filepaths_or_reference_df,
             max_features=max_features,
             min_features=min_features,
-            max_size=max_size)
+            max_size=max_size,
+        )
 
     if query_filepaths_or_df is None:
         query_df = None
@@ -479,6 +500,7 @@ def deduplicate(filepaths_or_reference_df: typing.
                 filepaths=query_filepaths_or_df,
                 max_features=max_features,
                 min_features=min_features,
-                max_size=max_size)
+                max_size=max_size,
+            )
 
     return deduplicate_sift_dfs(reference_df, query_df=query_df, **kwargs)
