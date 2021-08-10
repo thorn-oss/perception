@@ -340,8 +340,29 @@ class VideoHasher(Hasher):
             state: The state dictionary at the end of processing.
         """
 
+    def compute_with_timestamps(
+        self, filepath, errors="raise", hash_format="base64", **kwargs
+    ):
+        scenes: typing.List[dict] = []
+        hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
+        return [
+            dict(
+                hash=hash,
+                start_timestamp=scenes[i].get("start_timestamp"),
+                end_timestamp=scenes[i].get("end_timestamp"),
+            )
+            for i, hash in enumerate(hashes)
+        ]
+
     # pylint: disable=arguments-differ
-    def compute(self, filepath, errors="raise", hash_format="base64", **kwargs):
+    def compute(
+        self,
+        filepath,
+        errors="raise",
+        hash_format="base64",
+        scenes=None,
+        **kwargs,
+    ):
         """Compute a hash for a video at a given filepath. All
         other arguments are passed to perception.hashers.tools.read_video.
 
@@ -352,8 +373,12 @@ class VideoHasher(Hasher):
             hash_format: One of "vector", "base64", or "hex"
             max_duration: The maximum length of the video to hash.
             max_size: The maximum size of frames to queue
+            scenes: An array used to pass scene info back to wrapper
+                functions
         """
-        state = None
+        frame_timestamp, state = None, None
+        # Iterate through the video, aggregating scene info in the state
+        # dict
         for frame, frame_index, frame_timestamp in tools.read_video(
             filepath=filepath,
             frames_per_second=self.frames_per_second,
@@ -366,8 +391,14 @@ class VideoHasher(Hasher):
                 frame_timestamp=frame_timestamp,
                 state=state,
             )
+
         assert state is not None
-        vector = self.hash_from_final_state(state=state)
+        # Persist the final timestamp in the state to allow us to pass along
+        # duration
+        state["end"] = frame_timestamp
+        vectors = self.hash_from_final_state(state=state)
+        if scenes is not None:
+            scenes += state.get("scenes", [])
         if hash_format == "vector":
             # Take care of this separately because we took out `vector`
             # as valid return type to vector_to_string().
@@ -376,7 +407,7 @@ class VideoHasher(Hasher):
             # stays consistent with original, so keeping for now.
             # return (vector.tolist() if self.returns_multiple
             #        else vector)
-            return vector  # should iterate the same as vector.tolist()
+            return vectors  # should iterate the same as vector.tolist()
         if self.returns_multiple:
-            return [self.vector_to_string(v, hash_format=hash_format) for v in vector]
-        return self.vector_to_string(vector, hash_format=hash_format)
+            return [self.vector_to_string(v, hash_format=hash_format) for v in vectors]
+        return self.vector_to_string(vectors, hash_format=hash_format)

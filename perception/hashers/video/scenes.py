@@ -92,14 +92,20 @@ class SimpleSceneDetection(VideoHasher):
             if self.base_hasher.returns_multiple:
                 return [
                     (
-                        [self.vector_to_string(h, hash_format=hash_format) for h in hs],
-                        frames,
+                        [
+                            self.vector_to_string(h, hash_format=hash_format)
+                            for h in scene["hash"]
+                        ],
+                        scene["frames"],
                     )
-                    for hs, frames in scenes
+                    for scene in scenes
                 ]
             return [
-                (self.vector_to_string(h, hash_format=hash_format), frames)
-                for h, frames in scenes
+                (
+                    self.vector_to_string(scene["hash"], hash_format=hash_format),
+                    scene["frames"],
+                )
+                for scene in scenes
             ]
 
         state = None
@@ -135,11 +141,21 @@ class SimpleSceneDetection(VideoHasher):
                 )
             )
         ):
-            state["scenes"].append((subhash, state["frames"]))
+            # Persist the scene's hash, frames, start timestamp, and end timestamp.
+            # If frame_timestamp is None, we can assume we've reached the end of
+            # the video and should use the end timestamp instead
+            state["scenes"].append(
+                dict(
+                    hash=subhash,
+                    frames=state["frames"],
+                    start_timestamp=state["start"],
+                    end_timestamp=frame_timestamp or state.get("end"),
+                )
+            )
         state["substate"] = None
         state["bounds"] = None
         state["frames"] = []
-        state["pre"] = None
+        state["previous_frame"] = None
         if frame_timestamp is not None:
             state["start"] = frame_timestamp
 
@@ -169,7 +185,7 @@ class SimpleSceneDetection(VideoHasher):
     ):
         if not state:
             state = {
-                "pre": None,
+                "previous_frame": None,
                 "substate": None,
                 "start": 0,
                 "bounds": None,
@@ -186,17 +202,18 @@ class SimpleSceneDetection(VideoHasher):
 
         # Check if we have a previous frame to compare the
         # current frame to.
-        if state["pre"] is not None:
+        if state["previous_frame"] is not None:
             # Compute similarity between the previous frame and the
             # current frame.
             similarity = 1 - np.abs(
-                state["pre"].astype("float32") - current.astype("float32")
+                state["previous_frame"].astype("float32") - current.astype("float32")
             ).sum() / (255 * 128 ** 2)
+            # If the previous frame and the current one are too dissimilar, we've started
+            # a new scene and we should handle it appropriately
             if similarity < self.similarity_threshold or (
                 self.max_scene_length is not None
                 and frame_timestamp - state["start"] > self.max_scene_length
             ):
-                # The similarity is too low. We've started a new scene.
                 self.handle_scene(state, frame_timestamp)
                 cropped, current, state["bounds"] = self.crop(frame, state["bounds"])
                 if cropped is None:
@@ -204,7 +221,7 @@ class SimpleSceneDetection(VideoHasher):
                     state["start"] = frame_timestamp
                     return state
 
-        state["pre"] = current
+        state["previous_frame"] = current
         try:
             state["substate"] = self.base_hasher.process_frame(
                 cropped, frame_index, frame_timestamp, state=state["substate"]
@@ -219,5 +236,5 @@ class SimpleSceneDetection(VideoHasher):
         if state["substate"]:
             self.handle_scene(state)
         if not self.base_hasher.returns_multiple:
-            return [h for h, _ in state["scenes"]]
-        return flatten([hs for hs, _ in state["scenes"]])
+            return [h["hash"] for h in state["scenes"]]
+        return flatten([scene["hash"] for scene in state["scenes"]])

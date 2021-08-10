@@ -6,10 +6,10 @@ import string
 import pytest
 
 from perception import hashers, testing
+
 from perception.hashers.image.pdq import PDQHash
 
 TEST_IMAGES = [os.path.join("tests", "images", f"image{n}.jpg") for n in range(1, 11)]
-
 
 # The PDQ hash isometric computation is inexact. See
 # https://github.com/faustomorales/pdqhash-python/blob/master/tests/test_compute.py
@@ -106,22 +106,6 @@ def test_synchronized_hashing():
         assert hashes1 == hashes2
 
 
-def test_scene_detection():
-    hasher = hashers.SimpleSceneDetection(
-        base_hasher=hashers.TMKL1(
-            frames_per_second=30,
-            frame_hasher=hashers.PHashU8(),
-            norm=None,
-            distance_metric="euclidean",
-        ),
-        max_scene_length=10,
-    )
-    assert len(hasher.compute("perception/testing/videos/v1.m4v", errors="raise")) == 1
-    assert len(hasher.compute("perception/testing/videos/v2.m4v", errors="raise")) == 1
-    hashes_v2s = hasher.compute("perception/testing/videos/v2s.mov", errors="raise")
-    assert len(hashes_v2s) == 2
-
-
 def test_scene_detection_batches():
     hasher = hashers.SimpleSceneDetection(
         base_hasher=hashers.TMKL1(
@@ -188,3 +172,145 @@ def test_hex_b64_conversion():
         hashers.tools.b64_to_hex(b64_string, dtype="uint8", hash_length=144)
         == hex_string
     )
+
+
+class TestSimpleSceneDetection:
+    def test_compute_where_base_hasher_returns_multiple(self):
+        # Establish the hasher
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        # Confirm it's configured as we'd like it to be. By default,
+        # base_hasher.returns_multiple is False, but we'll force it to be
+        # True in order to ensure the existing logic handles things gracefully
+        hasher.base_hasher.returns_multiple = True
+        # This assertion is likely unnecessary, but it helps us a) confirm that
+        # the underlying assumptions for this test hold true and b) protect against
+        # regression, in case something bizarre happens with returns_multiple down the line
+        assert hasher.base_hasher.returns_multiple is True
+
+        # Confirm the results of compute look like we'd expect them to. In this case
+        # we've shoehorned an invalid config in, so we don't particularly care about
+        # the values, so much as the fact that the logic parses the results gracefully
+        hashes = hasher.compute("perception/testing/videos/v2s.mov", errors="raise")
+        assert hashes
+
+    def test_compute_where_base_hasher_does_not_return_multiple(self):
+        # Establish the hasher
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        hasher.base_hasher.returns_multiple = False
+
+        # Confirm the hasher is configured as we'd like it to be
+        assert hasher.base_hasher.returns_multiple is False
+
+        # Confirm the results of compute look like we'd expect them to
+        assert (
+            len(hasher.compute("perception/testing/videos/v1.m4v", errors="raise")) == 1
+        )
+        assert (
+            len(hasher.compute("perception/testing/videos/v2.m4v", errors="raise")) == 1
+        )
+        hashes_v2s = hasher.compute("perception/testing/videos/v2s.mov", errors="raise")
+        assert len(hashes_v2s) == 2
+
+    def test_compute_batches_where_base_hasher_returns_multiple(self):
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        # Confirm it's configured as we'd like it to be. By default,
+        # base_hasher.returns_multiple is False, but we'll force it to be
+        # True in order to ensure the existing logic handles things gracefully
+        hasher.base_hasher.returns_multiple = True
+        # This assertion is likely unnecessary, but it helps us a) confirm that
+        # the underlying assumptions for this test hold true and b) protect against
+        # regression, in case something bizarre happens with returns_multiple down the line
+        assert hasher.base_hasher.returns_multiple is True
+
+        # Confirm the results of compute look like we'd expect them to. In this case
+        # we've shoehorned an invalid config in, so we don't particularly care about
+        # the values, so much as the fact that the logic parses the results gracefully
+        hashes = hasher.compute_batches(
+            "perception/testing/videos/v2s.mov", batch_size=1
+        )
+        assert hashes
+
+    def test_compute_batches_where_base_hasher_does_not_return_multiple(self):
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        hasher.base_hasher.returns_multiple = False
+
+        assert hasher.base_hasher.returns_multiple is False
+        hashes_v2s = hasher.compute("perception/testing/videos/v2s.mov", errors="raise")
+        hashes_batches = []
+        frame_count = 0
+        for batch in hasher.compute_batches(
+            "perception/testing/videos/v2s.mov", batch_size=1
+        ):
+            for hash_string, frames in batch:
+                hashes_batches.append(hash_string)
+                frame_count += len(frames)
+        # Ensure we get the same hashes whether using compute or compute_batches
+        assert len(hashes_batches) == len(hashes_v2s)
+        assert all(h1 == h2 for h1, h2 in zip(hashes_batches, hashes_v2s))
+
+        expected_frame_count = 0
+        for _, _, _ in hashers.tools.read_video(
+            "perception/testing/videos/v2s.mov", frames_per_second=30
+        ):
+            expected_frame_count += 1
+
+        # Ensure all frames were accounted for in scene detection
+        assert expected_frame_count == frame_count
+
+    def test_compute_with_timestamps(self):
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        hashes = hasher.compute_with_timestamps(
+            "perception/testing/videos/v2s.mov", errors="raise"
+        )
+
+        # Confirm we have two hashes
+        assert len(hashes) == 2
+        scene_1_hash = hashes[0]
+        scene_2_hash = hashes[1]
+
+        # Sanity check timestamps within a given scene
+        assert scene_1_hash["start_timestamp"] < scene_1_hash["end_timestamp"]
+        assert scene_2_hash["start_timestamp"] < scene_2_hash["end_timestamp"]
+
+        # Sanity check timestamps between scenes
+        assert scene_1_hash["end_timestamp"] <= scene_2_hash["start_timestamp"]
