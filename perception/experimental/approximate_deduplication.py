@@ -127,8 +127,6 @@ def compute_euclidean_pairwise_duplicates_approx(
         if faiss_cache_path is not None:
             faiss.write_index(index, faiss_cache_path)
 
-    index = build_index(X=X, pct_probe=pct_probe, approximate=True, use_gpu=use_gpu)
-
     pairs = []
 
     # Only use y_counts if present.
