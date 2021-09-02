@@ -15,7 +15,7 @@ init:
 	# Blow away the venv to deal with pip caching issues with conflicting
 	# versions of OpenCV.
 	rm -rf .venv
-	PIPENV_VENV_IN_PROJECT=true pipenv install --dev --skip-lock
+	PIPENV_VENV_IN_PROJECT=true pipenv install --dev
 	pipenv run pip install -r docs/requirements.txt
 	pipenv run pip install cython
 	pipenv run pip freeze | grep opencv | xargs -n 1 pipenv run pip uninstall -y
