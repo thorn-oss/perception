@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.7.11-buster
 
 WORKDIR /usr/src
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*

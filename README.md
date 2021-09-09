@@ -3,14 +3,17 @@
 `perception` provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use. See [the documentation](https://perception.thorn.engineering/en/latest/) for details.
 
 ## Background
+
 `perception` was initially developed at [Thorn](https://www.thorn.org) as part of our work to eliminate child sexual abuse material from the internet. For more information on the issue, check out [our CEO's TED talk](https://www.thorn.org/blog/time-is-now-eliminate-csam/).
 
 ## Getting Started
 
 ### Installation
+
 `pip install opencv-python perception`
 
 ### Hashing
+
 Hashing with different functions is simple with `perception`.
 
 ```python
@@ -23,6 +26,7 @@ distance = hasher.compute_distance(hash1, hash2)
 ```
 
 ### Examples
+
 See below for end-to-end examples for common use cases for perceptual hashes.
 
 - [Detecting child sexual abuse material](https://perception.thorn.engineering/en/latest/examples/detecting_csam.html)
@@ -30,6 +34,7 @@ See below for end-to-end examples for common use cases for perceptual hashes.
 - [Benchmarking perceptual hashes](https://perception.thorn.engineering/en/latest/examples/benchmarking.html)
 
 ## Supported Hashing Algorithms
+
 `perception` currently ships with:
 
 - pHash (DCT hash) (`perception.hashers.PHash`)
@@ -55,6 +60,7 @@ make init
 make build
 ```
 
+- Running `make init` will update this repository's dependencies and preserve the results in `Pipfile.lock`. We strongly recommend including changes to the lock alongside any other changes that may have been made.
 - You can get a JupyterLab server running to experiment with using `make lab-server`.
 - To do a (close to) comprehensive check before committing code, you can use `make precommit`.
 - To view the documentation, use `make documentation-server`.
@@ -64,6 +70,7 @@ To implement new features, please first file an issue proposing your change for 
 To report problems, please file an issue with sample code, expected results, actual results, and a complete traceback.
 
 ## Alternatives
+
 There are other packages worth checking out to see if they meet your needs for perceptual hashing. Here are some
 examples.
 
