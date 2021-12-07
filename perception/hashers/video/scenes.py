@@ -128,7 +128,7 @@ class SimpleSceneDetection(VideoHasher):
         if state["scenes"]:
             yield convert(state["scenes"])
 
-    def handle_scene(self, state, frame_timestamp=None):
+    def handle_scene(self, state, frame_timestamp=None, frame_index=None):
         subhash = self.base_hasher.hash_from_final_state(state["substate"])
         if subhash is not None and (
             self.base_hasher.returns_multiple
@@ -150,6 +150,7 @@ class SimpleSceneDetection(VideoHasher):
                     frames=state["frames"],
                     start_timestamp=state["start"],
                     end_timestamp=frame_timestamp or state.get("end"),
+                    frame_index=state["frame_index"],
                 )
             )
         state["substate"] = None
@@ -158,6 +159,8 @@ class SimpleSceneDetection(VideoHasher):
         state["previous_frame"] = None
         if frame_timestamp is not None:
             state["start"] = frame_timestamp
+        if frame_index is not None:
+            state["frame_index"] = frame_index
 
     def crop(self, frame, bounds):
         # Check to see we have set bounds for this scene yet.
@@ -191,6 +194,7 @@ class SimpleSceneDetection(VideoHasher):
                 "bounds": None,
                 "frames": [],
                 "scenes": [],
+                "frame_index": 0,
             }
         cropped, current, state["bounds"] = self.crop(frame, state["bounds"])
         if cropped is None:
@@ -214,7 +218,7 @@ class SimpleSceneDetection(VideoHasher):
                 self.max_scene_length is not None
                 and frame_timestamp - state["start"] > self.max_scene_length
             ):
-                self.handle_scene(state, frame_timestamp)
+                self.handle_scene(state, frame_timestamp, frame_index)
                 cropped, current, state["bounds"] = self.crop(frame, state["bounds"])
                 if cropped is None:
                     # See comment above about invalid crops.

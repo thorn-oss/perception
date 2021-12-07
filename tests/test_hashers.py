@@ -314,3 +314,6 @@ class TestSimpleSceneDetection:
 
         # Sanity check timestamps between scenes
         assert scene_1_hash["end_timestamp"] <= scene_2_hash["start_timestamp"]
+
+        # Sanity check frame index between scenes
+        assert scene_1_hash["frame_index"] <= scene_2_hash["frame_index"]

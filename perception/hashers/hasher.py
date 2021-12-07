@@ -350,6 +350,7 @@ class VideoHasher(Hasher):
                 hash=hash,
                 start_timestamp=scenes[i].get("start_timestamp"),
                 end_timestamp=scenes[i].get("end_timestamp"),
+                frame_index=scenes[i].get("frame_index"),
             )
             for i, hash in enumerate(hashes)
         ]
