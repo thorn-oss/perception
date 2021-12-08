@@ -194,7 +194,7 @@ class SimpleSceneDetection(VideoHasher):
                 "bounds": None,
                 "frames": [],
                 "scenes": [],
-                "frame_index": 0,
+                "frame_index": frame_index,
             }
         cropped, current, state["bounds"] = self.crop(frame, state["bounds"])
         if cropped is None:
