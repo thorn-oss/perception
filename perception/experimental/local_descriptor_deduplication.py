@@ -14,6 +14,7 @@ import perception.experimental.approximate_deduplication as ad
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
 DEFAULT_THRESHOLD = 100
+DEFAULT_COARSE_THRESHOLD = 75
 DEFAULT_OVERLAP = 0.01
 DEFAULT_MATCH_PCT = 0.4
 DEFAULT_INTERSECTION = 0.6
@@ -361,7 +362,7 @@ def deduplicate_sift_dfs(
     match_df: pd.DataFrame,
     query_df: typing.Optional[pd.DataFrame] = None,
     coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
-    coarse_threshold: int = DEFAULT_THRESHOLD,
+    coarse_threshold: int = DEFAULT_COARSE_THRESHOLD,
     minimum_coarse_overlap: float = DEFAULT_OVERLAP,
     minimum_validation_match: float = DEFAULT_MATCH_PCT,
     minimum_validation_intersection: float = DEFAULT_INTERSECTION,
