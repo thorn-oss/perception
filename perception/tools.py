@@ -294,7 +294,7 @@ class SaferMatcher:
             username = os.environ["SAFER_MATCHING_SERVICE_USERNAME"]
             password = os.environ["SAFER_MATCHING_SERVICE_PASSWORD"]
         if username is not None and password is not None:
-            credentials = "%s:%s" % (username, password)
+            credentials = f"{username}:{password}"
             api_key = base64.b64encode(credentials.encode("ascii")).decode("ascii")
         if api_key is None:
             api_key = os.environ.get("SAFER_MATCHING_SERVICE_API_KEY")

@@ -124,12 +124,10 @@ class Filterable(ABC):
         for field, included in kwargs.items():
             existing = self._df[field].unique()
             if not all(inc in existing for inc in included):
-                message = "Did not find {missing} in column {field} dataset.".format(
-                    missing=", ".join(
-                        [str(inc) for inc in included if inc not in existing]
-                    ),
-                    field=field,
+                missing = ", ".join(
+                    [str(inc) for inc in included if inc not in existing]
                 )
+                message = f"Did not find {missing} in column {field} dataset."
                 warnings.warn(message, UserWarning)
             df = df[df[field].isin(included)]
         return self.__class__(df.copy())

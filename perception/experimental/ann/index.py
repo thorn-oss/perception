@@ -32,9 +32,7 @@ def build_query(table, ids, paramstyle, columns):
         params = {"ids": tuple(ids)}
     elif paramstyle == "qmark":
         params = ids
-        sql = query.format(
-            ",".join(columns), table, "({})".format(",".join("?" * len(ids)))
-        )
+        sql = query.format(",".join(columns), table, f"({','.join('?' * len(ids))})")
     else:
         raise NotImplementedError("Unsupported paramstyle.")
     return sql, params
