@@ -21,7 +21,7 @@ init:
 	pipenv run pip install -r docs/requirements.txt
 	pipenv run pip install cython
 	pipenv run pip freeze | grep opencv | xargs -n 1 pipenv run pip uninstall -y
-	pipenv run pip install -U --no-cache-dir opencv-contrib-python-headless
+	pipenv run pip install -U --no-cache-dir opencv-contrib-python-headless==4.4.0.46
 bash:
 	$(IN_DOCKER) -it $(IMAGE_NAME) bash
 lab-server:
