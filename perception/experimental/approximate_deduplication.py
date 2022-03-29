@@ -5,9 +5,8 @@ import os.path as op
 import typing
 import logging
 
-from networkx.algorithms import approximation
 import typing_extensions
-import networkx as nx
+import networkit as nk
 import numpy as np
 import faiss
 
@@ -181,7 +180,7 @@ def pairs_to_clusters(
     ids: typing.Iterable[str],
     pairs: typing.Iterable[typing.Tuple[str, str]],
     strictness: typing_extensions.Literal[
-        "clique", "community", "component"
+        "clique"
     ] = "clique",
     max_clique_batch_size: int = 1000,
 ) -> typing.List[ClusterAssignment]:
@@ -201,40 +200,60 @@ def pairs_to_clusters(
         A list of cluster assignments (dicts with id and cluster
         entries).
     """
-    assert strictness in ["component", "community", "clique"], "Invalid strictness."
-    graph = nx.Graph()
+    assert strictness in ["clique"], "Invalid strictness."
+    md5_to_node_map = {v: i for i, v in enumerate(ids)}
+    node_to_md5_map = {v: k for k, v in md5_to_node_map.items()}
+
     LOGGER.debug("Building graph.")
-    graph.add_nodes_from(ids)
-    graph.add_edges_from(pairs)
+    graph = nk.Graph(len(ids))
+    node_pairs = {
+        (md5_to_node_map[pair[0]], md5_to_node_map[pair[1]]) for pair in pairs
+    }
+    for node_pair in node_pairs:
+        graph.addEdge(node_pair[0], node_pair[1])
+
     assignments: typing.List[ClusterAssignment] = []
     cluster_index = 0
-    for component in nx.connected_components(graph):
+    cc_query = nk.components.ConnectedComponents(graph)
+    cc_query.run()
+    components = cc_query.getComponents()
+
+    for component in components:
         LOGGER.debug("Got component with size: %s", len(component))
-        if strictness == "component":
-            assignments.extend([{"id": n, "cluster": cluster_index} for n in component])
-            cluster_index += 1
-            continue
-        for community in nx.algorithms.community.asyn_lpa_communities(
-            graph.subgraph(component)
-        ):
-            LOGGER.debug("Got community with size: %s", len(community))
-            if strictness == "community":
-                assignments.extend(
-                    [{"id": n, "cluster": cluster_index} for n in community]
-                )
-                cluster_index += 1
-                continue
-            community = list(community)  # Need to do this to do batching.
-            for start in range(0, len(community), max_clique_batch_size):
-                nodes = community[start : start + max_clique_batch_size]
-                LOGGER.debug("Creating subgraph with %s nodes.", len(nodes))
-                subgraph = graph.subgraph(nodes).copy()
-                while subgraph:
-                    LOGGER.debug("Subgraph size: %s", len(subgraph))
-                    clique = approximation.clique.max_clique(subgraph)
+        # Map between node values for a connected component
+        cc_node_map = {i: v for i, v in enumerate(component)}
+
+        cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
+        communities = nk.community.detectCommunities(cc_sub_graph,
+                                                     algo=nk.community.PLP(cc_sub_graph),
+                                                     inspect=False)
+        community_map = communities.subsetSizeMap()
+        for community, size in community_map.items():
+            LOGGER.debug("Got community with size: %s", size)
+            community_members = list(communities.getMembers(community))  # Need to do this to do batching.
+            community_members = [cc_node_map[i] for i in community_members]
+            for start in range(0, len(community_members), max_clique_batch_size):
+                community_nodes = community_members[start : start + max_clique_batch_size]
+                LOGGER.debug("Creating subgraph with %s nodes.", len(community_nodes))
+                # Map between node values for a community
+                community_node_map = {i: v for i, v in enumerate(community_nodes)}
+                subgraph = nk.graphtools.subgraphFromNodes(graph, community_nodes, compact=True)
+
+                while subgraph.numberOfNodes() > 0:
+                    LOGGER.debug("Subgraph size: %s", subgraph.numberOfNodes())
+                    clique = nk.clique.MaximalCliques(subgraph, maximumOnly=True, callback=None)
+                    clique.run()
+                    clique_members = clique.getCliques()[0]
                     assignments.extend(
-                        [{"id": n, "cluster": cluster_index} for n in clique]
+                        [{"id": community_node_map[n], "cluster": cluster_index} for n in clique_members]
                     )
                     cluster_index += 1
-                    subgraph.remove_nodes_from(clique)
+                    {subgraph.removeNode(n) for n in clique_members}
+        del cc_sub_graph
+    assignments = [
+        {'id': node_to_md5_map[assignment['id']], 'cluster': assignment['cluster']} for assignment in assignments
+    ]
+
+    del graph
+
     return assignments
