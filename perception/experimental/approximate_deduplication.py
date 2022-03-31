@@ -180,15 +180,17 @@ def pairs_to_clusters(
     ids: typing.Iterable[str],
     pairs: typing.Iterable[typing.Tuple[str, str]],
     strictness: typing_extensions.Literal[
-        "clique"
+        "clique", "community", "component"
     ] = "clique",
     max_clique_batch_size: int = 1000,
 ) -> typing.List[ClusterAssignment]:
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
     Args:
-        ids: A list of file identifiers (e.g., filepaths).
-        pairs: A list of pairs of file identifiers.
+        ids: A list of node ids (e.g., filepaths). Note, node ids must be in an ordered array
+        otherwise the results may not make sense. We have to map between the ids that Networkit uses
+        internally and the ids supplied by the caller.
+        pairs: A list of pairs of node ids, each pair is assumed to have an edge
         strictness: The level at which groups will be clustered. "component"
             means that all clusters will be connected components. "community"
             will select clusters of files within components that are clustered
@@ -200,7 +202,7 @@ def pairs_to_clusters(
         A list of cluster assignments (dicts with id and cluster
         entries).
     """
-    assert strictness in ["clique"], "Invalid strictness."
+    assert strictness in ["component", "community", "clique"], "Invalid strictness."
     md5_to_node_map = {v: i for i, v in enumerate(ids)}
     node_to_md5_map = {v: k for k, v in md5_to_node_map.items()}
 
@@ -220,39 +222,71 @@ def pairs_to_clusters(
 
     for component in components:
         LOGGER.debug("Got component with size: %s", len(component))
+        if strictness == "component":
+            assignments.extend(
+                [
+                    {"id": node_to_md5_map[n], "cluster": cluster_index}
+                    for n in component
+                ]
+            )
+            cluster_index += 1
+            continue
         # Map between node values for a connected component
-        cc_node_map = {i: v for i, v in enumerate(component)}
+        cc_node_map = {i: v for i, v in enumerate(component)}  # pylint: disable=unnecessary-comprehension
 
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
-        communities = nk.community.detectCommunities(cc_sub_graph,
-                                                     algo=nk.community.PLP(cc_sub_graph),
-                                                     inspect=False)
+        communities = nk.community.detectCommunities(
+            cc_sub_graph, algo=nk.community.PLP(cc_sub_graph), inspect=False
+        )
         community_map = communities.subsetSizeMap()
         for community, size in community_map.items():
             LOGGER.debug("Got community with size: %s", size)
-            community_members = list(communities.getMembers(community))  # Need to do this to do batching.
+            community_members = list(
+                communities.getMembers(community)
+            )  # Need to do this to do batching.
             community_members = [cc_node_map[i] for i in community_members]
+            if strictness == "community":
+                assignments.extend(
+                    [
+                        {"id": node_to_md5_map[n], "cluster": cluster_index}
+                        for n in community_members
+                    ]
+                )
+                cluster_index += 1
+                continue
+
             for start in range(0, len(community_members), max_clique_batch_size):
-                community_nodes = community_members[start : start + max_clique_batch_size]
+                community_nodes = community_members[
+                    start : start + max_clique_batch_size
+                ]
                 LOGGER.debug("Creating subgraph with %s nodes.", len(community_nodes))
                 # Map between node values for a community
-                community_node_map = {i: v for i, v in enumerate(community_nodes)}
-                subgraph = nk.graphtools.subgraphFromNodes(graph, community_nodes, compact=True)
+                community_node_map = {i: v for i, v in enumerate(community_nodes)}  # pylint: disable=unnecessary-comprehension
+                subgraph = nk.graphtools.subgraphFromNodes(
+                    graph, community_nodes, compact=True
+                )
 
                 while subgraph.numberOfNodes() > 0:
                     LOGGER.debug("Subgraph size: %s", subgraph.numberOfNodes())
-                    clique = nk.clique.MaximalCliques(subgraph, maximumOnly=True, callback=None)
+                    clique = nk.clique.MaximalCliques(
+                        subgraph, maximumOnly=True, callback=None
+                    )
                     clique.run()
                     clique_members = clique.getCliques()[0]
                     assignments.extend(
-                        [{"id": community_node_map[n], "cluster": cluster_index} for n in clique_members]
+                        [
+                            {"id": community_node_map[n], "cluster": cluster_index}
+                            for n in clique_members
+                        ]
                     )
                     cluster_index += 1
-                    {subgraph.removeNode(n) for n in clique_members}
+                    {subgraph.removeNode(n) for n in clique_members}  # pylint: disable=expression-not-assigned
         del cc_sub_graph
-    assignments = [
-        {'id': node_to_md5_map[assignment['id']], 'cluster': assignment['cluster']} for assignment in assignments
-    ]
+    if strictness == "clique":
+        assignments = [
+            {"id": node_to_md5_map[assignment["id"]], "cluster": assignment["cluster"]}
+            for assignment in assignments
+        ]
 
     del graph
 
