@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
 
 ClusterAssignment = typing_extensions.TypedDict(
-    "ClusterAssignment", {"cluster": int, "id": str}
+    "ClusterAssignment", {"cluster": int, "id": typing.Any}
 )
 
 
@@ -177,7 +177,7 @@ def compute_euclidean_pairwise_duplicates_approx(
 
 
 def pairs_to_clusters(
-    ids: typing.Iterable[str],
+    ids: typing.List[str],
     pairs: typing.Iterable[typing.Tuple[str, str]],
     strictness: typing_extensions.Literal[
         "clique", "community", "component"
