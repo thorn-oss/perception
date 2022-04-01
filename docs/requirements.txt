@@ -11,4 +11,3 @@ typing-extensions
 faiss-cpu
 aiohttp
 python-json-logger
-networkit
