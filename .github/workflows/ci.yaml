@@ -11,6 +11,4 @@ jobs:
         steps:
         - uses: actions/checkout@v2
         - name: Run precommit
-        - run: |
-          sudo apt-get install -y cmake
-          make precommit_docker
+          run: make precommit_docker
