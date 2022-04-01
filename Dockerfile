@@ -1,7 +1,7 @@
 FROM python:3.7.11-buster
 
 WORKDIR /usr/src
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg cmake && rm -rf /var/lib/apt/lists/*
 COPY ./versioneer.py ./
 COPY ./setup* ./
 COPY ./Pipfile* ./
