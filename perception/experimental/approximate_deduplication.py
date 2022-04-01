@@ -264,8 +264,8 @@ def pairs_to_clusters(
                 LOGGER.debug("Creating subgraph with %s nodes.", len(community_nodes))
                 # Map between node values for a community
                 community_node_map = {
-                    i: v for i, v in enumerate(community_nodes)
-                }  # pylint: disable=unnecessary-comprehension
+                    i: v for i, v in enumerate(community_nodes)  # pylint: disable=unnecessary-comprehension
+                }
                 subgraph = nk.graphtools.subgraphFromNodes(
                     graph, community_nodes, compact=True
                 )
@@ -285,8 +285,8 @@ def pairs_to_clusters(
                     )
                     cluster_index += 1
                     {
-                        subgraph.removeNode(n) for n in clique_members
-                    }  # pylint: disable=expression-not-assigned
+                        subgraph.removeNode(n) for n in clique_members  # pylint: disable=expression-not-assigned
+                    }
         del cc_sub_graph
     if strictness == "clique":
         assignments = [
