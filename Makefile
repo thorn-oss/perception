@@ -18,8 +18,8 @@ init:
 	# Pipenv install will update Pipfile.lock. The lock provides an artifact of the last successful build,
 	# so we strongly encourage committing changes to the lock alongside any other changes made.
 	PIPENV_VENV_IN_PROJECT=true pipenv install --dev
-	pipenv run pip install -r docs/requirements.txt
 	pipenv run pip install cython
+	pipenv run pip install -r docs/requirements.txt
 	pipenv run pip freeze | grep opencv | xargs -n 1 pipenv run pip uninstall -y
 	pipenv run pip install -U --no-cache-dir opencv-contrib-python-headless==4.4.0.46
 bash:
