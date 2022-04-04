@@ -232,12 +232,7 @@ def pairs_to_clusters(
             cluster_index += 1
             continue
         # Map between node values for a connected component
-        cc_node_map = {
-            i: v
-            for i, v in enumerate(  # pylint: disable=unnecessary-comprehension
-                component
-            )
-        }
+        cc_node_map = dict(enumerate(component))
 
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
         communities = nk.community.detectCommunities(
