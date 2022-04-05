@@ -270,7 +270,7 @@ def pairs_to_clusters(
                 while subgraph.numberOfNodes() > 0:
                     LOGGER.debug("Subgraph size: %s", subgraph.numberOfNodes())
                     clique = nk.clique.MaximalCliques(
-                        subgraph, maximumOnly=True, callback=None
+                        subgraph, maximumOnly=True
                     )
                     clique.run()
                     clique_members = clique.getCliques()[0]
