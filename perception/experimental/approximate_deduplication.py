@@ -187,9 +187,7 @@ def pairs_to_clusters(
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
     Args:
-        ids: A list of node ids (e.g., filepaths). Note, node ids must be in an ordered array
-        otherwise the results may not make sense. We have to map between the ids that Networkit uses
-        internally and the ids supplied by the caller.
+        ids: A list of node ids (e.g., filepaths).
         pairs: A list of pairs of node ids, each pair is assumed to have an edge
         strictness: The level at which groups will be clustered. "component"
             means that all clusters will be connected components. "community"
