@@ -228,7 +228,7 @@ def pairs_to_clusters(
         # Map between node values for a connected component
         component_node_map = dict(enumerate(component))
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
-        algo = nk.community.PLP(cc_sub_graph, refine=False)
+        algo = nk.community.PLP(cc_sub_graph)
         algo.run()
         communities = algo.getPartition()
         community_map = communities.subsetSizeMap()
