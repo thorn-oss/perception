@@ -177,7 +177,7 @@ def compute_euclidean_pairwise_duplicates_approx(
 
 
 def pairs_to_clusters(
-    ids: typing.List[str],
+    ids: typing.Iterable[str],
     pairs: typing.Iterable[typing.Tuple[str, str]],
     strictness: typing_extensions.Literal[
         "clique", "community", "component"
@@ -203,14 +203,13 @@ def pairs_to_clusters(
         entries).
     """
     assert strictness in ["component", "community", "clique"], "Invalid strictness."
-    md5_to_node_map = {v: i for i, v in enumerate(ids)}
-    node_to_md5_map = {v: k for k, v in md5_to_node_map.items()}
+    list_ids = list(ids)
+    id_to_node_map = {v: i for i, v in enumerate(list_ids)}
+    node_to_id_map = {v: k for k, v in id_to_node_map.items()}
 
     LOGGER.debug("Building graph.")
-    graph = nk.Graph(len(ids))
-    node_pairs = {
-        (md5_to_node_map[pair[0]], md5_to_node_map[pair[1]]) for pair in pairs
-    }
+    graph = nk.Graph(len(list_ids))
+    node_pairs = {(id_to_node_map[pair[0]], id_to_node_map[pair[1]]) for pair in pairs}
     for node_pair in node_pairs:
         graph.addEdge(node_pair[0], node_pair[1])
 
@@ -224,15 +223,12 @@ def pairs_to_clusters(
         LOGGER.debug("Got component with size: %s", len(component))
         if strictness == "component":
             assignments.extend(
-                [
-                    {"id": node_to_md5_map[n], "cluster": cluster_index}
-                    for n in component
-                ]
+                [{"id": node_to_id_map[n], "cluster": cluster_index} for n in component]
             )
             cluster_index += 1
             continue
         # Map between node values for a connected component
-        cc_node_map = dict(enumerate(component))
+        component_node_map = dict(enumerate(component))
 
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
         communities = nk.community.detectCommunities(
@@ -244,11 +240,11 @@ def pairs_to_clusters(
             community_members = list(
                 communities.getMembers(community)
             )  # Need to do this to do batching.
-            community_members = [cc_node_map[i] for i in community_members]
+            community_members = [component_node_map[i] for i in community_members]
             if strictness == "community":
                 assignments.extend(
                     [
-                        {"id": node_to_md5_map[n], "cluster": cluster_index}
+                        {"id": node_to_id_map[n], "cluster": cluster_index}
                         for n in community_members
                     ]
                 )
@@ -291,7 +287,7 @@ def pairs_to_clusters(
         del cc_sub_graph
     if strictness == "clique":
         assignments = [
-            {"id": node_to_md5_map[assignment["id"]], "cluster": assignment["cluster"]}
+            {"id": node_to_id_map[assignment["id"]], "cluster": assignment["cluster"]}
             for assignment in assignments
         ]
 
