@@ -257,12 +257,7 @@ def pairs_to_clusters(
                 ]
                 LOGGER.debug("Creating subgraph with %s nodes.", len(community_nodes))
                 # Map between node values for a community
-                community_node_map = {
-                    i: v
-                    for i, v in enumerate(  # pylint: disable=unnecessary-comprehension
-                        community_nodes
-                    )
-                }
+                community_node_map = dict(enumerate(community_nodes))
                 subgraph = nk.graphtools.subgraphFromNodes(
                     graph, community_nodes, compact=True
                 )
