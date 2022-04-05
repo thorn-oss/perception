@@ -281,9 +281,8 @@ def pairs_to_clusters(
                         ]
                     )
                     cluster_index += 1
-                    {  # pylint: disable=expression-not-assigned
-                        subgraph.removeNode(n) for n in clique_members
-                    }
+                    for n in clique_members:
+                          subgraph.removeNode(n) 
         del cc_sub_graph
     if strictness == "clique":
         assignments = [
