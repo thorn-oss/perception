@@ -227,11 +227,10 @@ def pairs_to_clusters(
             continue
         # Map between node values for a connected component
         component_node_map = dict(enumerate(component))
-
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
-        communities = nk.community.detectCommunities(
-            cc_sub_graph, algo=nk.community.PLP(cc_sub_graph), inspect=False
-        )
+        algo = nk.community.PLP(cc_sub_graph, refine=False)
+        algo.run()
+        communities = algo.getPartition()
         community_map = communities.subsetSizeMap()
         for community, size in community_map.items():
             LOGGER.debug("Got community with size: %s", size)
@@ -262,27 +261,20 @@ def pairs_to_clusters(
 
                 while subgraph.numberOfNodes() > 0:
                     LOGGER.debug("Subgraph size: %s", subgraph.numberOfNodes())
-                    clique = nk.clique.MaximalCliques(
-                        subgraph, maximumOnly=True
-                    )
+                    clique = nk.clique.MaximalCliques(subgraph, maximumOnly=True)
                     clique.run()
                     clique_members = clique.getCliques()[0]
                     assignments.extend(
                         [
-                            {"id": community_node_map[n], "cluster": cluster_index}
+                            {
+                                "id": node_to_id_map[community_node_map[n]],
+                                "cluster": cluster_index,
+                            }
                             for n in clique_members
                         ]
                     )
                     cluster_index += 1
                     for n in clique_members:
-                          subgraph.removeNode(n) 
-        del cc_sub_graph
-    if strictness == "clique":
-        assignments = [
-            {"id": node_to_id_map[assignment["id"]], "cluster": assignment["cluster"]}
-            for assignment in assignments
-        ]
-
-    del graph
+                        subgraph.removeNode(n)
 
     return assignments
