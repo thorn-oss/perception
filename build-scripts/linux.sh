@@ -6,7 +6,7 @@ yum install -y atlas-devel python-devel
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-    if [[ ${PYBIN} != *$"cp27"*  && ${PYBIN} != *$"cp310"* ]]; then
+    if [[ ${PYBIN} != *$"cp27"* ]]; then
         echo ${PYBIN}
         "${PYBIN}/pip" install cython numpy
         "${PYBIN}/python" setup.py sdist
@@ -16,5 +16,5 @@ done
 
 # Bundle external shared libraries into the wheels
 for whl in dist/*.whl; do
-    auditwheel repair "$whl" --plat manylinux1_x86_64 -w /io/dist
+    auditwheel repair "$whl" --plat manylinux2010_x86_64 -w /io/dist
 done
