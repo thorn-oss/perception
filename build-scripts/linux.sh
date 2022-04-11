@@ -6,7 +6,7 @@ yum install -y atlas-devel python-devel
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-    if [[ ${PYBIN} != *$"cp27"* ]]; then
+    if [[ ${PYBIN} != *$"cp27"*  && ${PYBIN} != *$"cp310"* ]]; then
         echo ${PYBIN}
         "${PYBIN}/pip" install cython numpy
         "${PYBIN}/python" setup.py sdist
