@@ -1,7 +1,7 @@
 name: release
 on:
     push:
-      tags:        
+      tags:
         - v*
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
               if: ${{ matrix.os == 'macos-latest' }}
             - run: build-scripts/windows.bat
               if: ${{ matrix.os == 'windows-latest' }}
-            - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux1_x86_64 /io/build-scripts/linux.sh
+            - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux2010_x86_64 /io/build-scripts/linux.sh
               if: ${{ matrix.os == 'ubuntu-latest' }}
             - uses: actions/upload-artifact@v2
               if: ${{ matrix.os != 'ubuntu-latest' }}
