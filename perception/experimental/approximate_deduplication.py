@@ -142,7 +142,7 @@ def compute_euclidean_pairwise_duplicates_approx(
         if length == 0:
             continue
         Xq = M[end - length : end]
-        lims, _, idxs = index.range_search(Xq, threshold ** 2)
+        lims, _, idxs = index.range_search(Xq, threshold**2)
         lims = lims.astype("int32")
         matched = [
             match

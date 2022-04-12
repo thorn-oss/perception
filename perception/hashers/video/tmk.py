@@ -109,14 +109,14 @@ class TMKL2(VideoHasher):
             a_xp = np.concatenate([self.a, self.a], axis=1)  # (T, 2m, 1)
             fv_a_0 = fv_a / a_xp
             fv_b_0 = fv_b / a_xp
-            norm_a = np.sqrt(np.sum(fv_a_0 ** 2, axis=2, keepdims=True) + eps) + eps
-            norm_b = np.sqrt(np.sum(fv_b_0 ** 2, axis=2, keepdims=True) + eps) + eps
+            norm_a = np.sqrt(np.sum(fv_a_0**2, axis=2, keepdims=True) + eps) + eps
+            norm_b = np.sqrt(np.sum(fv_b_0**2, axis=2, keepdims=True) + eps) + eps
             fv_a = fv_a / norm_a
             fv_b = fv_b / norm_b
 
         if "freq" in normalization:
             norm_a, norm_b = [
-                np.sqrt((fv ** 2).sum(axis=1, keepdims=True) / self.m + eps) + eps
+                np.sqrt((fv**2).sum(axis=1, keepdims=True) / self.m + eps) + eps
                 for fv in [fv_a, fv_b]
             ]
             fv_a = fv_a / norm_a
@@ -124,7 +124,7 @@ class TMKL2(VideoHasher):
 
         if normalization == "matrix":
             norm_a, norm_b = [
-                np.sqrt(np.sum(fv ** 2, axis=(1, 2)) + eps)[..., np.newaxis] + eps
+                np.sqrt(np.sum(fv**2, axis=(1, 2)) + eps)[..., np.newaxis] + eps
                 for fv in [fv_a, fv_b]
             ]  # (T, 1)
 

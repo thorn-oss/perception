@@ -211,7 +211,7 @@ class SimpleSceneDetection(VideoHasher):
             # current frame.
             similarity = 1 - np.abs(
                 state["previous_frame"].astype("float32") - current.astype("float32")
-            ).sum() / (255 * 128 ** 2)
+            ).sum() / (255 * 128**2)
             # If the previous frame and the current one are too dissimilar, we've started
             # a new scene and we should handle it appropriately
             if similarity < self.similarity_threshold or (

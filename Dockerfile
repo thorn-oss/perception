@@ -9,4 +9,4 @@ COPY ./docs/requirements.txt ./docs/requirements.txt
 COPY ./Makefile ./
 COPY ./pyproject.toml ./
 COPY ./perception/benchmarking/extensions.pyx ./perception/benchmarking/extensions.pyx
-RUN pip install pipenv && make init && rm -rf /root/.cache/pip
+RUN pip install pipenv && make init-project && rm -rf /root/.cache/pip
