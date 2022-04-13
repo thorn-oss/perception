@@ -17,7 +17,7 @@ repos:
     hooks:
       - id: pylint
         name: pylint
-        entry: make format_check
+        entry: make lint_check
         language: system
         types: [python]
   - repo: https://github.com/pre-commit/mirrors-mypy
