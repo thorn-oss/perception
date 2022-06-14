@@ -418,6 +418,8 @@ def _get_keyframes(filepath):
             raise ValueError(f"{str(out)}: {str(err)}")
         data = json.loads(out.decode("utf-8"))["frames"]
         frames = [f["coded_picture_number"] for f in data if f["pict_type"] == "I"]
+        # ffprobe will return frames repeated and out of order at times. This
+        # last step deduplicates and sorts them.
         frames = list(set(frames))
         frames.sort()
     return frames
@@ -499,14 +501,16 @@ def read_video_to_generator_ffmpeg(
         make
         sudo make install
         cd ..
-        git clone --branch release/4.3 https://git.ffmpeg.org/ffmpeg.git
+        git clone https://git.ffmpeg.org/ffmpeg.git
         cd ffmpeg
         sudo apt-get update && sudo apt-get -y install yasm
         export PATH=$PATH:/usr/local/cuda/bin
+        # Note: Scroll far right to see full configure command:
         ./configure --enable-cuda-nvcc --enable-cuvid --enable-nvenc --enable-nvdec \
                     --enable-libnpp --enable-nonfree --extra-cflags=-I/usr/local/cuda/include \
                     --extra-ldflags=-L/usr/local/cuda/lib64
         make -j 10
+        sudo make install
 
     Returns:
         See :code:`read_video`
