@@ -970,29 +970,29 @@ def compute_synchronized_video_hashes(
 
 
 def unletterbox(
-    image,
+    image, only_remove_black: bool = False, min_fraction_meaningful_pixles: float = 0.1
 ) -> typing.Optional[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
     """Return bounds of non-trivial region of image or None.
 
     Unletterboxing is cropping an image such that trivial edge regions
     are removed. Trivial in this context means that the majority of
     the values in that row or column are zero or very close to
-    zero. This is why we don't use the terms "non-blank" or
-    "non-empty."
+    zero.
 
     In order to do unletterboxing, this function returns bounds in the
     form (x1, x2), (y1, y2) where:
 
-    - x1 is the index of the first column where over 10% of the pixels
+    - x1 is the index of the first column where over X% of the pixels
       have means (average of R, G, B) > 2.
-    - x2 is the index of the last column where over 10% of the pixels
+    - x2 is the index of the last column where over X% of the pixels
       have means > 2.
-    - y1 is the index of the first row where over 10% of the pixels
+    - y1 is the index of the first row where over X% of the pixels
       have means > 2.
-    - y2 is the index of the last row where over 10% of the pixels
+    - y2 is the index of the last row where over X% of the pixels
       have means > 2.
+    - X is min_fraction_meaningful_pixles 0.1 == 10%
 
-    If there are zero columns or zero rows where over 10% of the
+    If there are zero columns or zero rows where over X% of the
     pixels have means > 2, this function returns `None`.
 
     Note that in the case(s) of a single column and/or row of
@@ -1011,6 +1011,10 @@ def unletterbox(
 
     Args:
         image: The image from which to remove letterboxing.
+        only_remove_black: Set False to remove borders fo any color.
+        min_fraction_meaningful_pixles: 0 to 1: if cropped version is
+        smaller than this fraction of the image do not unletterbox.
+        0.1 == 10% of the image.
 
     Returns:
         A pair of coordinates bounds of the form (x1, x2)
@@ -1018,6 +1022,23 @@ def unletterbox(
         bottom bounds.
 
     """
+    assert 0 <= min_fraction_meaningful_pixles <= 1, "min_size must be between 0 and 1"
+    if not only_remove_black:
+        height, width, colors = image.shape
+        background_pixel = (height - 1, width - 1)
+        # Grab reference color.
+        bg_color = image[
+            background_pixel[0],
+            background_pixel[1],
+        ]
+
+        # Create an image of just that color.
+        mask = np.ones((height, width, colors))
+        mask[:, :] = bg_color
+
+        # Diff the image so that color is black.
+        image = np.abs(image - mask)
+
     # adj should be thought of as a boolean at each pixel indicating
     # whether or not that pixel is non-trivial (True) or not (False).
     adj = image.mean(axis=2) > 2
@@ -1025,9 +1046,11 @@ def unletterbox(
     if adj.all():
         return (0, image.shape[1] + 1), (0, image.shape[0] + 1)
 
-    y = np.where(adj.sum(axis=1) > 0.1 * image.shape[1])[0]
-    x = np.where(adj.sum(axis=0) > 0.1 * image.shape[0])[0]
+    # Find rows and cols with at least min_fraction_meaningful_pixles.
+    y = np.where(adj.sum(axis=1) > min_fraction_meaningful_pixles * image.shape[1])[0]
+    x = np.where(adj.sum(axis=0) > min_fraction_meaningful_pixles * image.shape[0])[0]
 
+    # Either no rows or no columns had enough meaningful information to keep.
     if len(y) == 0 or len(x) == 0:
         return None
 

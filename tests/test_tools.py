@@ -170,6 +170,26 @@ def test_unletterbox():
     assert x2 == 25 + image.shape[1]
 
 
+def test_unletterbox_color():
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    padded = np.zeros((image.shape[0] + 100, image.shape[1] + 50, 3), dtype="uint8")
+    padded[:, :] = (200, 0, 200)
+    padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
+    # Should not unletterbox since not black.
+    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded, only_remove_black=True)
+    assert y1 == 0
+    assert y2 == padded.shape[0]
+    assert x1 == 0
+    assert x2 == padded.shape[1]
+
+    # Should  unletterbox color:
+    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded, only_remove_black=False)
+    assert y1 == 50
+    assert y2 == 50 + image.shape[0]
+    assert x1 == 25
+    assert x2 == 25 + image.shape[1]
+
+
 def test_unletterbox_aspect_ratio():
     """Test the value of .1 in unletterbox()."""
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
