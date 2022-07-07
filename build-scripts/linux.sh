@@ -6,7 +6,8 @@ yum install -y atlas-devel python-devel
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-    if [[ ${PYBIN} != *$"cp27"* ]]; then
+    # Block unsupported Python Versions. This currently blocks 2.7 and 3.11.
+    if [[ ${PYBIN} != *$"cp27"* ]] && [[ ${PYBIN} != *$"cp311"* ]]; then
         echo ${PYBIN}
         "${PYBIN}/pip" install cython numpy
         "${PYBIN}/python" setup.py sdist

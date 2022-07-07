@@ -6,8 +6,9 @@ export LDFLAGS="$LDFLAGS -Wl,-rpath,/usr/local/opt/libomp/lib -L/usr/local/opt/l
 conda create -n py37 -y python=3.7
 conda create -n py38 -y python=3.8
 conda create -n py39 -y python=3.9
-conda run -n py36 python setup.py sdist
-for pyenv in py36 py37 py38
+conda create -n py310 -y python=3.10
+conda run -n py37 python setup.py sdist
+for pyenv in py37 py38 py39 py310
 do
 	conda run -n $pyenv pip install numpy cython wheel
 	conda run -n $pyenv python setup.py sdist
