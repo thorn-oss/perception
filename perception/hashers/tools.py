@@ -15,6 +15,7 @@ import threading
 import functools
 import itertools
 import subprocess
+from collections import Counter
 from urllib import request
 from http import client
 
@@ -1025,16 +1026,31 @@ def unletterbox(
     assert 0 <= min_fraction_meaningful_pixles <= 1, "min_size must be between 0 and 1"
     if not only_remove_black:
         height, width, colors = image.shape
-        background_pixel = (height - 1, width - 1)
+
+        bottom = height - 1
+        right = width - 1
+        top = 0
+        left = 0
+
+        # Generate a count of the corner pixels.
+        counts = Counter(
+            [
+                tuple(image[top, left]),
+                tuple(image[top, right]),
+                tuple(image[bottom, left]),
+                tuple(image[bottom, right]),
+            ]
+        )
+        if len(counts) == 4:
+            return (0, image.shape[1]), (0, image.shape[0])
+
         # Grab reference color.
-        bg_color = image[
-            background_pixel[0],
-            background_pixel[1],
-        ]
+        # We grab the most common shared color.
+        bg_color, _ = counts.most_common(1)[0]
 
         # Create an image of just that color.
         mask = np.ones((height, width, colors))
-        mask[:, :] = bg_color
+        mask[:, :] = np.array(bg_color)
 
         # Diff the image so that color is black.
         image = np.abs(image - mask)
