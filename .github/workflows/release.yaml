@@ -31,15 +31,9 @@ jobs:
             - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux2010_x86_64 /io/build-scripts/linux.sh
               if: ${{ matrix.os == 'ubuntu-latest' }}
             - uses: actions/upload-artifact@v2
-              if: ${{ matrix.os != 'ubuntu-latest' }}
               with:
                 name: wheels
                 path: dist/*
-            - uses: actions/upload-artifact@v2
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              with:
-                name: wheels
-                path: dist/*manylinux1_x86_64.whl
     publish:
         needs: build
         runs-on: ubuntu-latest
