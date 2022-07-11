@@ -11,6 +11,7 @@ conda run -n py37 python setup.py sdist
 for pyenv in py37 py38 py39 py310
 do
 	conda run -n $pyenv pip install numpy cython wheel
+	conda run -n $pyenv python setup.py version
 	conda run -n $pyenv python setup.py sdist
 	conda run -n $pyenv pip wheel --no-deps --wheel-dir dist dist/*.tar.gz
 done
