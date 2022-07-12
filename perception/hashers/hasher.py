@@ -1,5 +1,6 @@
 # pylint: disable=no-member
 from abc import ABC, abstractmethod
+from logging import warning
 import typing
 import concurrent.futures
 import warnings
@@ -347,12 +348,12 @@ class VideoHasher(Hasher):
         hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
         return [
             dict(
-                hash=hash,
-                start_timestamp=scenes[i].get("start_timestamp"),
-                end_timestamp=scenes[i].get("end_timestamp"),
-                frame_index=scenes[i].get("frame_index"),
+                hash=hashes[i],
+                start_timestamp=scene.get("start_timestamp"),
+                end_timestamp=scene.get("end_timestamp"),
+                frame_index=scene.get("frame_index"),
             )
-            for i, hash in enumerate(hashes)
+            for i, scene in enumerate(scenes)
         ]
 
     # pylint: disable=arguments-differ
@@ -393,7 +394,16 @@ class VideoHasher(Hasher):
                 state=state,
             )
 
-        assert state is not None
+        if state is None:
+            if errors == "raise":
+                raise ValueError(
+                    f"Video processing failed for {filepath}, State is None."
+                )
+            if errors == "warn":
+                warning(f"Video processing failed for {filepath}, State is None.")
+
+            return None
+
         # Persist the final timestamp in the state to allow us to pass along
         # duration
         state["end"] = frame_timestamp

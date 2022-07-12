@@ -684,6 +684,8 @@ def read_video_to_generator(
 
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"Could not find {filepath}.")
+    if not os.access(filepath, os.R_OK):
+        raise IOError(f"{filepath} is not readable")
     cap = cv2.VideoCapture(filename=filepath, apiPreference=cv2.CAP_FFMPEG)
     try:
         # The purpose of the following block is largely to create a
