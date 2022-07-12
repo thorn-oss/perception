@@ -973,7 +973,7 @@ def compute_synchronized_video_hashes(
 
 
 def unletterbox(
-    image, only_remove_black: bool = False, min_fraction_meaningful_pixles: float = 0.1
+    image, only_remove_black: bool = False, min_fraction_meaningful_pixels: float = 0.1
 ) -> typing.Optional[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
     """Return bounds of non-trivial region of image or None.
 
@@ -993,7 +993,7 @@ def unletterbox(
       have means > 2.
     - y2 is the index of the last row where over X% of the pixels
       have means > 2.
-    - X is min_fraction_meaningful_pixles 0.1 == 10%
+    - X is min_fraction_meaningful_pixels 0.1 == 10%
 
     If there are zero columns or zero rows where over X% of the
     pixels have means > 2, this function returns `None`.
@@ -1015,7 +1015,7 @@ def unletterbox(
     Args:
         image: The image from which to remove letterboxing.
         only_remove_black: Set False to remove borders fo any color.
-        min_fraction_meaningful_pixles: 0 to 1: if cropped version is
+        min_fraction_meaningful_pixels: 0 to 1: if cropped version is
         smaller than this fraction of the image do not unletterbox.
         0.1 == 10% of the image.
 
@@ -1025,7 +1025,7 @@ def unletterbox(
         bottom bounds.
 
     """
-    assert 0 <= min_fraction_meaningful_pixles <= 1, "min_size must be between 0 and 1"
+    assert 0 <= min_fraction_meaningful_pixels <= 1, "min_size must be between 0 and 1"
     if not only_remove_black:
         height, width, colors = image.shape
 
@@ -1064,9 +1064,9 @@ def unletterbox(
     if adj.all():
         return (0, image.shape[1] + 1), (0, image.shape[0] + 1)
 
-    # Find rows and cols with at least min_fraction_meaningful_pixles.
-    y = np.where(adj.sum(axis=1) > min_fraction_meaningful_pixles * image.shape[1])[0]
-    x = np.where(adj.sum(axis=0) > min_fraction_meaningful_pixles * image.shape[0])[0]
+    # Find rows and cols with at least min_fraction_meaningful_pixels.
+    y = np.where(adj.sum(axis=1) > min_fraction_meaningful_pixels * image.shape[1])[0]
+    x = np.where(adj.sum(axis=0) > min_fraction_meaningful_pixels * image.shape[0])[0]
 
     # Either no rows or no columns had enough meaningful information to keep.
     if len(y) == 0 or len(x) == 0:
