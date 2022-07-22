@@ -39,6 +39,7 @@ def build_index(
     """
     if X is None:
         return None
+    X = X.astype("float32")
     d = X.shape[1]
     if approximate:
         ntotal = X.shape[0]
