@@ -1050,12 +1050,12 @@ def unletterbox(
         # We grab the most common shared color.
         bg_color, _ = counts.most_common(1)[0]
 
-        # Create an image of just that color.
-        mask = np.ones((height, width, colors))
+        # Create an image of just that color. dtype to match image.
+        mask = np.ones((height, width, colors), dtype=np.uint8)
         mask[:, :] = np.array(bg_color)
 
         # Diff the image so that color is black.
-        image = np.abs(image - mask)
+        image = np.abs(np.subtract(image, mask))
 
     # adj should be thought of as a boolean at each pixel indicating
     # whether or not that pixel is non-trivial (True) or not (False).
