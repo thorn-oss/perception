@@ -1051,7 +1051,7 @@ def unletterbox(
         bg_color, _ = counts.most_common(1)[0]
 
         # Create an image of just that color. dtype to match image.
-        mask = np.ones((height, width, colors), dtype=np.uint8)
+        mask = np.ones((height, width, colors), dtype=np.int16)
         mask[:, :] = np.array(bg_color)
 
         # Diff the image so that color is black.
