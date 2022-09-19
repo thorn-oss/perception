@@ -3,6 +3,7 @@ import typing
 import logging
 import concurrent.futures
 
+import typing_extensions
 import numpy as np
 import pandas as pd
 import tqdm
@@ -24,12 +25,28 @@ DEFAULT_MIN_FEATURES = 10
 DEFAULT_RATIO = 0.5
 
 
-def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
+MatchStats = typing_extensions.TypedDict(
+    "MatchStats",
+    {
+        "match": typing.Optional[float],
+        "good_A2B": typing.Optional[typing.List[bool]],
+        "good_B2A": typing.Optional[typing.List[bool]],
+        "min_kpBM": typing.Optional[int],
+        "MAB": typing.Optional[str],
+        "intersection": typing.Optional[float],
+        "inliers": typing.Optional[float],
+        "bounds_intersection": typing.Optional[float],
+    },
+)
+
+
+def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):
     """Read, unletterbox, and resize an image.
 
     Args:
         filepath: The path to the file
         max_size: The maximum size for a dimension of the image
+        grayscale: Set to false to get RGB
     """
     image = pht.read(filepath)
     if image is None:
@@ -40,7 +57,9 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE):
         return None
     (x1, x2), (y1, y2) = res
     image = np.ascontiguousarray(image[y1:y2, x1:x2])
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    if grayscale:
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
     max_dimension = max(image.shape[:2])
     if max_dimension > max_size:
         scale = max_size / max_dimension
@@ -230,7 +249,16 @@ def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
     )
 
 
-def validate_match(
+def validate_match(**kwargs) -> bool:
+    """See validate_match_verbose.
+
+    This exists to be backwards compatible, but no real reason to not migrate to
+    just using `validate_match_verbose`
+    """
+    return validate_match_verbose(**kwargs)[0]
+
+
+def validate_match_verbose(
     kp1: np.ndarray,
     des1: np.ndarray,
     kp2: np.ndarray,
@@ -241,7 +269,7 @@ def validate_match(
     minimum_intersection: float = DEFAULT_INTERSECTION,
     minimum_inliers: int = DEFAULT_INLIERS,
     ratio=DEFAULT_RATIO,
-) -> float:
+) -> typing.Tuple[bool, MatchStats]:
     """Validate the match between two sets of keypoints and descriptors. The
     validation algorithm is as follows:
 
@@ -288,10 +316,22 @@ def validate_match(
     desA = des2 if swap else des1
     desB = des1 if swap else des2
 
+    stats: MatchStats = {
+        "match": None,
+        "good_A2B": None,
+        "good_B2A": None,
+        "min_kpBM": None,
+        "MAB": None,
+        "intersection": None,
+        "inliers": None,
+        "bounds_intersection": None,
+    }
+
     indexA = ad.build_index(desA, approximate=False)
     indexB = ad.build_index(desB, approximate=False)
     if desA is None or indexA is None or desB is None or indexB is None:
-        return False
+        return False, stats
+
     # pylint: disable=no-value-for-parameter
     distances_A2B, indexes_A2B = indexB.search(desA.astype("float32"), 2)
     distances_B2A, _ = indexA.search(desB.astype("float32"), 2)
@@ -300,21 +340,33 @@ def validate_match(
         [distances_A2B, distances_B2A],
     )
     match = min(good_A2B.sum() / good_A2B.shape[0], good_B2A.sum() / good_B2A.shape[0])
+    stats["match"] = match
+
+    # Can use these to filter which points match and filter points out if they match logos.
+    if swap:
+        stats["good_A2B"] = good_B2A
+        stats["good_B2A"] = good_A2B
+    else:
+        stats["good_A2B"] = good_A2B
+        stats["good_B2A"] = good_B2A
+
     if match < minimum_match:
         # We didn't get enough good matches.
-        return False
+        return False, stats
     kpAM = kpA[good_A2B]
     kpBM = kpB[indexes_A2B[good_A2B, 0]]
 
     # findHomography requires 4 points from each to work.
+    stats["min_kpBM"] = min(len(kpAM), len(kpBM))
     if len(kpAM) < 4 or len(kpBM) < 4:
-        return False
+        return False, stats
 
     intersection = compute_minimum_intersection(
         kp1=kpA, kp2=kpB, filter_arr1=good_A2B, filter_arr2=indexes_A2B[good_A2B, 0]
     )
+    stats["intersection"] = intersection
     if intersection < minimum_intersection:
-        return False
+        return False, stats
 
     MAB, mask = cv2.findHomography(
         kpAM.reshape(-1, 1, 2),
@@ -324,19 +376,23 @@ def validate_match(
         maxIters=50_000,
         confidence=0.9999,
     )
+    stats["MAB"] = "good"
     if MAB is None:
         # We didn't get a transformation matrix.
-        return False
+        stats["MAB"] = "is-None"
+        return False, stats
+    stats["inliers"] = mask.sum()
     if mask.sum() < minimum_inliers:
         # The transformation matrix didn't include enough inliers.
-        return False
+        return False, stats
     # Check how much of each original bounding box fits onto
     # the other image.
     try:
         MBA = np.linalg.inv(MAB)
     except np.linalg.LinAlgError:
         # We couldn't compute the matrix inverse.
-        return False
+        stats["MAB"] = "inverse-failed"
+        return False, stats
     ptsA = np.array([[0, 0], dimsA]).astype("float32")
     ptsB = np.array([[0, 0], dimsB]).astype("float32")
     ptsAt = (
@@ -353,9 +409,10 @@ def validate_match(
         abs(np.prod(ptsBt[1] - ptsBt[0]) / np.prod(dimsA)),
         abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(dimsB)),
     )
+    stats["bounds_intersection"] = bounds_intersection
     if bounds_intersection < minimum_intersection:
-        return False
-    return True
+        return False, stats
+    return True, stats
 
 
 def deduplicate_sift_dfs(
@@ -371,7 +428,11 @@ def deduplicate_sift_dfs(
     max_workers: int = None,
     use_gpu: bool = True,
     faiss_cache_path: str = None,
-) -> typing.List[typing.Tuple[str, str]]:
+    verbose: bool = False,
+) -> typing.Union[
+    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
+]:
     """Deduplicate images within one set of images or between two sets of images:
     #. Given a dataframe (or two) of SIFT descriptors and keypoints for images.
     #. Perform a coarse, approximate search for images with common features.
@@ -398,8 +459,10 @@ def deduplicate_sift_dfs(
         faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path. Most helpful if
             doing multiple queries against the same match_df.
+        verbose: return metada with matches such as overlap percent etc.
     Returns:
         A list of pairs of file duplicates.
+        If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
     """
     candidates = compute_pairs(
         match_df,
@@ -427,13 +490,16 @@ def deduplicate_sift_dfs(
             ]
         )
 
-    keep = []
+    keep: typing.Union[
+        typing.List[typing.Tuple[typing.Any, typing.Any]],
+        typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
+    ] = []  # type: ignore
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         batch_size = 10_000
         for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
             futures = {
                 executor.submit(
-                    validate_match,
+                    validate_match_verbose,
                     des1=reference_df.loc[c1]["descriptors"],
                     kp1=reference_df.loc[c1]["keypoints"],
                     des2=reference_df.loc[c2]["descriptors"],
@@ -448,8 +514,14 @@ def deduplicate_sift_dfs(
                 for c1, c2 in candidates[start : start + batch_size]
             }
             for future in concurrent.futures.as_completed(futures):
-                if future.result():
-                    keep.append(futures[future])
+                is_match, metadata = future.result()
+                if is_match:
+                    if verbose:
+                        keep.append(
+                            (futures[future][0], futures[future][1], metadata)  # type: ignore
+                        )
+                    else:
+                        keep.append(futures[future])  # type: ignore
     return keep
 
 
@@ -462,7 +534,10 @@ def deduplicate(
     min_features: int = DEFAULT_MIN_FEATURES,
     max_size: int = DEFAULT_MAX_SIZE,
     **kwargs,
-) -> typing.List[typing.Tuple[str, str]]:
+) -> typing.Union[
+    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
+]:
     """Deduplicate images by doing the following:
     #. Unletterbox all images and resize to some maximum size, preserving
        aspect ratio.
@@ -480,6 +555,7 @@ def deduplicate(
         max_size: The maximum side length for an image.
     Returns:
         A list of pairs of file duplicates.
+        If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
     """
     if isinstance(filepaths_or_reference_df, pd.DataFrame):
         reference_df = filepaths_or_reference_df

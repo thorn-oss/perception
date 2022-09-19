@@ -27,8 +27,8 @@ class MarrHildreth(OpenCVHasher):
     def __init__(self):
         super().__init__()
         self.hasher = (
-            cv2.img_hash_MarrHildrethHash.create()
-        )  # pylint: disable=no-member
+            cv2.img_hash_MarrHildrethHash.create()  # pylint: disable=no-member
+        )
 
     def _compute(self, image):
         return np.unpackbits(self.hasher.compute(image)[0])
