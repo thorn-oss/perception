@@ -475,20 +475,14 @@ def deduplicate_sift_dfs(
     )
 
     if query_df is None:
-        reference_df = match_df
-    else:
-        candidate_filepath_set = set()
-        for c1, c2 in candidates:
-            candidate_filepath_set.add(c1)
-            candidate_filepath_set.add(c2)
+        query_df = match_df
 
-        # May not be necessary if c1 and c2 are always in the same set
-        reference_df = pd.concat(
-            [
-                query_df[query_df.index.isin(candidate_filepath_set)],
-                match_df[match_df.index.isin(candidate_filepath_set)],
-            ]
-        )
+    assert (
+        match_df.index.is_unique
+    ), "Index of match_df must be unique, or it will cause wrong matches."
+    assert (
+        query_df.index.is_unique
+    ), "Index of query_df must be unique, or it will cause wrong matches."
 
     keep: typing.Union[
         typing.List[typing.Tuple[typing.Any, typing.Any]],
@@ -500,12 +494,12 @@ def deduplicate_sift_dfs(
             futures = {
                 executor.submit(
                     validate_match_verbose,
-                    des1=reference_df.loc[c1]["descriptors"],
-                    kp1=reference_df.loc[c1]["keypoints"],
-                    des2=reference_df.loc[c2]["descriptors"],
-                    kp2=reference_df.loc[c2]["keypoints"],
-                    dims1=reference_df.loc[c1]["dimensions"],
-                    dims2=reference_df.loc[c2]["dimensions"],
+                    des1=query_df.loc[c1]["descriptors"],
+                    kp1=query_df.loc[c1]["keypoints"],
+                    des2=match_df.loc[c2]["descriptors"],
+                    kp2=match_df.loc[c2]["keypoints"],
+                    dims1=query_df.loc[c1]["dimensions"],
+                    dims2=match_df.loc[c2]["dimensions"],
                     minimum_match=minimum_validation_match,
                     minimum_inliers=minimum_validation_inliers,
                     minimum_intersection=minimum_validation_intersection,
