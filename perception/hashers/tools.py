@@ -823,9 +823,11 @@ def read_video(
     """
     for ffmpeg_kwarg in ["interp", "frame_rounding", "draw_timestamps", "use_cuda"]:
         if not use_ffmpeg and ffmpeg_kwarg in kwargs:
-            warnings.warn(
-                f"{ffmpeg_kwarg} is ignored when use_ffmpeg is False.", UserWarning
-            )
+            if kwargs[ffmpeg_kwarg] is not None:
+                # Only log a warning if the value is something other than None.
+                warnings.warn(
+                    f"{ffmpeg_kwarg} is ignored when use_ffmpeg is False.", UserWarning
+                )
             del kwargs[ffmpeg_kwarg]
     generator: typing.Callable[..., FramesWithIndexesAndTimestamps]
     if use_ffmpeg:
