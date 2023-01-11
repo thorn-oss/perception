@@ -467,7 +467,7 @@ def deduplicate_sift_dfs(
             it does not exist then save the generated faiss index to the path. Most helpful if
             doing multiple queries against the same match_df.
         verbose: return metada with matches such as overlap percent etc.
-        show_progress: Whether or not to show a progress bar while computing pairs of file duplicates
+        show_progress: Whether or not to show a progress bar while computing duplicate file pairs
     Returns:
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
@@ -557,7 +557,8 @@ def deduplicate(
         min_features: The minimum number of features to
             extract.
         max_size: The maximum side length for an image.
-        show_progress: Whether or not to show a progress bar while building descriptors and computing pairs of file duplicates
+        show_progress: Whether or not to show a progress bar while building descriptors and
+            computing pairs of file duplicates
     Returns:
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)

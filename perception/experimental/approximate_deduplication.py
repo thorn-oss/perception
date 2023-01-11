@@ -140,7 +140,7 @@ def compute_euclidean_pairwise_duplicates_approx(
         iterator_counts = y_counts
         M = Y
 
-    for end, length, query in tqdm(
+    for end, length, query in tqdm.tqdm(
         zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))),
         disable=not show_progress,
     ):
