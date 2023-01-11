@@ -9,6 +9,7 @@ import typing_extensions
 import networkit as nk
 import numpy as np
 import faiss
+import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -79,6 +80,7 @@ def compute_euclidean_pairwise_duplicates_approx(
     pct_probe=0.1,
     use_gpu: bool = True,
     faiss_cache_path: str = None,
+    show_progress: bool = False,
 ):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
     but uses an approximate search instead of an exhaustive search, which can dramatically reduce
@@ -95,6 +97,7 @@ def compute_euclidean_pairwise_duplicates_approx(
             value, the more exhaustive the search.
         faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path.
+        show_progress: Whether or not to show a progress bar while computing pairs
     Returns:
         A list of pairs of matching file indexes.
     """
@@ -137,13 +140,14 @@ def compute_euclidean_pairwise_duplicates_approx(
         iterator_counts = y_counts
         M = Y
 
-    for end, length, query in zip(
-        iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))
+    for end, length, query in tqdm(
+        zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))),
+        disable=not show_progress,
     ):
         if length == 0:
             continue
         Xq = M[end - length : end]
-        lims, _, idxs = index.range_search(Xq, threshold**2)
+        lims, _, idxs = index.range_search(Xq, threshold ** 2)
         lims = lims.astype("int32")
         matched = [
             match

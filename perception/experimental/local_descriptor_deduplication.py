@@ -115,6 +115,7 @@ def build_reference_df(
     max_features=DEFAULT_MAX_FEATURES,
     min_features=DEFAULT_MIN_FEATURES,
     max_size=DEFAULT_MAX_SIZE,
+    show_progress=False,
 ) -> pd.DataFrame:
     """Build SIFT descriptors for a list of files.
 
@@ -132,15 +133,16 @@ def build_reference_df(
         and descriptor counts.
     """
     LOGGER.debug("Generating descriptors")
-    features = [
-        generate_image_descriptors(
-            filepath,
-            max_features=max_features,
-            min_features=min_features,
-            max_size=max_size,
+    features = []
+    for filepath in tqdm.tqdm(filepaths, disable=not show_progress):
+        features.append(
+            generate_image_descriptors(
+                filepath,
+                max_features=max_features,
+                min_features=min_features,
+                max_size=max_size,
+            )
         )
-        for filepath in filepaths
-    ]
     LOGGER.debug("Finished computing descriptors.")
     return pd.DataFrame(
         {
@@ -163,6 +165,7 @@ def compute_pairs(
     pct_probe=0.1,
     use_gpu: bool = True,
     faiss_cache_path: str = None,
+    show_progress: bool = False,
 ):
     """Compute pairs of matching images from a reference
     dataframe.
@@ -176,6 +179,7 @@ def compute_pairs(
             search.
         faiss_cache_path: If provided load any existing faiss index from this path, and if
             it does not exist then save the generated faiss index to the path.
+        show_progress: Whether or not to show a progress bar while computing pairs
     """
     match_df = match_df.dropna(subset=["descriptors"])
     counts = match_df["descriptor_count"].values.astype("uint32")
@@ -189,6 +193,7 @@ def compute_pairs(
         y_counts = query_df["descriptor_count"].values.astype("uint32")
         y_descriptors = np.vstack(query_df["descriptors"].values).astype("float32")
 
+    LOGGER.debug("Computing clusters")
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype("float32"),
         counts=counts,
@@ -199,6 +204,7 @@ def compute_pairs(
         y_counts=y_counts,
         use_gpu=use_gpu,
         faiss_cache_path=faiss_cache_path,
+        show_progress=show_progress,
     )
 
     if query_df is None:
@@ -429,6 +435,7 @@ def deduplicate_sift_dfs(
     use_gpu: bool = True,
     faiss_cache_path: str = None,
     verbose: bool = False,
+    show_progress: bool = False,
 ) -> typing.Union[
     typing.List[typing.Tuple[typing.Any, typing.Any]],
     typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
@@ -460,6 +467,7 @@ def deduplicate_sift_dfs(
             it does not exist then save the generated faiss index to the path. Most helpful if
             doing multiple queries against the same match_df.
         verbose: return metada with matches such as overlap percent etc.
+        show_progress: Whether or not to show a progress bar while computing pairs of file duplicates
     Returns:
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
@@ -472,6 +480,7 @@ def deduplicate_sift_dfs(
         minimum_overlap=minimum_coarse_overlap,
         use_gpu=use_gpu,
         faiss_cache_path=faiss_cache_path,
+        show_progress=show_progress,
     )
 
     if query_df is None:
@@ -527,6 +536,7 @@ def deduplicate(
     max_features: int = DEFAULT_MAX_FEATURES,
     min_features: int = DEFAULT_MIN_FEATURES,
     max_size: int = DEFAULT_MAX_SIZE,
+    show_progress: bool = False,
     **kwargs,
 ) -> typing.Union[
     typing.List[typing.Tuple[typing.Any, typing.Any]],
@@ -547,6 +557,7 @@ def deduplicate(
         min_features: The minimum number of features to
             extract.
         max_size: The maximum side length for an image.
+        show_progress: Whether or not to show a progress bar while building descriptors and computing pairs of file duplicates
     Returns:
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
@@ -559,6 +570,7 @@ def deduplicate(
             max_features=max_features,
             min_features=min_features,
             max_size=max_size,
+            show_progress=show_progress,
         )
 
     if query_filepaths_or_df is None:
@@ -572,6 +584,9 @@ def deduplicate(
                 max_features=max_features,
                 min_features=min_features,
                 max_size=max_size,
+                show_progress=show_progress,
             )
 
-    return deduplicate_sift_dfs(reference_df, query_df=query_df, **kwargs)
+    return deduplicate_sift_dfs(
+        reference_df, query_df=query_df, show_progress=show_progress, **kwargs
+    )
