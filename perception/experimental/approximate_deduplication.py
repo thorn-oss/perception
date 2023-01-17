@@ -10,7 +10,7 @@ import networkit as nk
 import numpy as np
 import faiss
 
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm  # pylint: disable=no-member
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0

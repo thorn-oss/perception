@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 import cv2
 
+from tqdm.auto import tqdm
+
 import perception.hashers.tools as pht
 import perception.experimental.approximate_deduplication as ad
-
-from tqdm.auto import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
