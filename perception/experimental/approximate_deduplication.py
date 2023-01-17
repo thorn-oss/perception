@@ -10,7 +10,7 @@ import networkit as nk
 import numpy as np
 import faiss
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -141,7 +141,7 @@ def compute_euclidean_pairwise_duplicates_approx(
         iterator_counts = y_counts
         M = Y
 
-    for end, length, query in tqdm.tqdm(  # pylint: disable=no-member
+    for end, length, query in tqdm.tqdm(
         zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))),
         total=len(iterator_counts),
         disable=not show_progress,

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import cv2
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 import perception.hashers.tools as pht
 import perception.experimental.approximate_deduplication as ad
@@ -135,9 +135,7 @@ def build_reference_df(
     """
     LOGGER.debug("Generating descriptors")
     features = []
-    for filepath in tqdm.tqdm(
-        filepaths, disable=not show_progress, desc="Filepaths"
-    ):  # pylint: disable=no-member
+    for filepath in tqdm.tqdm(filepaths, disable=not show_progress, desc="Filepaths"):
         features.append(
             generate_image_descriptors(
                 filepath,
