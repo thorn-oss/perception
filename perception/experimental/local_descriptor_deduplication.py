@@ -6,11 +6,12 @@ import concurrent.futures
 import typing_extensions
 import numpy as np
 import pandas as pd
-import tqdm
 import cv2
 
 import perception.hashers.tools as pht
 import perception.experimental.approximate_deduplication as ad
+
+from tqdm.auto import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
@@ -134,7 +135,7 @@ def build_reference_df(
     """
     LOGGER.debug("Generating descriptors")
     features = []
-    for filepath in tqdm.tqdm(filepaths, disable=not show_progress):
+    for filepath in tqdm.tqdm(filepaths, disable=not show_progress, desc="Filepaths"):
         features.append(
             generate_image_descriptors(
                 filepath,

@@ -9,7 +9,8 @@ import typing_extensions
 import networkit as nk
 import numpy as np
 import faiss
-import tqdm
+
+from tqdm.auto import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -144,6 +145,7 @@ def compute_euclidean_pairwise_duplicates_approx(
         zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))),
         total=len(iterator_counts),
         disable=not show_progress,
+        desc="Vectors",
     ):
         if length == 0:
             continue
