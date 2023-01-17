@@ -135,7 +135,7 @@ def build_reference_df(
     """
     LOGGER.debug("Generating descriptors")
     features = []
-    for filepath in tqdm.tqdm(filepaths, disable=not show_progress, desc="Filepaths"):
+    for filepath in tqdm.tqdm(filepaths, disable=not show_progress, desc="Filepaths"):  # pylint: disable=no-member
         features.append(
             generate_image_descriptors(
                 filepath,
