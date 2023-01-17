@@ -9,7 +9,7 @@ import typing_extensions
 import networkit as nk
 import numpy as np
 import faiss
-import tqdm
+from tqdm.auto import tqdm
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
