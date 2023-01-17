@@ -7,8 +7,7 @@ import typing_extensions
 import numpy as np
 import pandas as pd
 import cv2
-
-from tqdm import tqdm
+import tqdm
 
 import perception.hashers.tools as pht
 import perception.experimental.approximate_deduplication as ad
