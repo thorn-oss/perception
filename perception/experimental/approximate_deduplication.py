@@ -141,12 +141,12 @@ def compute_euclidean_pairwise_duplicates_approx(
         iterator_counts = y_counts
         M = Y
 
-    for end, length, query in tqdm.tqdm(
+    for end, length, query in tqdm.tqdm(  # pylint: disable=no-member
         zip(iterator_counts.cumsum(), iterator_counts, range(len(iterator_counts))),
         total=len(iterator_counts),
         disable=not show_progress,
         desc="Vectors",
-    ):  # pylint: disable=no-member
+    ):
         if length == 0:
             continue
         Xq = M[end - length : end]
