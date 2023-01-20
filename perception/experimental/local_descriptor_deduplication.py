@@ -1,7 +1,9 @@
 # pylint: disable=no-member,invalid-name,too-many-locals,too-many-arguments,too-many-return-statements
+from abc import ABC
 import typing
 import logging
 import concurrent.futures
+from warnings import warn
 
 import typing_extensions
 import numpy as np
@@ -14,30 +16,258 @@ import perception.experimental.approximate_deduplication as ad
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
-DEFAULT_THRESHOLD = 100
-DEFAULT_COARSE_THRESHOLD = 75
 DEFAULT_OVERLAP = 0.01
 DEFAULT_MATCH_PCT = 0.4
 DEFAULT_INTERSECTION = 0.6
 DEFAULT_INLIERS = 5
 DEFAULT_MAX_SIZE = 256
 DEFAULT_MIN_FEATURES = 10
+
+DEFAULT_THRESHOLD = 100
+DEFAULT_SIFT_THRESHOLD = 100
+DEFAULT_AKAZE_THRESHOLD = 250
+
 DEFAULT_RATIO = 0.5
+DEFAULT_SIFT_RATIO = 0.5
+DEFAULT_AKAZE_RATIO = 0.85
 
 
-MatchStats = typing_extensions.TypedDict(
-    "MatchStats",
-    {
-        "match": typing.Optional[float],
-        "good_A2B": typing.Optional[typing.List[bool]],
-        "good_B2A": typing.Optional[typing.List[bool]],
-        "min_kpBM": typing.Optional[int],
-        "MAB": typing.Optional[str],
-        "intersection": typing.Optional[float],
-        "inliers": typing.Optional[float],
-        "bounds_intersection": typing.Optional[float],
-    },
-)
+class Descriptors(typing_extensions.TypedDict):
+    keypoints: np.ndarray
+    descriptors: np.ndarray
+    descriptor_count: int
+    dimensions: typing.Tuple[int, int]
+    filepath: str
+    hasher: str
+
+
+class MatchStats(typing_extensions.TypedDict):
+    match: typing.Optional[float]
+    good_A2B: typing.Optional[typing.List[bool]]
+    good_B2A: typing.Optional[typing.List[bool]]
+    min_kpBM: typing.Optional[int]
+    MAB: typing.Optional[str]
+    intersection: typing.Optional[float]
+    inliers: typing.Optional[float]
+    bounds_intersection: typing.Optional[float]
+
+
+class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
+    grayscale = False
+    name: str
+    hasher: typing.Any
+    ratio: float
+    threshold: int
+
+    def __init__(
+        self,
+        max_features: int = DEFAULT_MAX_FEATURES,
+        ratio: float = DEFAULT_SIFT_RATIO,
+        threshold: int = DEFAULT_THRESHOLD,
+        overlap: float = DEFAULT_OVERLAP,
+        validation_match: float = DEFAULT_MATCH_PCT,
+        validation_inliers: int = DEFAULT_INLIERS,
+        validation_intersection: float = DEFAULT_INTERSECTION,
+    ):
+        self.ratio = ratio
+        self.threshold = threshold
+        self.max_features = max_features
+        self.overlap = overlap
+        self.validation_match = validation_match
+        self.validation_inliers = validation_inliers
+        self.validation_intersection = validation_intersection
+
+    def compute(self, image) -> typing.Tuple[np.ndarray, np.ndarray]:
+        return self.hasher.detectAndCompute(image, None)
+
+    def validate_match(
+        self,
+        descriptor1: Descriptors,
+        descriptor2: Descriptors,
+        minimum_match: float = DEFAULT_MATCH_PCT,
+        minimum_intersection: float = DEFAULT_INTERSECTION,
+        minimum_inliers: int = DEFAULT_INLIERS,
+    ) -> typing.Tuple[bool, MatchStats]:
+        """Validate the match between two sets of keypoints and descriptors. The
+        validation algorithm is as follows:
+
+        #. Compute the mutual set of matches between the two sets of descriptors
+           and filter them using Lowe's ratio test.
+        #. If the minimum number of passing matches is less than "minimum_match",
+           the match fails. This ensures we don't have trivial matches.
+        #. Compute the intersection area of the matched keypoints versus the
+           raw keypoints. If the area overlap is less than minimum_intersection,
+           the match fails. This ensures we don't match on small subsegments of
+           an image, such as logos.
+        #. Compute a transformation matrix using cv2.findHomography. If we cannot
+           obtain a transformation matrix, the match fails. If the sum total
+           of inliers for the transformation matrix is less than minimum_inliers,
+           the match fails.
+        #. Finally, use the transformation matrix on a set of points representing
+           the bounding box of each image. If less than minimum_intersection of
+           the bounding box fits within the bounds of the transformed version,
+           the match fails. This is a second pass safety check for logos and other
+           subsegments of images.
+
+        Args:
+            kp1: The first set of keypoints
+            des1: The first set of descriptors
+            kp2: The second set of keypoints
+            des2: The second set of descriptors
+            dims1: The dimensions (width, height) for the first image
+            dims2: The dimensions (width, height) for the second image
+            minimum_match: The minimum number of matches passing the ratio test.
+            minimum_intersection: The minimum overlapping area between the keypoints
+                in the filtered set of matches and the original keypoints.
+            minimum_inliers: The minimum number of inliers for the transformation
+                matrix.
+            ratio: The ratio to use for Lowe's ratio test.
+
+        Returns:
+            True if the match passes, False otherwise.
+        """
+        swap = descriptor1["keypoints"].shape[0] < descriptor2["keypoints"].shape[0]
+        descriptorA = descriptor2 if swap else descriptor1
+        descriptorB = descriptor1 if swap else descriptor2
+
+        stats: MatchStats = {
+            "match": None,
+            "good_A2B": None,
+            "good_B2A": None,
+            "min_kpBM": None,
+            "MAB": None,
+            "intersection": None,
+            "inliers": None,
+            "bounds_intersection": None,
+        }
+
+        indexA = ad.build_index(descriptorA["descriptors"], approximate=False)
+        indexB = ad.build_index(descriptorB["descriptors"], approximate=False)
+        if (
+            descriptorA["descriptors"] is None
+            or indexA is None
+            or descriptorB["descriptors"] is None
+            or indexB is None
+        ):
+            return False, stats
+
+        # pylint: disable=no-value-for-parameter
+        distances_A2B, indexes_A2B = indexB.search(
+            descriptorA["descriptors"].astype("float32"), 2
+        )
+        distances_B2A, _ = indexA.search(
+            descriptorB["descriptors"].astype("float32"), 2
+        )
+        good_A2B, good_B2A = map(
+            lambda distances: (distances[:, 0] < distances[:, 1] * self.ratio),
+            [distances_A2B, distances_B2A],
+        )
+        match = min(
+            good_A2B.sum() / good_A2B.shape[0], good_B2A.sum() / good_B2A.shape[0]
+        )
+        stats["match"] = match
+
+        # Can use these to filter which points match and filter points out if they match logos.
+        if swap:
+            stats["good_A2B"] = good_B2A
+            stats["good_B2A"] = good_A2B
+        else:
+            stats["good_A2B"] = good_A2B
+            stats["good_B2A"] = good_B2A
+
+        if match < minimum_match:
+            # We didn't get enough good matches.
+            return False, stats
+        kpAM = descriptorA["keypoints"][good_A2B]
+        kpBM = descriptorB["keypoints"][indexes_A2B[good_A2B, 0]]
+
+        # findHomography requires 4 points from each to work.
+        stats["min_kpBM"] = min(len(kpAM), len(kpBM))
+        if len(kpAM) < 4 or len(kpBM) < 4:
+            return False, stats
+
+        intersection = compute_minimum_intersection(
+            kp1=descriptorA["keypoints"],
+            kp2=descriptorB["keypoints"],
+            filter_arr1=good_A2B,
+            filter_arr2=indexes_A2B[good_A2B, 0],
+        )
+        stats["intersection"] = intersection
+        if intersection < minimum_intersection:
+            return False, stats
+
+        MAB, mask = cv2.findHomography(
+            kpAM.reshape(-1, 1, 2),
+            kpBM.reshape(-1, 1, 2),
+            cv2.RANSAC,
+            1.0,
+            maxIters=50_000,
+            confidence=0.9999,
+        )
+        stats["MAB"] = "good"
+        if MAB is None:
+            # We didn't get a transformation matrix.
+            stats["MAB"] = "is-None"
+            return False, stats
+        stats["inliers"] = mask.sum()
+        if mask.sum() < minimum_inliers:
+            # The transformation matrix didn't include enough inliers.
+            return False, stats
+        # Check how much of each original bounding box fits onto
+        # the other image.
+        try:
+            MBA = np.linalg.inv(MAB)
+        except np.linalg.LinAlgError:
+            # We couldn't compute the matrix inverse.
+            stats["MAB"] = "inverse-failed"
+            return False, stats
+        ptsA = np.array([[0, 0], descriptorA["dimensions"]]).astype("float32")
+        ptsB = np.array([[0, 0], descriptorB["dimensions"]]).astype("float32")
+        ptsAt = (
+            cv2.perspectiveTransform(ptsA.reshape((-1, 1, 2)), MAB)
+            .reshape(-1, 2)
+            .clip(0, descriptorB["dimensions"])
+        )
+        ptsBt = (
+            cv2.perspectiveTransform(ptsB.reshape((-1, 1, 2)), MBA)
+            .reshape(-1, 2)
+            .clip(0, descriptorA["dimensions"])
+        )
+        bounds_intersection = min(
+            abs(np.prod(ptsBt[1] - ptsBt[0]) / np.prod(descriptorA["dimensions"])),
+            abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(descriptorB["dimensions"])),
+        )
+        stats["bounds_intersection"] = bounds_intersection
+        return (bounds_intersection >= minimum_intersection, stats)
+
+
+class SIFT(LocalHasher):
+    name = "SIFT"
+
+    def __init__(
+        self,
+        max_features: int = DEFAULT_MAX_FEATURES,
+        ratio: float = DEFAULT_SIFT_RATIO,
+        threshold: int = DEFAULT_SIFT_THRESHOLD,
+        **kwargs,
+    ):
+        super().__init__(max_features, ratio, threshold, **kwargs)
+        self.hasher = cv2.SIFT_create(nfeatures=self.max_features)
+
+
+class AKAZE(LocalHasher):
+    name = "AKAZE"
+
+    def __init__(
+        self,
+        max_features: int = DEFAULT_MAX_FEATURES,
+        ratio: float = DEFAULT_AKAZE_RATIO,
+        threshold: int = DEFAULT_AKAZE_THRESHOLD,
+        **kwargs,
+    ):
+        super().__init__(max_features, ratio, threshold, **kwargs)
+        LOGGER.warning("The default AKAZE tuning has issues with some cropped images.")
+        self.hasher = cv2.AKAZE_create()
 
 
 def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):
@@ -71,11 +301,11 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):
 
 def generate_image_descriptors(
     filepath: str,
-    max_features=DEFAULT_MAX_FEATURES,
+    hasher: typing.Optional[LocalHasher] = None,
     min_features=DEFAULT_MIN_FEATURES,
     max_size=DEFAULT_MAX_SIZE,
-) -> typing.Optional[typing.Tuple[np.ndarray, np.ndarray, typing.Tuple[int, int]]]:
-    """Generate SIFT descriptors for a file.
+) -> typing.Optional[Descriptors]:
+    """Generate local descriptors for a file.
 
     Args:
         filepath: Path to image file.
@@ -89,12 +319,18 @@ def generate_image_descriptors(
         If successful, returns a tuple of keypoints, descriptors,
         and a (width, height) tuple.
     """
-    sift = cv2.SIFT_create(nfeatures=max_features)
+    if hasher is None:
+        hasher = SIFT(
+            max_features=DEFAULT_MAX_FEATURES,
+        )
+
     try:
-        image = load_and_preprocess(filepath, max_size=max_size)
+        image = load_and_preprocess(
+            filepath, max_size=max_size, grayscale=hasher.grayscale
+        )
         if image is None:
             return None
-        keypoints, descriptors = sift.detectAndCompute(image, None)
+        keypoints, descriptors = hasher.compute(image)
     except FileNotFoundError:
         LOGGER.warning("Image file %s not found.", filepath)
         return None
@@ -107,23 +343,31 @@ def generate_image_descriptors(
     if descriptors.shape[0] < min_features:
         return None
     keypoints = np.array([kp.pt for kp in keypoints], dtype=np.float32)
-    return keypoints, descriptors, (image.shape[1], image.shape[0])
+
+    return {
+        "keypoints": keypoints,
+        "descriptors": descriptors,
+        "descriptor_count": descriptors.shape[0],
+        "filepath": filepath,
+        "dimensions": (image.shape[1], image.shape[0]),
+        "hasher": hasher.name,
+    }
 
 
 def build_reference_df(
     filepaths: typing.Iterable[str],
-    max_features=DEFAULT_MAX_FEATURES,
+    hasher: typing.Optional[LocalHasher] = None,
     min_features=DEFAULT_MIN_FEATURES,
     max_size=DEFAULT_MAX_SIZE,
     show_progress=False,
 ) -> pd.DataFrame:
-    """Build SIFT descriptors for a list of files.
+    """Build descriptors for a list of files.
 
     Args:
         filepaths: A list of filepaths for which descriptors
             are desired.
-        max_features: The maximum number of features to
-            extract.
+        hasher: The local descriptor hasher to use to extract
+            features.
         min_features: The minimum number of features to
             extract.
         max_size: The maximum side length for an image.
@@ -133,12 +377,16 @@ def build_reference_df(
         and descriptor counts.
     """
     LOGGER.debug("Generating descriptors")
+
+    if hasher is None:
+        hasher = SIFT()
+
     features = []
     for filepath in tqdm.tqdm(filepaths, disable=not show_progress, desc="Filepaths"):
         features.append(
             generate_image_descriptors(
                 filepath,
-                max_features=max_features,
+                hasher=hasher,
                 min_features=min_features,
                 max_size=max_size,
             )
@@ -146,25 +394,39 @@ def build_reference_df(
     LOGGER.debug("Finished computing descriptors.")
     return pd.DataFrame(
         {
-            "descriptors": [f[1] if f is not None else None for f in features],
-            "keypoints": [f[0] if f is not None else None for f in features],
+            "descriptors": [
+                f["descriptors"] if f is not None else None for f in features
+            ],
+            "keypoints": [f["keypoints"] if f is not None else None for f in features],
             "descriptor_count": [
-                f[1].shape[0] if f is not None else None for f in features
+                f["descriptor_count"] if f is not None else None for f in features
             ],  # type: ignore
-            "dimensions": [f[2] if f is not None else None for f in features],
+            "dimensions": [
+                f["dimensions"] if f is not None else None for f in features
+            ],
+            "hasher": hasher.name,
             "filepath": filepaths,
         }
     ).set_index("filepath")
 
 
+def hasher_name(df: pd.DataFrame) -> str:
+    return df.iloc[0].get("hasher", "SIFT")
+
+
+def check_hasher(df1: pd.DataFrame, df2: pd.DataFrame):
+    assert hasher_name(df1) == hasher_name(
+        df2
+    ), "The hashers must mach for deduplication to work."
+
+
 def compute_pairs(
     match_df,
     query_df=None,
-    threshold=DEFAULT_THRESHOLD,
-    minimum_overlap=DEFAULT_OVERLAP,
+    hasher: typing.Optional[LocalHasher] = None,
     pct_probe=0.1,
     use_gpu: bool = True,
-    faiss_cache_path: str = None,
+    faiss_cache_path: typing.Optional[str] = None,
     show_progress: bool = False,
 ):
     """Compute pairs of matching images from a reference
@@ -185,10 +447,17 @@ def compute_pairs(
     counts = match_df["descriptor_count"].values.astype("uint32")
     descriptors = np.vstack(match_df["descriptors"].values)
 
+    if hasher is None:
+        hasher = SIFT()
+
     if query_df is None:
+        assert (
+            hasher_name(match_df) == hasher.name
+        ), "The hasher must mach the original hash format."
         y_counts = None
         y_descriptors = None
     else:
+        check_hasher(match_df, query_df)
         query_df = query_df.dropna(subset=["descriptors"])
         y_counts = query_df["descriptor_count"].values.astype("uint32")
         y_descriptors = np.vstack(query_df["descriptors"].values).astype("float32")
@@ -197,8 +466,8 @@ def compute_pairs(
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype("float32"),
         counts=counts,
-        threshold=threshold,
-        minimum_overlap=minimum_overlap,
+        threshold=hasher.threshold,
+        minimum_overlap=hasher.overlap,
         pct_probe=pct_probe,
         Y=y_descriptors,
         y_counts=y_counts,
@@ -255,199 +524,34 @@ def compute_minimum_intersection(kp1, kp2, filter_arr1, filter_arr2):
     )
 
 
-def validate_match(**kwargs) -> bool:
-    """See validate_match_verbose.
-
-    This exists to be backwards compatible, but no real reason to not migrate to
-    just using `validate_match_verbose`
-    """
-    return validate_match_verbose(**kwargs)[0]
+def deduplicate_sift_dfs(*args, **kwargs):
+    "DEPRECATED please use deduplicate_dfs."
+    warn("deduplicate_sift_dfs is deprecated.", DeprecationWarning, stacklevel=2)
+    deduplicate_dfs(*args, **kwargs)
 
 
-def validate_match_verbose(
-    kp1: np.ndarray,
-    des1: np.ndarray,
-    kp2: np.ndarray,
-    des2: np.ndarray,
-    dims1: typing.Tuple[int, int],
-    dims2: typing.Tuple[int, int],
-    minimum_match: float = DEFAULT_MATCH_PCT,
-    minimum_intersection: float = DEFAULT_INTERSECTION,
-    minimum_inliers: int = DEFAULT_INLIERS,
-    ratio=DEFAULT_RATIO,
-) -> typing.Tuple[bool, MatchStats]:
-    """Validate the match between two sets of keypoints and descriptors. The
-    validation algorithm is as follows:
-
-    #. Compute the mutual set of matches between the two sets of descriptors
-       and filter them using Lowe's ratio test.
-    #. If the minimum number of passing matches is less than "minimum_match",
-       the match fails. This ensures we don't have trivial matches.
-    #. Compute the intersection area of the matched keypoints versus the
-       raw keypoints. If the area overlap is less than minimum_intersection,
-       the match fails. This ensures we don't match on small subsegments of
-       an image, such as logos.
-    #. Compute a transformation matrix using cv2.findHomography. If we cannot
-       obtain a transformation matrix, the match fails. If the sum total
-       of inliers for the transformation matrix is less than minimum_inliers,
-       the match fails.
-    #. Finally, use the transformation matrix on a set of points representing
-       the bounding box of each image. If less than minimum_intersection of
-       the bounding box fits within the bounds of the transformed version,
-       the match fails. This is a second pass safety check for logos and other
-       subsegments of images.
-
-    Args:
-        kp1: The first set of keypoints
-        des1: The first set of descriptors
-        kp2: The second set of keypoints
-        des2: The second set of descriptors
-        dims1: The dimensions (width, height) for the first image
-        dims2: The dimensions (width, height) for the second image
-        minimum_match: The minimum number of matches passing the ratio test.
-        minimum_intersection: The minimum overlapping area between the keypoints
-            in the filtered set of matches and the original keypoints.
-        minimum_inliers: The minimum number of inliers for the transformation
-            matrix.
-        ratio: The ratio to use for Lowe's ratio test.
-
-    Returns:
-        True if the match passes, False otherwise.
-    """
-    swap = kp1.shape[0] < kp2.shape[0]
-    kpA = kp2 if swap else kp1
-    kpB = kp1 if swap else kp2
-    dimsA = dims2 if swap else dims1
-    dimsB = dims1 if swap else dims2
-    desA = des2 if swap else des1
-    desB = des1 if swap else des2
-
-    stats: MatchStats = {
-        "match": None,
-        "good_A2B": None,
-        "good_B2A": None,
-        "min_kpBM": None,
-        "MAB": None,
-        "intersection": None,
-        "inliers": None,
-        "bounds_intersection": None,
-    }
-
-    indexA = ad.build_index(desA, approximate=False)
-    indexB = ad.build_index(desB, approximate=False)
-    if desA is None or indexA is None or desB is None or indexB is None:
-        return False, stats
-
-    # pylint: disable=no-value-for-parameter
-    distances_A2B, indexes_A2B = indexB.search(desA.astype("float32"), 2)
-    distances_B2A, _ = indexA.search(desB.astype("float32"), 2)
-    good_A2B, good_B2A = map(
-        lambda distances: (distances[:, 0] < distances[:, 1] * ratio),
-        [distances_A2B, distances_B2A],
-    )
-    match = min(good_A2B.sum() / good_A2B.shape[0], good_B2A.sum() / good_B2A.shape[0])
-    stats["match"] = match
-
-    # Can use these to filter which points match and filter points out if they match logos.
-    if swap:
-        stats["good_A2B"] = good_B2A
-        stats["good_B2A"] = good_A2B
-    else:
-        stats["good_A2B"] = good_A2B
-        stats["good_B2A"] = good_B2A
-
-    if match < minimum_match:
-        # We didn't get enough good matches.
-        return False, stats
-    kpAM = kpA[good_A2B]
-    kpBM = kpB[indexes_A2B[good_A2B, 0]]
-
-    # findHomography requires 4 points from each to work.
-    stats["min_kpBM"] = min(len(kpAM), len(kpBM))
-    if len(kpAM) < 4 or len(kpBM) < 4:
-        return False, stats
-
-    intersection = compute_minimum_intersection(
-        kp1=kpA, kp2=kpB, filter_arr1=good_A2B, filter_arr2=indexes_A2B[good_A2B, 0]
-    )
-    stats["intersection"] = intersection
-    if intersection < minimum_intersection:
-        return False, stats
-
-    MAB, mask = cv2.findHomography(
-        kpAM.reshape(-1, 1, 2),
-        kpBM.reshape(-1, 1, 2),
-        cv2.RANSAC,
-        1.0,
-        maxIters=50_000,
-        confidence=0.9999,
-    )
-    stats["MAB"] = "good"
-    if MAB is None:
-        # We didn't get a transformation matrix.
-        stats["MAB"] = "is-None"
-        return False, stats
-    stats["inliers"] = mask.sum()
-    if mask.sum() < minimum_inliers:
-        # The transformation matrix didn't include enough inliers.
-        return False, stats
-    # Check how much of each original bounding box fits onto
-    # the other image.
-    try:
-        MBA = np.linalg.inv(MAB)
-    except np.linalg.LinAlgError:
-        # We couldn't compute the matrix inverse.
-        stats["MAB"] = "inverse-failed"
-        return False, stats
-    ptsA = np.array([[0, 0], dimsA]).astype("float32")
-    ptsB = np.array([[0, 0], dimsB]).astype("float32")
-    ptsAt = (
-        cv2.perspectiveTransform(ptsA.reshape((-1, 1, 2)), MAB)
-        .reshape(-1, 2)
-        .clip(0, dimsB)
-    )
-    ptsBt = (
-        cv2.perspectiveTransform(ptsB.reshape((-1, 1, 2)), MBA)
-        .reshape(-1, 2)
-        .clip(0, dimsA)
-    )
-    bounds_intersection = min(
-        abs(np.prod(ptsBt[1] - ptsBt[0]) / np.prod(dimsA)),
-        abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(dimsB)),
-    )
-    stats["bounds_intersection"] = bounds_intersection
-    if bounds_intersection < minimum_intersection:
-        return False, stats
-    return True, stats
-
-
-def deduplicate_sift_dfs(
+def deduplicate_dfs(
     match_df: pd.DataFrame,
     query_df: typing.Optional[pd.DataFrame] = None,
     coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
-    coarse_threshold: int = DEFAULT_COARSE_THRESHOLD,
-    minimum_coarse_overlap: float = DEFAULT_OVERLAP,
-    minimum_validation_match: float = DEFAULT_MATCH_PCT,
-    minimum_validation_intersection: float = DEFAULT_INTERSECTION,
-    minimum_validation_inliers: int = DEFAULT_INLIERS,
-    ratio: float = DEFAULT_RATIO,
-    max_workers: int = None,
+    max_workers: typing.Optional[int] = None,
     use_gpu: bool = True,
-    faiss_cache_path: str = None,
+    faiss_cache_path: typing.Optional[str] = None,
     verbose: bool = False,
+    hasher: typing.Optional[LocalHasher] = None,
     show_progress: bool = False,
 ) -> typing.Union[
     typing.List[typing.Tuple[typing.Any, typing.Any]],
     typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
 ]:
     """Deduplicate images within one set of images or between two sets of images:
-    #. Given a dataframe (or two) of SIFT descriptors and keypoints for images.
+    #. Given a dataframe (or two) of descriptors and keypoints for images.
     #. Perform a coarse, approximate search for images with common features.
     #. For each candidate pair, validate it pairwise by checking the features
     and keypoints with the traditional approach using the ratio test. See
     validate_match for more information.
     Args:
-        match_df: Dataframe of sift features to dedup within.
+        match_df: Dataframe of features to dedup within.
         query_df: If provided will search for matches between this and match_df, if None will
             just search match_df against itself.
         coarse_pct_probe: The minimum fraction of nearest lists to search. If
@@ -472,12 +576,14 @@ def deduplicate_sift_dfs(
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
     """
+    if hasher is None:
+        hasher = SIFT()
+
     candidates = compute_pairs(
         match_df,
         query_df,
         pct_probe=coarse_pct_probe,
-        threshold=coarse_threshold,
-        minimum_overlap=minimum_coarse_overlap,
+        hasher=hasher,
         use_gpu=use_gpu,
         faiss_cache_path=faiss_cache_path,
         show_progress=show_progress,
@@ -502,17 +608,12 @@ def deduplicate_sift_dfs(
         for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
             futures = {
                 executor.submit(
-                    validate_match_verbose,
-                    des1=query_df.loc[c1]["descriptors"],
-                    kp1=query_df.loc[c1]["keypoints"],
-                    des2=match_df.loc[c2]["descriptors"],
-                    kp2=match_df.loc[c2]["keypoints"],
-                    dims1=query_df.loc[c1]["dimensions"],
-                    dims2=match_df.loc[c2]["dimensions"],
-                    minimum_match=minimum_validation_match,
-                    minimum_inliers=minimum_validation_inliers,
-                    minimum_intersection=minimum_validation_intersection,
-                    ratio=ratio,
+                    hasher.validate_match,
+                    descriptor1=query_df.loc[c1].to_dict(),
+                    descriptor2=match_df.loc[c2].to_dict(),
+                    minimum_match=hasher.validation_match,
+                    minimum_inliers=hasher.validation_inliers,
+                    minimum_intersection=hasher.validation_intersection,
                 ): (c1, c2)
                 for c1, c2 in candidates[start : start + batch_size]
             }
@@ -536,6 +637,7 @@ def deduplicate(
     max_features: int = DEFAULT_MAX_FEATURES,
     min_features: int = DEFAULT_MIN_FEATURES,
     max_size: int = DEFAULT_MAX_SIZE,
+    hasher: typing.Optional[LocalHasher] = None,
     show_progress: bool = False,
     **kwargs,
 ) -> typing.Union[
@@ -545,11 +647,11 @@ def deduplicate(
     """Deduplicate images by doing the following:
     #. Unletterbox all images and resize to some maximum size, preserving
        aspect ratio.
-    #. Compute the SIFT descriptors and keypoints for all the resulting images.
-    #. See `deduplicate_sift_dfs` for remaining steps.
+    #. Compute the descriptors and keypoints for all the resulting images.
+    #. See `deduplicate_dfs` for remaining steps.
     Args:
         filepaths_or_reference_df: The list of images to deduplicate, or a precomputed
-            SIFT DataFrame.
+            descriptor DataFrame.
         query_filepaths_or_df: If provided will look for matches between these files and
             the files in the first param.
         max_features: The maximum number of features to
@@ -563,12 +665,15 @@ def deduplicate(
         A list of pairs of file duplicates.
         If verbose is true the tuple will be: (match_id1, match_id2, metadata_dict)
     """
+    if hasher is None:
+        hasher = SIFT(max_features=max_features)
+
     if isinstance(filepaths_or_reference_df, pd.DataFrame):
         reference_df = filepaths_or_reference_df
     else:
         reference_df = build_reference_df(
             filepaths=filepaths_or_reference_df,
-            max_features=max_features,
+            hasher=hasher,
             min_features=min_features,
             max_size=max_size,
             show_progress=show_progress,
@@ -582,12 +687,16 @@ def deduplicate(
         else:
             query_df = build_reference_df(
                 filepaths=query_filepaths_or_df,
-                max_features=max_features,
+                hasher=hasher,
                 min_features=min_features,
                 max_size=max_size,
                 show_progress=show_progress,
             )
 
-    return deduplicate_sift_dfs(
-        reference_df, query_df=query_df, show_progress=show_progress, **kwargs
+    return deduplicate_dfs(
+        reference_df,
+        query_df=query_df,
+        hasher=hasher,
+        show_progress=show_progress,
+        **kwargs,
     )
