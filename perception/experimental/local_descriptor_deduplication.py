@@ -462,7 +462,7 @@ def compute_pairs(
         y_counts = query_df["descriptor_count"].values.astype("uint32")
         y_descriptors = np.vstack(query_df["descriptors"].values).astype("float32")
 
-    LOGGER.debug("Computing clusters")
+    LOGGER.debug("Computing euclid pairs aprox")
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype("float32"),
         counts=counts,
@@ -579,6 +579,7 @@ def deduplicate_dfs(
     if hasher is None:
         hasher = SIFT()
 
+    LOGGER.debug("Computing candidate pairs")
     candidates = compute_pairs(
         match_df,
         query_df,
@@ -599,6 +600,7 @@ def deduplicate_dfs(
         query_df.index.is_unique
     ), "Index of query_df must be unique, or it will cause wrong matches."
 
+    LOGGER.debug("Validating candidate pairs: %d", len(candidates))
     keep: typing.Union[
         typing.List[typing.Tuple[typing.Any, typing.Any]],
         typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
@@ -626,6 +628,7 @@ def deduplicate_dfs(
                         )
                     else:
                         keep.append(futures[future])  # type: ignore
+    LOGGER.debug("Validating complete, keeping: %d", len(keep))
     return keep
 
 
