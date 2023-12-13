@@ -781,7 +781,7 @@ def read_video_into_queue(*args, video_queue, terminate, func, **kwargs):
     # We're inside a thread now and the queue is being read elsewhere.
     try:
         for frame, frame_index, timestamp in func(*args, **kwargs):
-            if not terminate.isSet():
+            if not terminate.is_set():
                 video_queue.put((frame, frame_index, timestamp))
             else:
                 break
