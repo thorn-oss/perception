@@ -30,7 +30,7 @@ jobs:
               if: ${{ matrix.os == 'windows-latest' }}
             - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux2010_x86_64 /io/build-scripts/linux.sh
               if: ${{ matrix.os == 'ubuntu-latest' }}
-            - uses: actions/upload-artifact@v2
+            - uses: actions/upload-artifact@v3
               with:
                 name: wheels
                 path: dist/*
