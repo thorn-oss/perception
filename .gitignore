@@ -36,3 +36,4 @@ notebooks
 *.c
 *.cpp
 *.so
+debug-image*

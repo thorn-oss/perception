@@ -10,6 +10,7 @@ import perception.hashers.tools as pht
 import perception.benchmarking.image_transforms as pbit
 import perception.experimental.local_descriptor_deduplication as ldd
 import perception.experimental.approximate_deduplication as ad
+from perception.experimental.debug import vizualize_pair
 import pytest
 
 
@@ -174,3 +175,68 @@ def test_handling_hasher_mismatch():
     query_df = ldd.build_reference_df(filepaths=df.index, hasher=ldd.AKAZE())
     with pytest.raises(AssertionError):
         ldd.deduplicate(reference_df, query_df)
+
+
+def test_viz_pair():
+    # Params for object level matching.
+    match_parameters = {
+        "strong_match_threshold": 0.3,  # Ideally something close to 95% precision.
+        "ratio": 0.5,
+        "coarse_pct_probe": 0.1,
+        "minimum_coarse_overlap": 0.001,
+        "coarse_threshold": 100.0,
+        "minimum_validation_match": 0.04,
+        "minimum_validation_intersection": 0.04,
+        "minimum_validation_inliers": 6,
+    }
+    object_sift = ldd.SIFT(
+        max_features=256,
+        ratio=match_parameters["ratio"],
+        threshold=match_parameters["coarse_threshold"],
+        overlap=match_parameters["minimum_coarse_overlap"],
+        validation_match=match_parameters["minimum_validation_match"],
+        validation_inliers=match_parameters["minimum_validation_inliers"],
+        validation_intersection=match_parameters["minimum_validation_intersection"],
+    )
+    filepaths = [
+        "tests/images/chair.png",
+        "tests/images/chair3.png",
+        "tests/images/chair-square.png",
+        "tests/images/chair-tall.png",
+    ]
+    reference_df = ldd.build_reference_df(
+        filepaths=filepaths,
+        hasher=object_sift,
+        min_features=10,
+        max_size=1000,
+        show_progress=False,
+    )
+    pairs = ldd.deduplicate(
+        filepaths_or_reference_df=reference_df,
+        hasher=object_sift,
+        max_size=1000,
+        min_features=10,
+        verbose=True,
+    )
+    row = pairs[0]
+    viz_img = vizualize_pair(
+        reference_df.loc[row[0]],
+        reference_df.loc[row[1]],
+        0.5,
+        match_metadata=row[2],
+        sanitized=False,
+    )
+    viz_img = cv2.cvtColor(viz_img, cv2.COLOR_RGB2BGR)
+    cv2.imwrite("debug-image.png", viz_img)
+
+    row = pairs[1]
+    viz_img = vizualize_pair(
+        reference_df.loc[row[0]],
+        reference_df.loc[row[1]],
+        0.5,
+        match_metadata=row[2],
+        sanitized=False,
+    )
+    viz_img = cv2.cvtColor(viz_img, cv2.COLOR_RGB2BGR)
+    cv2.imwrite("debug-image2.png", viz_img)
+    # TODO: some clever cv2 assert.

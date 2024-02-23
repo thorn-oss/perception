@@ -43,13 +43,13 @@ class Descriptors(typing_extensions.TypedDict):
 
 class MatchStats(typing_extensions.TypedDict):
     match: typing.Optional[float]
-    good_A2B: typing.Optional[typing.List[bool]]
-    good_B2A: typing.Optional[typing.List[bool]]
     min_kpBM: typing.Optional[int]
     MAB: typing.Optional[str]
     intersection: typing.Optional[float]
     inliers: typing.Optional[float]
     bounds_intersection: typing.Optional[float]
+    final_matched_a_pts: typing.Optional[typing.List[np.ndarray]]
+    final_matched_b_pts: typing.Optional[typing.List[np.ndarray]]
 
 
 class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
@@ -132,13 +132,13 @@ class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
 
         stats: MatchStats = {
             "match": None,
-            "good_A2B": None,
-            "good_B2A": None,
             "min_kpBM": None,
             "MAB": None,
             "intersection": None,
             "inliers": None,
             "bounds_intersection": None,
+            "final_matched_a_pts": None,
+            "final_matched_b_pts": None,
         }
 
         indexA = ad.build_index(descriptorA["descriptors"], approximate=False)
@@ -166,14 +166,6 @@ class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
             good_A2B.sum() / good_A2B.shape[0], good_B2A.sum() / good_B2A.shape[0]
         )
         stats["match"] = match
-
-        # Can use these to filter which points match and filter points out if they match logos.
-        if swap:
-            stats["good_A2B"] = good_B2A
-            stats["good_B2A"] = good_A2B
-        else:
-            stats["good_A2B"] = good_A2B
-            stats["good_B2A"] = good_B2A
 
         if match < minimum_match:
             # We didn't get enough good matches.
@@ -238,6 +230,17 @@ class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
             abs(np.prod(ptsAt[1] - ptsAt[0]) / np.prod(descriptorB["dimensions"])),
         )
         stats["bounds_intersection"] = bounds_intersection
+
+        # Apply mask index to kpAM, kpBM for list of matcihing points. mask ==1 for keep
+        matched_a_pts = []
+        matched_b_pts = []
+        for i in range(mask.shape[0]):
+            if mask[i][0] == 1:
+                matched_a_pts.append(kpAM[i])
+                matched_b_pts.append(kpBM[i])
+        stats["final_matched_a_pts"] = matched_a_pts
+        stats["final_matched_b_pts"] = matched_b_pts
+
         return (bounds_intersection >= minimum_intersection, stats)
 
 
