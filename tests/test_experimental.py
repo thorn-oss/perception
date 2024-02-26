@@ -14,6 +14,19 @@ from perception.experimental.debug import vizualize_pair
 import pytest
 
 
+# Params for object level matching.
+OBJECT_MATCH_PARAMS = {
+    "strong_match_threshold": 0.3,  # Ideally something close to 95% precision.
+    "ratio": 0.5,
+    "coarse_pct_probe": 0.1,
+    "minimum_coarse_overlap": 0.001,
+    "coarse_threshold": 100.0,
+    "minimum_validation_match": 0.04,
+    "minimum_validation_intersection": 0.04,
+    "minimum_validation_inliers": 6,
+}
+
+
 @pytest.mark.parametrize("hasher", [ldd.SIFT(), ldd.AKAZE()])
 def test_deduplication(hasher):
     tdir = tempfile.TemporaryDirectory()
@@ -178,25 +191,16 @@ def test_handling_hasher_mismatch():
 
 
 def test_viz_pair():
-    # Params for object level matching.
-    match_parameters = {
-        "strong_match_threshold": 0.3,  # Ideally something close to 95% precision.
-        "ratio": 0.5,
-        "coarse_pct_probe": 0.1,
-        "minimum_coarse_overlap": 0.001,
-        "coarse_threshold": 100.0,
-        "minimum_validation_match": 0.04,
-        "minimum_validation_intersection": 0.04,
-        "minimum_validation_inliers": 6,
-    }
     object_sift = ldd.SIFT(
         max_features=256,
-        ratio=match_parameters["ratio"],
-        threshold=match_parameters["coarse_threshold"],
-        overlap=match_parameters["minimum_coarse_overlap"],
-        validation_match=match_parameters["minimum_validation_match"],
-        validation_inliers=match_parameters["minimum_validation_inliers"],
-        validation_intersection=match_parameters["minimum_validation_intersection"],
+        ratio=OBJECT_MATCH_PARAMS["ratio"],
+        threshold=OBJECT_MATCH_PARAMS["coarse_threshold"],
+        overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
+        validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
+        validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
+        validation_intersection=OBJECT_MATCH_PARAMS[
+            "minimum_validation_intersection"
+        ],
     )
     filepaths = [
         "tests/images/chair.png",
@@ -227,9 +231,43 @@ def test_viz_pair():
         sanitized=False,
     )
     viz_img = cv2.cvtColor(viz_img, cv2.COLOR_RGB2BGR)
-    cv2.imwrite("debug-image.png", viz_img)
+    cv2.imwrite("tests/images/debug-image.png", viz_img)
 
-    row = pairs[1]
+
+def test_viz_pair_symmetry():
+    # This test catches a regression where if the smaller image was the query one LDD would swap
+    # points during distance calculation, but not unswap points before returning them.
+    object_sift = ldd.SIFT(
+        max_features=256,
+        ratio=OBJECT_MATCH_PARAMS["ratio"],
+        threshold=OBJECT_MATCH_PARAMS["coarse_threshold"],
+        overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
+        validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
+        validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
+        validation_intersection=OBJECT_MATCH_PARAMS[
+            "minimum_validation_intersection"
+        ],
+    )
+    filepaths = [
+        "tests/images/chair.png",
+        "tests/images/chair3.png",
+    ]
+    reference_df = ldd.build_reference_df(
+        filepaths=filepaths,
+        hasher=object_sift,
+        min_features=10,
+        max_size=1000,
+        show_progress=False,
+    )
+    pairs = ldd.deduplicate(
+        filepaths_or_reference_df=filepaths[:1],
+        query_filepaths_or_df=filepaths[1:],
+        hasher=object_sift,
+        max_size=1000,
+        min_features=10,
+        verbose=True,
+    )
+    row = pairs[0]
     viz_img = vizualize_pair(
         reference_df.loc[row[0]],
         reference_df.loc[row[1]],
@@ -238,5 +276,24 @@ def test_viz_pair():
         sanitized=False,
     )
     viz_img = cv2.cvtColor(viz_img, cv2.COLOR_RGB2BGR)
-    cv2.imwrite("debug-image2.png", viz_img)
-    # TODO: some clever cv2 assert.
+    cv2.imwrite("tests/images/debug-image-symmetry-1.png", viz_img)
+
+    # Swap order of ref and query files.
+    pairs = ldd.deduplicate(
+        filepaths_or_reference_df=filepaths[1:],
+        query_filepaths_or_df=filepaths[:1],
+        hasher=object_sift,
+        max_size=1000,
+        min_features=10,
+        verbose=True,
+    )
+    row = pairs[0]
+    viz_img = vizualize_pair(
+        reference_df.loc[row[0]],
+        reference_df.loc[row[1]],
+        0.5,
+        match_metadata=row[2],
+        sanitized=False,
+    )
+    viz_img = cv2.cvtColor(viz_img, cv2.COLOR_RGB2BGR)
+    cv2.imwrite("tests/images/debug-image-symmetry-2.png", viz_img)

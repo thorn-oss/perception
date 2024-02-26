@@ -238,8 +238,13 @@ class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
             if mask[i][0] == 1:
                 matched_a_pts.append(kpAM[i])
                 matched_b_pts.append(kpBM[i])
-        stats["final_matched_a_pts"] = matched_a_pts
-        stats["final_matched_b_pts"] = matched_b_pts
+        # Unswap points before final return.
+        if swap:
+            stats["final_matched_a_pts"] = matched_b_pts
+            stats["final_matched_b_pts"] = matched_a_pts
+        else:
+            stats["final_matched_a_pts"] = matched_a_pts
+            stats["final_matched_b_pts"] = matched_b_pts
 
         return (bounds_intersection >= minimum_intersection, stats)
 
