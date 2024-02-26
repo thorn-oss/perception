@@ -32,8 +32,16 @@ def test_tmk_parity():
         )
         theirs.append(
             model.single_fv(
-                ts=torch.from_numpy(features[np.newaxis,]),
-                xs=torch.from_numpy(timestamps[np.newaxis,]),
+                ts=torch.from_numpy(
+                    features[
+                        np.newaxis,
+                    ]
+                ),
+                xs=torch.from_numpy(
+                    timestamps[
+                        np.newaxis,
+                    ]
+                ),
             ).numpy()[0]
         )
         ours.append(hasher.compute(filepath=filepath, hash_format="vector"))
@@ -49,9 +57,21 @@ def test_tmk_parity():
     for normalization in ["feat", "feat_freq", "matrix"]:
         model.tmk.normalization = normalization
         scores_theirs = model.tmk.merge(
-            fv_a=torch.from_numpy(theirs[0][np.newaxis,]),
-            fv_b=torch.from_numpy(theirs[1][np.newaxis,]),
-            offsets=torch.from_numpy(offsets[np.newaxis,]),
+            fv_a=torch.from_numpy(
+                theirs[0][
+                    np.newaxis,
+                ]
+            ),
+            fv_b=torch.from_numpy(
+                theirs[1][
+                    np.newaxis,
+                ]
+            ),
+            offsets=torch.from_numpy(
+                offsets[
+                    np.newaxis,
+                ]
+            ),
         )[0]
         scores_ours = hasher._score_pair(
             theirs[0], theirs[1], offsets=offsets, normalization=normalization
