@@ -11,6 +11,7 @@ from perception.hashers.image.pdq import PDQHash
 
 TEST_IMAGES = [os.path.join("tests", "images", f"image{n}.jpg") for n in range(1, 11)]
 
+
 # The PDQ hash isometric computation is inexact. See
 # https://github.com/faustomorales/pdqhash-python/blob/master/tests/test_compute.py
 # for details.

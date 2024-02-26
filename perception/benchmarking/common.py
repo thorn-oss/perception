@@ -165,9 +165,9 @@ class Saveable(Filterable):
                     os.path.join(storage_dir, "index.csv")
                 )
                 index["filepath"] = index["filename"].apply(
-                    lambda fn: os.path.join(storage_dir, fn)
-                    if not pd.isnull(fn)
-                    else None
+                    lambda fn: (
+                        os.path.join(storage_dir, fn) if not pd.isnull(fn) else None
+                    )
                 )
                 do_zip_extraction = True
                 if index["filepath"].apply(os.path.isfile).all():
@@ -191,9 +191,11 @@ class Saveable(Filterable):
             ), "Storage directory only valid if path is to ZIP file."
             index = pd.read_csv(os.path.join(path_to_zip_or_directory, "index.csv"))
             index["filepath"] = index["filename"].apply(
-                lambda fn: os.path.join(path_to_zip_or_directory, fn)
-                if not pd.isnull(fn)
-                else None
+                lambda fn: (
+                    os.path.join(path_to_zip_or_directory, fn)
+                    if not pd.isnull(fn)
+                    else None
+                )
             )
 
         if verify_md5:
@@ -219,17 +221,19 @@ class Saveable(Filterable):
         # Build index using filename instead of filepath.
         index = df.copy()
         index["filename"] = df["filepath"].apply(
-            lambda filepath: os.path.basename(filepath)
-            if not pd.isnull(filepath)
-            else None
+            lambda filepath: (
+                os.path.basename(filepath) if not pd.isnull(filepath) else None
+            )
         )
         if index["filename"].dropna().duplicated().sum() > 0:
             warnings.warn("Changing filenames to UUID due to duplicates.", UserWarning)
 
             index["filename"] = [
-                str(uuid.uuid4()) + os.path.splitext(row["filename"])[1]
-                if not pd.isnull(row["filename"])
-                else None
+                (
+                    str(uuid.uuid4()) + os.path.splitext(row["filename"])[1]
+                    if not pd.isnull(row["filename"])
+                    else None
+                )
                 for _, row in index.iterrows()
             ]
         index["md5"] = [
