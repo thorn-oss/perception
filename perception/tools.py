@@ -93,14 +93,16 @@ def deduplicate_hashes(
         hashes = sorted(hashes)
     vectors = np.array(
         [
-            perception_hashers.tools.string_to_vector(
-                hash_string=hash_string_or_vector,
-                hash_format=hash_format,
-                hash_length=hash_length,
-                dtype=hash_dtype,
+            (
+                perception_hashers.tools.string_to_vector(
+                    hash_string=hash_string_or_vector,
+                    hash_format=hash_format,
+                    hash_length=hash_length,
+                    dtype=hash_dtype,
+                )
+                if isinstance(hash_string_or_vector, str)
+                else hash_string_or_vector
             )
-            if isinstance(hash_string_or_vector, str)
-            else hash_string_or_vector
             for _, hash_string_or_vector in hashes
         ]
     )
@@ -352,12 +354,14 @@ class SaferMatcher:
             {
                 "id": image if isinstance(image, str) else image[1],
                 self.hasher_api_id: hash_string,
-                "md5": perception_hashers.tools.compute_md5(image)
-                if isinstance(image, str)
-                else (
-                    perception_hashers.tools.compute_md5(image[0])
-                    if isinstance(image[0], str)
-                    else None
+                "md5": (
+                    perception_hashers.tools.compute_md5(image)
+                    if isinstance(image, str)
+                    else (
+                        perception_hashers.tools.compute_md5(image[0])
+                        if isinstance(image[0], str)
+                        else None
+                    )
                 ),
             }
             for image, (hash_string, quality) in zip(images, raw_hashes)

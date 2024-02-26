@@ -74,9 +74,11 @@ class FramewiseHasher(VideoHasher):
 
         def format_batch(hashes):
             return [
-                self.vector_to_string(vector, hash_format=hash_format)
-                if hash_format != "vector"
-                else vector
+                (
+                    self.vector_to_string(vector, hash_format=hash_format)
+                    if hash_format != "vector"
+                    else vector
+                )
                 for vector in hashes
             ]
 
