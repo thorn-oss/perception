@@ -198,9 +198,7 @@ def test_viz_pair():
         overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
         validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
         validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
-        validation_intersection=OBJECT_MATCH_PARAMS[
-            "minimum_validation_intersection"
-        ],
+        validation_intersection=OBJECT_MATCH_PARAMS["minimum_validation_intersection"],
     )
     filepaths = [
         "tests/images/chair.png",
@@ -244,9 +242,7 @@ def test_viz_pair_symmetry():
         overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
         validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
         validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
-        validation_intersection=OBJECT_MATCH_PARAMS[
-            "minimum_validation_intersection"
-        ],
+        validation_intersection=OBJECT_MATCH_PARAMS["minimum_validation_intersection"],
     )
     filepaths = [
         "tests/images/chair.png",
