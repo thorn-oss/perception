@@ -10,6 +10,7 @@ import networkit as nk
 import numpy as np
 import faiss
 import tqdm
+from typing import Optional
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -79,7 +80,7 @@ def compute_euclidean_pairwise_duplicates_approx(
     y_counts=None,
     pct_probe=0.1,
     use_gpu: bool = True,
-    faiss_cache_path: str = None,
+    faiss_cache_path: Optional[str] = None,
     show_progress: bool = False,
 ):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple

@@ -4,6 +4,7 @@ import scipy.special
 
 from ..hasher import VideoHasher, ImageHasher
 from ..image.phash import PHashF
+from typing import Optional
 
 
 class TMKL2(VideoHasher):
@@ -14,7 +15,7 @@ class TMKL2(VideoHasher):
 
     def __init__(
         self,
-        frame_hasher: ImageHasher = None,
+        frame_hasher: Optional[ImageHasher] = None,
         frames_per_second: int = 15,
         normalization: str = "matrix",
     ):
@@ -166,7 +167,7 @@ class TMKL1(VideoHasher):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        frame_hasher: ImageHasher = None,
+        frame_hasher: Optional[ImageHasher] = None,
         frames_per_second: int = 15,
         dtype="float32",
         distance_metric="cosine",

@@ -17,6 +17,7 @@ import numpy as np
 import tqdm
 
 from ..hashers.tools import compute_md5, string_to_vector
+from typing import Optional
 
 try:
     from . import extensions  # type: ignore
@@ -136,7 +137,7 @@ class Filterable(ABC):
 class Saveable(Filterable):
     @classmethod
     def load(
-        cls, path_to_zip_or_directory: str, storage_dir: str = None, verify_md5=True
+        cls, path_to_zip_or_directory: str, storage_dir: Optional[str] = None, verify_md5=True
     ):
         """Load a dataset from a ZIP file or directory.
 
@@ -327,7 +328,7 @@ class BenchmarkHashes(Filterable):
         self._df.to_csv(filepath, index=False)
 
     # pylint: disable=too-many-locals
-    def compute_metrics(self, custom_distance_metrics: dict = None) -> pd.DataFrame:
+    def compute_metrics(self, custom_distance_metrics: Optional[dict] = None) -> pd.DataFrame:
         if self._metrics is not None:
             return self._metrics
         metrics = []

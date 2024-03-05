@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 import scipy.spatial
+from typing import Optional
 
 try:
     import tqdm  # pylint: disable=unused-import
@@ -124,8 +125,8 @@ class Hasher(ABC):
     def compute_parallel(
         self,
         filepaths: typing.List[str],
-        progress: "tqdm.tqdm" = None,
-        progress_desc: str = None,
+        progress: Optional["tqdm.tqdm"] = None,
+        progress_desc: Optional[str] = None,
         max_workers: int = 5,
         isometric: bool = False,
     ):
@@ -319,7 +320,7 @@ class VideoHasher(Hasher):
         frame: np.ndarray,
         frame_index: typing.Optional[int],
         frame_timestamp: typing.Optional[float],
-        state: dict = None,
+        state: Optional[dict] = None,
     ) -> dict:
         """Called for each frame in the video. For all
         but the first frame, a state is provided recording the state from

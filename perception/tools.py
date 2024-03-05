@@ -7,6 +7,7 @@ import typing
 import warnings
 import urllib.parse
 import urllib.request
+from typing import Optional
 
 try:
     import tqdm  # pylint: disable=unused-import
@@ -47,11 +48,11 @@ def deduplicate_hashes(
     hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
     threshold: float,
     hash_format: str = "base64",
-    hasher: perception_hashers.ImageHasher = None,
-    hash_length: int = None,
-    hash_dtype: str = None,
-    distance_metric: str = None,
-    progress: "tqdm.tqdm" = None,
+    hasher: Optional[perception_hashers.ImageHasher] = None,
+    hash_length: Optional[int] = None,
+    hash_dtype: Optional[str] = None,
+    distance_metric: Optional[str] = None,
+    progress: Optional["tqdm.tqdm"] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates using a list of precomputed hashes.
 
@@ -171,7 +172,7 @@ def deduplicate(
     files: typing.List[str],
     hashers: typing.List[typing.Tuple[perception_hashers.ImageHasher, float]],
     isometric: bool = False,
-    progress: "tqdm.tqdm" = None,
+    progress: Optional["tqdm.tqdm"] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates in a list of files.
 
@@ -278,12 +279,12 @@ class SaferMatcher:
 
     def __init__(
         self,
-        api_key: str = None,
-        username: str = None,
-        password: str = None,
-        url: str = None,
-        hasher: perception_hashers.ImageHasher = None,
-        hasher_api_id: str = None,
+        api_key: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        url: Optional[str] = None,
+        hasher: Optional[perception_hashers.ImageHasher] = None,
+        hasher_api_id: Optional[str] = None,
         quality_threshold: int = 90,
     ):
         if (

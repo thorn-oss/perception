@@ -11,6 +11,7 @@ import pandas as pd
 from PIL import Image  # pylint: disable=import-error
 
 from .. import hashers, tools
+from typing import Optional
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
@@ -111,7 +112,7 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 
 def test_video_hasher_integrity(
-    hasher: hashers.VideoHasher, test_videos: typing.List[str] = None
+    hasher: hashers.VideoHasher, test_videos: Optional[typing.List[str]] = None
 ):
     if test_videos is None:
         test_videos = DEFAULT_TEST_VIDEOS
@@ -122,7 +123,7 @@ def test_image_hasher_integrity(
     hasher: hashers.ImageHasher,
     pil_opencv_threshold: float,
     transform_threshold: float,
-    test_images: typing.List[str] = None,
+    test_images: Optional[typing.List[str]] = None,
     opencv_hasher: bool = False,
 ):
     """Test to ensure a hasher works correctly.

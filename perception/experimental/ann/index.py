@@ -9,6 +9,7 @@ import numpy as np
 import faiss
 
 import perception.hashers.tools as pht
+from typing import Optional
 
 QueryInput = typing_extensions.TypedDict("QueryInput", {"id": str, "hash": str})
 
@@ -273,8 +274,8 @@ class ApproximateNearestNeighbors:
     def search(
         self,
         queries: typing.List[QueryInput],
-        threshold: int = None,
-        threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
+        threshold: Optional[int] = None,
+        threshold_func: Optional[typing.Callable[[np.ndarray], np.ndarray]] = None,
         hash_format="base64",
         k=1,
     ):

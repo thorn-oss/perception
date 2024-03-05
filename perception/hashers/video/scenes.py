@@ -9,6 +9,7 @@ from ...utils import flatten
 from ..hasher import VideoHasher
 from ..image.phash import PHashU8
 from .tmk import TMKL1
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class SimpleSceneDetection(VideoHasher):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        base_hasher: VideoHasher = None,
+        base_hasher: Optional[VideoHasher] = None,
         interscene_threshold=None,
         min_frame_size=50,
         similarity_threshold=0.95,

@@ -22,6 +22,7 @@ from http import client
 import numpy as np
 import validators
 import cv2
+from typing import Optional
 
 try:
     import PIL
@@ -460,9 +461,9 @@ def read_video_to_generator_ffmpeg(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
     errors="raise",
-    max_duration: float = None,
-    max_size: int = None,
-    interp: str = None,
+    max_duration: Optional[float] = None,
+    max_size: Optional[int] = None,
+    interp: Optional[str] = None,
     frame_rounding: str = "up",
     draw_timestamps=False,
     use_cuda=False,
@@ -660,8 +661,8 @@ def read_video_to_generator(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
     errors="raise",
-    max_duration: float = None,
-    max_size: int = None,
+    max_duration: Optional[float] = None,
+    max_size: Optional[int] = None,
 ) -> FramesWithIndexesAndTimestamps:
     """This is used by :code:`read_video` when :code:`use_ffmpeg` is False (default).
 

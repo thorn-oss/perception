@@ -1,6 +1,7 @@
 import numpy as np
 from ..hasher import VideoHasher, ImageHasher
 from .. import tools
+from typing import Optional
 
 
 class FramewiseHasher(VideoHasher):
@@ -14,7 +15,7 @@ class FramewiseHasher(VideoHasher):
         frame_hasher: ImageHasher,
         interframe_threshold: float,
         frames_per_second: int = 15,
-        quality_threshold: float = None,
+        quality_threshold: Optional[float] = None,
     ):
         self.hash_length = frame_hasher.hash_length
         self.frames_per_second = frames_per_second
