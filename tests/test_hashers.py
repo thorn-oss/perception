@@ -6,7 +6,6 @@ import string
 import pytest
 
 from perception import hashers, testing
-
 from perception.hashers.image.pdq import PDQHash
 
 TEST_IMAGES = [os.path.join("tests", "images", f"image{n}.jpg") for n in range(1, 11)]

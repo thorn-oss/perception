@@ -20,7 +20,6 @@ class PDQHash(ImageHasher):
         hash_vector, quality = pdqhash.compute(image)
         return hash_vector > 0, quality
 
-    # pylint: disable=no-self-use
     def _compute_isometric(self, image):
         hash_vectors, _ = pdqhash.compute_dihedral(image)
         names = ["r0", "r90", "r180", "r270", "fv", "fh", "r90fv", "r90fh"]
@@ -32,6 +31,5 @@ class PDQHashF(PDQHash):
     distance_metric = "euclidean"
     hash_length = 256
 
-    # pylint: disable=no-self-use
     def _compute(self, image):
         return pdqhash.compute_float(image)[0]

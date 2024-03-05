@@ -1,23 +1,23 @@
 # pylint: disable=invalid-name
-from abc import ABC
+import itertools
 import logging
+import os
+import shutil
 import tempfile
 import typing
-import itertools
+import uuid
 import warnings
 import zipfile
-import shutil
-import uuid
-import os
+from abc import ABC
+from typing import Optional
 
 import matplotlib.pyplot as plt
-from scipy import spatial, stats
-import pandas as pd
 import numpy as np
+import pandas as pd
 import tqdm
+from scipy import spatial, stats
 
 from ..hashers.tools import compute_md5, string_to_vector
-from typing import Optional
 
 try:
     from . import extensions  # type: ignore

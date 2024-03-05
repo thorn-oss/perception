@@ -2,14 +2,14 @@
 import time
 import typing
 import warnings
+from typing import Optional
+
+import faiss
+import numpy as np
+import pandas as pd
 import typing_extensions
 
-import pandas as pd
-import numpy as np
-import faiss
-
 import perception.hashers.tools as pht
-from typing import Optional
 
 QueryInput = typing_extensions.TypedDict("QueryInput", {"id": str, "hash": str})
 

@@ -1,13 +1,13 @@
 # pylint: disable=no-member
+import concurrent.futures
+import typing
+import warnings
 from abc import ABC, abstractmethod
 from logging import warning
-import typing
-import concurrent.futures
-import warnings
+from typing import Optional
 
 import numpy as np
 import scipy.spatial
-from typing import Optional
 
 try:
     import tqdm  # pylint: disable=unused-import
@@ -116,7 +116,6 @@ class Hasher(ABC):
             f"Distance metric: {self.distance_metric} not supported."
         )
 
-    # pylint: disable=no-self-use
     def _compute_distance(self, vector1, vector2):
         raise ValueError("Called a custom distance function but it is not implemented.")
 
@@ -348,12 +347,12 @@ class VideoHasher(Hasher):
         scenes: typing.List[dict] = []
         hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
         return [
-            dict(
-                hash=hashes[i],
-                start_timestamp=scene.get("start_timestamp"),
-                end_timestamp=scene.get("end_timestamp"),
-                frame_index=scene.get("frame_index"),
-            )
+            {
+                "hash": hashes[i],
+                "start_timestamp": scene.get("start_timestamp"),
+                "end_timestamp": scene.get("end_timestamp"),
+                "frame_index": scene.get("frame_index"),
+            }
             for i, scene in enumerate(scenes)
         ]
 

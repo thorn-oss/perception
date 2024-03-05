@@ -1,17 +1,18 @@
-import typing
-import warnings
 import logging
-import uuid
 import os
+import typing
+import uuid
+import warnings
 
-from tqdm import tqdm
-import pandas as pd
-import imgaug
 import cv2
+import imgaug
+import pandas as pd
+from tqdm import tqdm
 
-from ..hashers import ImageHasher, tools
+from ..hashers import tools
+from ..hashers.hasher import ImageHasher
 from ..tools import deduplicate, flatten
-from .common import BenchmarkTransforms, BenchmarkDataset, BenchmarkHashes
+from .common import BenchmarkDataset, BenchmarkHashes, BenchmarkTransforms
 
 # pylint: disable=invalid-name
 log = logging.getLogger(__name__)
@@ -169,8 +170,9 @@ class BenchmarkImageDataset(BenchmarkDataset):
                     continue
                 try:
                     transformed = transform(image=image)
+                # pylint: disable=broad-except
                 except Exception as e:
-                    raise Exception(
+                    raise RuntimeError(
                         f"An exception occurred while processing {filepath} "
                         f"with transform {transform_name}."
                     ) from e

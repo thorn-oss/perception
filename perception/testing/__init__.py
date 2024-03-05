@@ -1,26 +1,26 @@
 # pylint: disable=invalid-name,too-many-locals
-import os
+import atexit
 import math
+import os
 import typing
-import pkg_resources
+from contextlib import ExitStack
+from importlib import resources
+from typing import Optional
 
 import cv2
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 from PIL import Image  # pylint: disable=import-error
 
 from .. import hashers, tools
-from typing import Optional
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
 
 def get_low_detail_image():
     v = np.arange(0, 50, 1)
-    v = np.concatenate([v, v[::-1]])[
-        np.newaxis,
-    ]
+    v = np.concatenate([v, v[::-1]])[np.newaxis,]
     image = np.matmul(v.T, v)
     image = (image * 255 / image.max()).astype("uint8")
     image = image[..., np.newaxis].repeat(repeats=3, axis=2)
@@ -31,25 +31,36 @@ def get_low_detail_image():
 
 LOW_DETAIL_IMAGE = get_low_detail_image()
 
+file_manager = ExitStack()
+atexit.register(file_manager.close)
+
 DEFAULT_TEST_IMAGES = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "images", f"image{n}.jpg")
+    file_manager.enter_context(
+        resources.as_file(
+            resources.files("perception") / "testing" / "images" / f"image{n}.jpg"
+        )
     )
     for n in range(1, 11)
 ]
 DEFAULT_TEST_LOGOS = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "logos", "logoipsum.png")
+    file_manager.enter_context(
+        resources.as_file(
+            resources.files("perception") / "testing" / "logos" / "logoipsum.png"
+        )
     )
 ]
 DEFAULT_TEST_VIDEOS = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "videos", f"v{n}.m4v")
+    file_manager.enter_context(
+        resources.as_file(
+            resources.files("perception") / "testing" / "videos" / f"v{n}.m4v"
+        )
     )
     for n in range(1, 3)
 ] + [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "videos", "v2s.mov")
+    file_manager.enter_context(
+        resources.as_file(
+            resources.files("perception") / "testing" / "videos" / "v2s.mov"
+        )
     )
 ]
 

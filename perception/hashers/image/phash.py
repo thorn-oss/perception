@@ -1,9 +1,9 @@
-import scipy.fftpack
-import numpy as np
 import cv2
+import numpy as np
+import scipy.fftpack
 
-from ..hasher import ImageHasher
 from .. import tools
+from ..hasher import ImageHasher
 
 
 class PHash(ImageHasher):
@@ -51,7 +51,6 @@ class PHash(ImageHasher):
             self.freq_shift : self.hash_size + self.freq_shift,
         ]
 
-    # pylint: disable=no-self-use
     def _dct_to_hash(self, dct):
         dct = dct.flatten()
         if self.exclude_first_term:

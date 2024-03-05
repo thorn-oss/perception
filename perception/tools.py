@@ -1,20 +1,20 @@
 # pylint: disable=too-many-arguments,too-many-locals
 
-import os
-import json
 import base64
+import json
+import os
 import typing
-import warnings
 import urllib.parse
 import urllib.request
+import warnings
 from typing import Optional
 
 try:
     import tqdm  # pylint: disable=unused-import
 except ImportError:  # pragma: no cover
     tqdm = None
-from scipy import spatial
 import numpy as np
+from scipy import spatial
 
 from . import hashers as perception_hashers
 from .utils import flatten

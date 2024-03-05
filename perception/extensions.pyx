@@ -3,16 +3,19 @@
 # cython: language_level=3
 # cython: language=c++
 
-import sys
 import math
-import numpy as np
+import sys
+
 import cython
-from cython.parallel import prange, parallel
-from libc.stdlib cimport abort, malloc, free
+import numpy as np
+from cython.parallel import parallel, prange
+
+cimport numpy as np
+from libc.stdlib cimport abort, free, malloc
 from libcpp cimport bool as cppbool
 from libcpp.vector cimport vector
 
-cimport numpy as np
+
 cdef extern from "limits.h":
     int INT_MAX
 

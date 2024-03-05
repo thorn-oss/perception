@@ -1,7 +1,9 @@
-import numpy as np
-from ..hasher import VideoHasher, ImageHasher
-from .. import tools
 from typing import Optional
+
+import numpy as np
+
+from .. import tools
+from ..hasher import ImageHasher, VideoHasher
 
 
 class FramewiseHasher(VideoHasher):

@@ -1,18 +1,18 @@
 # pylint: disable=line-too-long,too-many-arguments
-import json
-import typing
 import asyncio
-import logging
 import functools
+import json
+import logging
+import typing
+from typing import Optional
 
 import aiohttp.web
 import numpy as np
-import pandas as pd
 from pythonjsonlogger import jsonlogger
 
 import perception.hashers.tools as pht
+
 from .index import ApproximateNearestNeighbors
-from typing import Optional
 
 
 def is_similarity_valid(data, index: ApproximateNearestNeighbors):
@@ -78,7 +78,7 @@ async def similarity(request):
                 hash_format=request_data.get("hash_format", "base64"),
             ),
         )
-        matches = json.loads(pd.io.json.dumps({"queries": matches}))
+        matches = json.loads(json.dumps({"queries": matches}))
 
     return aiohttp.web.json_response(matches)
 

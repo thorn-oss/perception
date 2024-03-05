@@ -1,15 +1,15 @@
 # pylint: disable=invalid-name
 import logging
+from typing import Optional
 
-import numpy as np
 import cv2
+import numpy as np
 
-from .. import tools
 from ...utils import flatten
+from .. import tools
 from ..hasher import VideoHasher
 from ..image.phash import PHashU8
 from .tmk import TMKL1
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -146,13 +146,13 @@ class SimpleSceneDetection(VideoHasher):
             # If frame_timestamp is None, we can assume we've reached the end of
             # the video and should use the end timestamp instead
             state["scenes"].append(
-                dict(
-                    hash=subhash,
-                    frames=state["frames"],
-                    start_timestamp=state["start"],
-                    end_timestamp=frame_timestamp or state.get("end"),
-                    frame_index=state["frame_index"],
-                )
+                {
+                    "hash": subhash,
+                    "frames": state["frames"],
+                    "start_timestamp": state["start"],
+                    "end_timestamp": frame_timestamp or state.get("end"),
+                    "frame_index": state["frame_index"],
+                }
             )
         state["substate"] = None
         state["bounds"] = None

@@ -1,16 +1,16 @@
 # pylint: disable=invalid-name
 
+import logging
 import math
 import os.path as op
 import typing
-import logging
+from typing import Optional
 
-import typing_extensions
+import faiss
 import networkit as nk
 import numpy as np
-import faiss
 import tqdm
-from typing import Optional
+import typing_extensions
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0

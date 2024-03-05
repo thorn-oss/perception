@@ -1,18 +1,18 @@
 # pylint: disable=no-member,invalid-name,too-many-locals,too-many-arguments,too-many-return-statements
-from abc import ABC
-import typing
-import logging
 import concurrent.futures
+import logging
+import typing
+from abc import ABC
 from warnings import warn
 
-import typing_extensions
+import cv2
 import numpy as np
 import pandas as pd
-import cv2
 import tqdm
+import typing_extensions
 
-import perception.hashers.tools as pht
 import perception.experimental.approximate_deduplication as ad
+import perception.hashers.tools as pht
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256

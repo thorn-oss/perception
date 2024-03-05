@@ -2,12 +2,12 @@
 
 import os
 import typing
+from typing import Optional
 
 import cv2
 import ffmpeg
 
 from ..hashers.tools import read_video
-from typing import Optional
 
 
 def probe(filepath):

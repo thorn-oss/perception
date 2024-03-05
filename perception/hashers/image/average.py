@@ -1,7 +1,7 @@
 import cv2
 
-from ..hasher import ImageHasher
 from .. import tools
+from ..hasher import ImageHasher
 
 
 class AverageHash(ImageHasher):

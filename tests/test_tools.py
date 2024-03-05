@@ -1,12 +1,12 @@
 # pylint: disable=invalid-name
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
 
 import numpy as np
 import pytest
 
-from perception import hashers, tools, testing
+from perception import hashers, testing, tools
 
 
 def test_deduplicate():

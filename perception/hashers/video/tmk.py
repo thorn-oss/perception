@@ -1,10 +1,11 @@
 # pylint: disable=invalid-name,too-many-instance-attributes,too-many-locals
+from typing import Optional
+
 import numpy as np
 import scipy.special
 
-from ..hasher import VideoHasher, ImageHasher
+from ..hasher import ImageHasher, VideoHasher
 from ..image.phash import PHashF
-from typing import Optional
 
 
 class TMKL2(VideoHasher):

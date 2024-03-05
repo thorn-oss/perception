@@ -2,13 +2,15 @@
 # distutils: extra_link_args=-fopenmp
 # cython: language_level=3
 
-import numpy as np
 import cython
-from cython.parallel import prange, parallel
-from libc.stdlib cimport abort, malloc, free
-from libc.math cimport sqrt
+import numpy as np
+from cython.parallel import parallel, prange
 
 cimport numpy as np
+from libc.math cimport sqrt
+from libc.stdlib cimport abort, free, malloc
+
+
 cdef extern from "limits.h":
     int INT_MAX
 
