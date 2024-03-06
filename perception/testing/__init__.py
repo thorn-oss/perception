@@ -5,6 +5,7 @@ import os
 import typing
 from contextlib import ExitStack
 from importlib import resources
+from pathlib import Path
 from typing import Optional
 
 import cv2
@@ -20,7 +21,9 @@ SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
 def get_low_detail_image():
     v = np.arange(0, 50, 1)
-    v = np.concatenate([v, v[::-1]])[np.newaxis,]
+    v = np.concatenate([v, v[::-1]])[
+        np.newaxis,
+    ]
     image = np.matmul(v.T, v)
     image = (image * 255 / image.max()).astype("uint8")
     image = image[..., np.newaxis].repeat(repeats=3, axis=2)
@@ -123,7 +126,7 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 
 def test_video_hasher_integrity(
-    hasher: hashers.VideoHasher, test_videos: Optional[typing.List[str]] = None
+    hasher: hashers.VideoHasher, test_videos: Optional[typing.List[Path]] = None
 ):
     if test_videos is None:
         test_videos = DEFAULT_TEST_VIDEOS
@@ -134,7 +137,7 @@ def test_image_hasher_integrity(
     hasher: hashers.ImageHasher,
     pil_opencv_threshold: float,
     transform_threshold: float,
-    test_images: Optional[typing.List[str]] = None,
+    test_images: typing.List[Path] = DEFAULT_TEST_IMAGES,
     opencv_hasher: bool = False,
 ):
     """Test to ensure a hasher works correctly.
@@ -149,8 +152,6 @@ def test_image_hasher_integrity(
         opencv_hasher: Whether the hasher is an OpenCV hasher. Used to
             determine whether to check for consistent distances.
     """
-    if test_images is None:
-        test_images = DEFAULT_TEST_IMAGES
     assert len(test_images) >= 2, "You must provide at least two test images."
     image1 = test_images[0]
     image2 = test_images[1]

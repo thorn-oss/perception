@@ -13,9 +13,7 @@ from perception.benchmarking.image import BenchmarkImageDataset
 from perception.benchmarking.video import BenchmarkVideoDataset
 
 files = testing.DEFAULT_TEST_IMAGES
-dataset = BenchmarkImageDataset.from_tuples(
-    [(fn, i % 2) for i, fn in enumerate(files)]
-)
+dataset = BenchmarkImageDataset.from_tuples([(fn, i % 2) for i, fn in enumerate(files)])
 
 
 def test_deduplicate():
