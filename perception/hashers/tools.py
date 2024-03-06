@@ -1,27 +1,28 @@
 # pylint: disable=too-many-locals,too-many-lines
-import os
-import io
-import math
-import json
-import shlex
-import queue
 import base64
-import typing
-import hashlib
-import warnings
-import logging
 import fractions
-import threading
 import functools
+import hashlib
+import io
 import itertools
+import json
+import logging
+import math
+import os
+import queue
+import shlex
 import subprocess
+import threading
+import typing
+import warnings
 from collections import Counter
-from urllib import request
 from http import client
+from typing import Optional
+from urllib import request
 
+import cv2
 import numpy as np
 import validators
-import cv2
 
 try:
     import PIL
@@ -320,16 +321,16 @@ def get_common_framerates(id_rates: dict):
 
 def get_isometric_transforms(image: ImageInputType, require_color=True):
     image = to_image_array(image, require_color=require_color)
-    return dict(
-        r0=image,
-        fv=np.ascontiguousarray(image[::-1, :]),
-        fh=np.ascontiguousarray(image[:, ::-1]),
-        r180=np.ascontiguousarray(image[::-1, ::-1]),
-        r90=np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, :, :]),
-        r90fv=np.ascontiguousarray(image.transpose(1, 0, 2)),
-        r90fh=np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, ::-1]),
-        r270=np.ascontiguousarray(image.transpose(1, 0, 2)[:, ::-1]),
-    )
+    return {
+        "r0": image,
+        "fv": np.ascontiguousarray(image[::-1, :]),
+        "fh": np.ascontiguousarray(image[:, ::-1]),
+        "r180": np.ascontiguousarray(image[::-1, ::-1]),
+        "r90": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, :, :]),
+        "r90fv": np.ascontiguousarray(image.transpose(1, 0, 2)),
+        "r90fh": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, ::-1]),
+        "r270": np.ascontiguousarray(image.transpose(1, 0, 2)[:, ::-1]),
+    }
 
 
 def get_isometric_dct_transforms(dct: np.ndarray):
@@ -344,16 +345,16 @@ def get_isometric_dct_transforms(dct: np.ndarray):
     T2[1::2, 1::2] = 1
     T2[::2, 1::2] = -1
     T2[1::2, ::2] = -1
-    return dict(
-        r0=dct,
-        fv=dct * T1,
-        fh=dct * T1.T,
-        r180=dct * T2,
-        r90=dct.T * T1,
-        r90fv=dct.T,
-        r90fh=dct.T * T2,
-        r270=dct.T * T1.T,
-    )
+    return {
+        "r0": dct,
+        "fv": dct * T1,
+        "fh": dct * T1.T,
+        "r180": dct * T2,
+        "r90": dct.T * T1,
+        "r90fv": dct.T,
+        "r90fh": dct.T * T2,
+        "r270": dct.T * T1.T,
+    }
 
 
 def read(filepath_or_buffer: ImageInputType, timeout=None):
@@ -460,9 +461,9 @@ def read_video_to_generator_ffmpeg(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
     errors="raise",
-    max_duration: float = None,
-    max_size: int = None,
-    interp: str = None,
+    max_duration: Optional[float] = None,
+    max_size: Optional[int] = None,
+    interp: Optional[str] = None,
     frame_rounding: str = "up",
     draw_timestamps=False,
     use_cuda=False,
@@ -660,8 +661,8 @@ def read_video_to_generator(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
     errors="raise",
-    max_duration: float = None,
-    max_size: int = None,
+    max_duration: Optional[float] = None,
+    max_size: Optional[int] = None,
 ) -> FramesWithIndexesAndTimestamps:
     """This is used by :code:`read_video` when :code:`use_ffmpeg` is False (default).
 

@@ -11,7 +11,7 @@ class OpenCVHasher(ImageHasher):  # pylint: disable=abstract-method
 
     def __init__(self):
         if not hasattr(cv2, "img_hash"):
-            raise Exception(
+            raise RuntimeError(
                 "You do not appear to have opencv-contrib installed. It is required for pure OpenCV hashers."  # pylint: disable=line-too-long
             )
 

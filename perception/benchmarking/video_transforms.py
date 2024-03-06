@@ -2,6 +2,7 @@
 
 import os
 import typing
+from typing import Optional
 
 import cv2
 import ffmpeg
@@ -32,10 +33,10 @@ def sanitize_output_filepath(input_filepath, output_filepath, output_ext=None):
 def get_simple_transform(
     width: typing.Union[str, int] = -1,
     height: typing.Union[str, int] = -1,
-    pad: str = None,
-    codec: str = None,
-    clip_pct: typing.Tuple[float, float] = None,
-    clip_s: typing.Tuple[float, float] = None,
+    pad: Optional[str] = None,
+    codec: Optional[str] = None,
+    clip_pct: Optional[typing.Tuple[float, float]] = None,
+    clip_s: Optional[typing.Tuple[float, float]] = None,
     sar=None,
     fps=None,
     output_ext=None,

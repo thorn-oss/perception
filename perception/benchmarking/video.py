@@ -1,14 +1,14 @@
 import concurrent.futures
+import os
 import typing
 import uuid
-import os
 
-import tqdm
 import pandas as pd
+import tqdm
 
-from ..tools import flatten
 from ..hashers import VideoHasher, tools
-from .common import BenchmarkDataset, BenchmarkTransforms, BenchmarkHashes
+from ..tools import flatten
+from .common import BenchmarkDataset, BenchmarkHashes, BenchmarkTransforms
 
 
 def _process_row(row, hashers, framerates):

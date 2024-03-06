@@ -1,8 +1,9 @@
 # pylint: disable=invalid-name,no-member,protected-access
-import torch
 import numpy as np
+import torch
 import videoalignment.models
 import videoalignment.test_models
+
 from perception.hashers.tools import read_video
 from perception.hashers.video import tmk
 

@@ -1,18 +1,19 @@
 # pylint: disable=protected-access,invalid-name
 import os
 import tempfile
-import imgaug
+
 import cv2
+import imgaug
 import pandas as pd
-import perception.testing as pt
-import perception.benchmarking as pb
-import perception.hashers.tools as pht
-import perception.benchmarking.image_transforms as pbit
-import perception.experimental.local_descriptor_deduplication as ldd
-import perception.experimental.approximate_deduplication as ad
-from perception.experimental.debug import vizualize_pair
 import pytest
 
+import perception.benchmarking.image as pb
+import perception.benchmarking.image_transforms as pbit
+import perception.experimental.approximate_deduplication as ad
+import perception.experimental.local_descriptor_deduplication as ldd
+import perception.hashers.tools as pht
+import perception.testing as pt
+from perception.experimental.debug import vizualize_pair
 
 # Params for object level matching.
 OBJECT_MATCH_PARAMS = {
@@ -198,9 +199,7 @@ def test_viz_pair():
         overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
         validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
         validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
-        validation_intersection=OBJECT_MATCH_PARAMS[
-            "minimum_validation_intersection"
-        ],
+        validation_intersection=OBJECT_MATCH_PARAMS["minimum_validation_intersection"],
     )
     filepaths = [
         "tests/images/chair.png",
@@ -244,9 +243,7 @@ def test_viz_pair_symmetry():
         overlap=OBJECT_MATCH_PARAMS["minimum_coarse_overlap"],
         validation_match=OBJECT_MATCH_PARAMS["minimum_validation_match"],
         validation_inliers=OBJECT_MATCH_PARAMS["minimum_validation_inliers"],
-        validation_intersection=OBJECT_MATCH_PARAMS[
-            "minimum_validation_intersection"
-        ],
+        validation_intersection=OBJECT_MATCH_PARAMS["minimum_validation_intersection"],
     )
     filepaths = [
         "tests/images/chair.png",

@@ -1,19 +1,20 @@
 # pylint: disable=protected-access,invalid-name
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
 
-from imgaug import augmenters as iaa
-from scipy import spatial
 import numpy as np
 import pytest
+from imgaug import augmenters as iaa
+from scipy import spatial
 
 from perception import benchmarking, hashers, testing
+from perception.benchmarking import video_transforms
+from perception.benchmarking.image import BenchmarkImageDataset
+from perception.benchmarking.video import BenchmarkVideoDataset
 
 files = testing.DEFAULT_TEST_IMAGES
-dataset = benchmarking.BenchmarkImageDataset.from_tuples(
-    [(fn, i % 2) for i, fn in enumerate(files)]
-)
+dataset = BenchmarkImageDataset.from_tuples([(fn, i % 2) for i, fn in enumerate(files)])
 
 
 def test_deduplicate():
@@ -21,7 +22,7 @@ def test_deduplicate():
     new_file = os.path.join(tempdir.name, "dup_file.jpg")
     shutil.copy(files[0], new_file)
     duplicated_files = files + [new_file]
-    deduplicated, duplicates = benchmarking.BenchmarkImageDataset.from_tuples(
+    deduplicated, duplicates = BenchmarkImageDataset.from_tuples(
         [(fn, i % 2) for i, fn in enumerate(duplicated_files)]
     ).deduplicate(hasher=hashers.AverageHash(), threshold=1e-2)
     assert len(duplicates) == 1
@@ -30,7 +31,7 @@ def test_deduplicate():
 
 def test_bad_dataset():
     bad_files = files + ["tests/images/nonexistent.jpg"]
-    bad_dataset = benchmarking.BenchmarkImageDataset.from_tuples(
+    bad_dataset = BenchmarkImageDataset.from_tuples(
         [(fn, i % 2) for i, fn in enumerate(bad_files)]
     )
     transforms = {
@@ -58,9 +59,9 @@ def test_benchmark_dataset():
 
     dataset.save("/tmp/dataset.zip")
     dataset.save("/tmp/dataset_folder")
-    o1 = benchmarking.BenchmarkImageDataset.load("/tmp/dataset.zip")
-    o2 = benchmarking.BenchmarkImageDataset.load("/tmp/dataset_folder")
-    o3 = benchmarking.BenchmarkImageDataset.load("/tmp/dataset.zip")
+    o1 = BenchmarkImageDataset.load("/tmp/dataset.zip")
+    o2 = BenchmarkImageDataset.load("/tmp/dataset_folder")
+    o3 = BenchmarkImageDataset.load("/tmp/dataset.zip")
 
     for opened in [o1, o2, o3]:
         assert (
@@ -96,7 +97,7 @@ def test_benchmark_transforms():
 
 
 def test_video_benchmark_dataset():
-    video_dataset = benchmarking.BenchmarkVideoDataset.from_tuples(
+    video_dataset = BenchmarkVideoDataset.from_tuples(
         files=[
             ("perception/testing/videos/v1.m4v", "category1"),
             ("perception/testing/videos/v2.m4v", "category1"),
@@ -105,17 +106,11 @@ def test_video_benchmark_dataset():
         ]
     )
     transforms = {
-        "noop": benchmarking.video_transforms.get_simple_transform(
-            width=128, sar="1/1"
-        ),
-        "gif": benchmarking.video_transforms.get_simple_transform(
-            codec="gif", output_ext=".gif"
-        ),
-        "clip1s": benchmarking.video_transforms.get_simple_transform(clip_s=(1, None)),
-        "blackpad": benchmarking.video_transforms.get_black_frame_padding_transform(
-            duration_s=1
-        ),
-        "slideshow": benchmarking.video_transforms.get_slideshow_transform(
+        "noop": video_transforms.get_simple_transform(width=128, sar="1/1"),
+        "gif": video_transforms.get_simple_transform(codec="gif", output_ext=".gif"),
+        "clip1s": video_transforms.get_simple_transform(clip_s=(1, None)),
+        "blackpad": video_transforms.get_black_frame_padding_transform(duration_s=1),
+        "slideshow": video_transforms.get_slideshow_transform(
             frame_input_rate=1, frame_output_rate=1
         ),
     }

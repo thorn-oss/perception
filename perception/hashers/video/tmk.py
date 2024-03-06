@@ -1,8 +1,10 @@
 # pylint: disable=invalid-name,too-many-instance-attributes,too-many-locals
+from typing import Optional
+
 import numpy as np
 import scipy.special
 
-from ..hasher import VideoHasher, ImageHasher
+from ..hasher import ImageHasher, VideoHasher
 from ..image.phash import PHashF
 
 
@@ -14,7 +16,7 @@ class TMKL2(VideoHasher):
 
     def __init__(
         self,
-        frame_hasher: ImageHasher = None,
+        frame_hasher: Optional[ImageHasher] = None,
         frames_per_second: int = 15,
         normalization: str = "matrix",
     ):
@@ -166,7 +168,7 @@ class TMKL1(VideoHasher):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        frame_hasher: ImageHasher = None,
+        frame_hasher: Optional[ImageHasher] = None,
         frames_per_second: int = 15,
         dtype="float32",
         distance_metric="cosine",

@@ -1,9 +1,10 @@
 # pylint: disable=no-member
+import concurrent.futures
+import typing
+import warnings
 from abc import ABC, abstractmethod
 from logging import warning
-import typing
-import concurrent.futures
-import warnings
+from typing import Optional
 
 import numpy as np
 import scipy.spatial
@@ -115,7 +116,6 @@ class Hasher(ABC):
             f"Distance metric: {self.distance_metric} not supported."
         )
 
-    # pylint: disable=no-self-use
     def _compute_distance(self, vector1, vector2):
         raise ValueError("Called a custom distance function but it is not implemented.")
 
@@ -124,8 +124,8 @@ class Hasher(ABC):
     def compute_parallel(
         self,
         filepaths: typing.List[str],
-        progress: "tqdm.tqdm" = None,
-        progress_desc: str = None,
+        progress: Optional["tqdm.tqdm"] = None,
+        progress_desc: Optional[str] = None,
         max_workers: int = 5,
         isometric: bool = False,
     ):
@@ -319,7 +319,7 @@ class VideoHasher(Hasher):
         frame: np.ndarray,
         frame_index: typing.Optional[int],
         frame_timestamp: typing.Optional[float],
-        state: dict = None,
+        state: Optional[dict] = None,
     ) -> dict:
         """Called for each frame in the video. For all
         but the first frame, a state is provided recording the state from
@@ -347,12 +347,12 @@ class VideoHasher(Hasher):
         scenes: typing.List[dict] = []
         hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
         return [
-            dict(
-                hash=hashes[i],
-                start_timestamp=scene.get("start_timestamp"),
-                end_timestamp=scene.get("end_timestamp"),
-                frame_index=scene.get("frame_index"),
-            )
+            {
+                "hash": hashes[i],
+                "start_timestamp": scene.get("start_timestamp"),
+                "end_timestamp": scene.get("end_timestamp"),
+                "frame_index": scene.get("frame_index"),
+            }
             for i, scene in enumerate(scenes)
         ]
 

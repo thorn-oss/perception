@@ -1,13 +1,17 @@
 # pylint: disable=invalid-name,too-many-locals
-import os
+import atexit
 import math
+import os
 import typing
-import pkg_resources
+from contextlib import ExitStack
+from importlib import resources
+from pathlib import Path
+from typing import Optional
 
 import cv2
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 from PIL import Image  # pylint: disable=import-error
 
 from .. import hashers, tools
@@ -30,25 +34,44 @@ def get_low_detail_image():
 
 LOW_DETAIL_IMAGE = get_low_detail_image()
 
+file_manager = ExitStack()
+atexit.register(file_manager.close)
+
 DEFAULT_TEST_IMAGES = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "images", f"image{n}.jpg")
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "images" / f"image{n}.jpg"
+            )
+        )
     )
     for n in range(1, 11)
 ]
 DEFAULT_TEST_LOGOS = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "logos", "logoipsum.png")
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "logos" / "logoipsum.png"
+            )
+        )
     )
 ]
 DEFAULT_TEST_VIDEOS = [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "videos", f"v{n}.m4v")
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "videos" / f"v{n}.m4v"
+            )
+        )
     )
     for n in range(1, 3)
 ] + [
-    pkg_resources.resource_filename(
-        "perception", os.path.join("testing", "videos", "v2s.mov")
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "videos" / "v2s.mov"
+            )
+        )
     )
 ]
 
@@ -111,10 +134,8 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 
 def test_video_hasher_integrity(
-    hasher: hashers.VideoHasher, test_videos: typing.List[str] = None
+    hasher: hashers.VideoHasher, test_videos: typing.List[str] = DEFAULT_TEST_VIDEOS
 ):
-    if test_videos is None:
-        test_videos = DEFAULT_TEST_VIDEOS
     test_hasher_parallelization(hasher, test_videos)
 
 
@@ -122,7 +143,7 @@ def test_image_hasher_integrity(
     hasher: hashers.ImageHasher,
     pil_opencv_threshold: float,
     transform_threshold: float,
-    test_images: typing.List[str] = None,
+    test_images: typing.List[str] = DEFAULT_TEST_IMAGES,
     opencv_hasher: bool = False,
 ):
     """Test to ensure a hasher works correctly.
@@ -137,8 +158,6 @@ def test_image_hasher_integrity(
         opencv_hasher: Whether the hasher is an OpenCV hasher. Used to
             determine whether to check for consistent distances.
     """
-    if test_images is None:
-        test_images = DEFAULT_TEST_IMAGES
     assert len(test_images) >= 2, "You must provide at least two test images."
     image1 = test_images[0]
     image2 = test_images[1]

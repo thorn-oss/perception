@@ -1,15 +1,16 @@
 # pylint: disable=invalid-name
 
+import logging
 import math
 import os.path as op
 import typing
-import logging
+from typing import Optional
 
-import typing_extensions
+import faiss
 import networkit as nk
 import numpy as np
-import faiss
 import tqdm
+import typing_extensions
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -79,7 +80,7 @@ def compute_euclidean_pairwise_duplicates_approx(
     y_counts=None,
     pct_probe=0.1,
     use_gpu: bool = True,
-    faiss_cache_path: str = None,
+    faiss_cache_path: Optional[str] = None,
     show_progress: bool = False,
 ):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple

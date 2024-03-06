@@ -1,4 +1,4 @@
-FROM python:3.7.17-buster
+FROM python:3.9.13-buster
 
 WORKDIR /usr/src
 RUN apt-get update && apt-get install -y ffmpeg cmake && rm -rf /var/lib/apt/lists/*

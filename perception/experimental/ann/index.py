@@ -2,11 +2,12 @@
 import time
 import typing
 import warnings
-import typing_extensions
+from typing import Optional
 
-import pandas as pd
-import numpy as np
 import faiss
+import numpy as np
+import pandas as pd
+import typing_extensions
 
 import perception.hashers.tools as pht
 
@@ -273,8 +274,8 @@ class ApproximateNearestNeighbors:
     def search(
         self,
         queries: typing.List[QueryInput],
-        threshold: int = None,
-        threshold_func: typing.Callable[[np.ndarray], np.ndarray] = None,
+        threshold: Optional[int] = None,
+        threshold_func: Optional[typing.Callable[[np.ndarray], np.ndarray]] = None,
         hash_format="base64",
         k=1,
     ):
