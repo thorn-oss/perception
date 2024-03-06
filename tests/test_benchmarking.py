@@ -9,6 +9,7 @@ from imgaug import augmenters as iaa
 from scipy import spatial
 
 from perception import benchmarking, hashers, testing
+from perception.benchmarking import video_transforms
 from perception.benchmarking.image import BenchmarkImageDataset
 from perception.benchmarking.video import BenchmarkVideoDataset
 
@@ -105,17 +106,11 @@ def test_video_benchmark_dataset():
         ]
     )
     transforms = {
-        "noop": benchmarking.video_transforms.get_simple_transform(
-            width=128, sar="1/1"
-        ),
-        "gif": benchmarking.video_transforms.get_simple_transform(
-            codec="gif", output_ext=".gif"
-        ),
-        "clip1s": benchmarking.video_transforms.get_simple_transform(clip_s=(1, None)),
-        "blackpad": benchmarking.video_transforms.get_black_frame_padding_transform(
-            duration_s=1
-        ),
-        "slideshow": benchmarking.video_transforms.get_slideshow_transform(
+        "noop": video_transforms.get_simple_transform(width=128, sar="1/1"),
+        "gif": video_transforms.get_simple_transform(codec="gif", output_ext=".gif"),
+        "clip1s": video_transforms.get_simple_transform(clip_s=(1, None)),
+        "blackpad": video_transforms.get_black_frame_padding_transform(duration_s=1),
+        "slideshow": video_transforms.get_slideshow_transform(
             frame_input_rate=1, frame_output_rate=1
         ),
     }

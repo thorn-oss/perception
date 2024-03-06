@@ -18,7 +18,7 @@ black = "==22.3.0"
 Pillow = "*"
 twine = "*"
 pdqhash = "*"
-torch = "<2"
+torch = "<1.13"
 types-pkg-resources = "*"
 videoalignment = {git = "https://github.com/facebookresearch/videoalignment.git", ref = "1603926" }
 pre-commit = "==2.18"

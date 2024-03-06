@@ -38,31 +38,39 @@ file_manager = ExitStack()
 atexit.register(file_manager.close)
 
 DEFAULT_TEST_IMAGES = [
-    file_manager.enter_context(
-        resources.as_file(
-            resources.files("perception") / "testing" / "images" / f"image{n}.jpg"
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "images" / f"image{n}.jpg"
+            )
         )
     )
     for n in range(1, 11)
 ]
 DEFAULT_TEST_LOGOS = [
-    file_manager.enter_context(
-        resources.as_file(
-            resources.files("perception") / "testing" / "logos" / "logoipsum.png"
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "logos" / "logoipsum.png"
+            )
         )
     )
 ]
 DEFAULT_TEST_VIDEOS = [
-    file_manager.enter_context(
-        resources.as_file(
-            resources.files("perception") / "testing" / "videos" / f"v{n}.m4v"
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "videos" / f"v{n}.m4v"
+            )
         )
     )
     for n in range(1, 3)
 ] + [
-    file_manager.enter_context(
-        resources.as_file(
-            resources.files("perception") / "testing" / "videos" / "v2s.mov"
+    str(
+        file_manager.enter_context(
+            resources.as_file(
+                resources.files("perception") / "testing" / "videos" / "v2s.mov"
+            )
         )
     )
 ]
@@ -126,10 +134,8 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 
 def test_video_hasher_integrity(
-    hasher: hashers.VideoHasher, test_videos: Optional[typing.List[Path]] = None
+    hasher: hashers.VideoHasher, test_videos: typing.List[str] = DEFAULT_TEST_VIDEOS
 ):
-    if test_videos is None:
-        test_videos = DEFAULT_TEST_VIDEOS
     test_hasher_parallelization(hasher, test_videos)
 
 
@@ -137,7 +143,7 @@ def test_image_hasher_integrity(
     hasher: hashers.ImageHasher,
     pil_opencv_threshold: float,
     transform_threshold: float,
-    test_images: typing.List[Path] = DEFAULT_TEST_IMAGES,
+    test_images: typing.List[str] = DEFAULT_TEST_IMAGES,
     opencv_hasher: bool = False,
 ):
     """Test to ensure a hasher works correctly.
