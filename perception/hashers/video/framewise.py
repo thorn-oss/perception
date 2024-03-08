@@ -34,7 +34,6 @@ class FramewiseHasher(VideoHasher):
         self.interframe_threshold = interframe_threshold
         self.quality_threshold = quality_threshold
 
-    # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
         if self.quality_threshold is None:
             current = self.frame_hasher.compute(frame, hash_format="vector")

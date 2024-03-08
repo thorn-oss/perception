@@ -14,7 +14,6 @@ from ..hashers.hasher import ImageHasher
 from ..tools import deduplicate, flatten
 from .common import BenchmarkDataset, BenchmarkHashes, BenchmarkTransforms
 
-# pylint: disable=invalid-name
 log = logging.getLogger(__name__)
 
 
@@ -85,7 +84,6 @@ class BenchmarkImageTransforms(BenchmarkTransforms):
 
 
 class BenchmarkImageDataset(BenchmarkDataset):
-    # pylint: disable=too-many-locals
     def deduplicate(
         self, hasher: ImageHasher, threshold=0.001, isometric=False
     ) -> typing.Tuple["BenchmarkImageDataset", typing.Set[typing.Tuple[str, str]]]:
@@ -108,7 +106,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
             pairs = pairs.union(
                 set(
                     deduplicate(
-                        files=group["filepath"],
+                        files=group["filepath"].tolist(),
                         hashers=[(hasher, threshold)],
                         isometric=isometric,
                     )
@@ -161,7 +159,6 @@ class BenchmarkImageDataset(BenchmarkDataset):
                 filepath, guid, category = row[["filepath", "guid", "category"]]
                 try:
                     image = tools.read(filepath)
-                # pylint: disable=broad-except
                 except Exception as exception:
                     message = f"An error occurred reading {filepath}."
                     if errors == "raise":
@@ -170,7 +167,6 @@ class BenchmarkImageDataset(BenchmarkDataset):
                     continue
                 try:
                     transformed = transform(image=image)
-                # pylint: disable=broad-except
                 except Exception as e:
                     raise RuntimeError(
                         f"An exception occurred while processing {filepath} "

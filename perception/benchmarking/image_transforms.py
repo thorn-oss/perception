@@ -1,5 +1,3 @@
-# pylint: disable=invalid-name
-
 import cv2
 import numpy as np
 

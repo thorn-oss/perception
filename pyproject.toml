@@ -1,2 +1,94 @@
+[tool.poetry]
+name = "Perception"
+version = "0.7.0"
+description = "Perception provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use."
+authors = ["Thorn <info@wearethorn.org>"]
+license = "Apache License 2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9,<3.12"
+Cython = "^3"
+numpy = "^1.26"
+opencv-contrib-python-headless = "^4.8"
+pandas = "*"
+pdqhash = "*"
+Pillow = "*"
+pywavelets = "^1.5.0"
+tqdm = "*"
+validators = "^0.22.0"
+
+# Benchmarking Extras
+matplotlib = { version = "*", optional = true }
+scipy = { version = "*", optional = true }
+imgaug = { version = "*", optional = true }
+tabulate = { version = "*", optional = true }
+scikit-learn = { version = "*", optional = true }
+ffmpeg-python = { version = "*", optional = true }
+
+# Matching Extras
+aiohttp = { version = "*", optional = true }
+python-json-logger = { version = "*", optional = true }
+rich = "^13.7.0"
+
+# Experimental Extras
+networkit = {version = "^10.1", optional = true}
+faiss-cpu = {version = "^1.7.4", optional = true}
+
+[tool.poetry.extras]
+benchmarking = [
+  "matplotlib",
+  "scipy",
+  "imgaug",
+  "tabulate",
+  "scikit-learn",
+  "ffmpeg-python",
+]
+matching = ["aiohttp", "python-json-logger"]
+experimental = ["networkit", "faiss-cpu"]
+
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+coverage = "*"
+ipython = "*"
+mypy = "*"
+pandas-stubs = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-cov = "*"
+ruff = "*"
+torch = { version = "^2", source = "torch" }
+types-pillow = "*"
+types-tqdm = "*"
+twine = "*"
+versioneer = "*"
+
+[tool.poetry.build]
+script = "build.py"
+generate-setup-file = true
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "supplemental"
+
+[tool.mypy]
+exclude = ["/tests/"]
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["perception._version", "versioneer"]
+ignore_errors = true
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "perception/_version.py"
+versionfile_build = "perception/_version.py"
+tag_prefix = "v"
+
 [build-system]
-requires = ["setuptools", "wheel", "Cython", "numpy"]
+requires = ["poetry-core", "numpy", "Cython", "setuptools", "wheel"]
+build-backend = "poetry.core.masonry.api"

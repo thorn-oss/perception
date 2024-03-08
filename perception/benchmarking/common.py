@@ -1,4 +1,3 @@
-# pylint: disable=invalid-name
 import itertools
 import logging
 import os
@@ -80,7 +79,6 @@ def compute_threshold_precision_recall(pos, neg, precision_threshold=99.9):
     # Choose the optimal threshold
     bad_threshold_idxs = np.where(precision < precision_threshold)[0]
 
-    # pylint: disable=len-as-condition
     if len(bad_threshold_idxs) > 0 and bad_threshold_idxs[0] > 0:
         optimal_threshold = pos[bad_threshold_idxs[0] - 1]
         recovered = (pos <= optimal_threshold).sum()
@@ -106,11 +104,9 @@ class Filterable(ABC):
     expected_columns: typing.List
 
     def __init__(self, df):
-        # pylint: disable=no-member
         assert sorted(df.columns) == sorted(
             self.expected_columns
         ), f"Column mismatch: Expected {sorted(self.expected_columns)}, found {sorted(df.columns)}."
-        # pylint: enable=no-member
         self._df = df
 
     @property
@@ -208,10 +204,10 @@ class Saveable(Filterable):
                 for _, row in tqdm.tqdm(
                     index.iterrows(),
                     desc="Performing final md5 integrity check.",
-                    total=len(index.index),  # pylint: disable=no-member
+                    total=len(index.index),
                 )
             ), "An md5 mismatch has occurred."
-        return cls(index.drop(["filename", "md5"], axis=1))  # pylint: disable=no-member
+        return cls(index.drop(["filename", "md5"], axis=1))
 
     def save(self, path_to_zip_or_directory):
         """Save a dataset to a directory or ZIP file.
@@ -315,7 +311,7 @@ class BenchmarkHashes(Filterable):
 
     def __init__(self, df: pd.DataFrame):
         super().__init__(df)
-        self._metrics: pd.DataFrame = None
+        self._metrics: Optional[pd.DataFrame] = None
 
     def __add__(self, other):
         return BenchmarkHashes(df=pd.concat([self._df, other._df]).drop_duplicates())
@@ -330,7 +326,6 @@ class BenchmarkHashes(Filterable):
     def save(self, filepath):
         self._df.to_csv(filepath, index=False)
 
-    # pylint: disable=too-many-locals
     def compute_metrics(
         self, custom_distance_metrics: Optional[dict] = None
     ) -> pd.DataFrame:
@@ -453,7 +448,6 @@ class BenchmarkHashes(Filterable):
         self._metrics = metrics
         return metrics
 
-    # pylint: disable=too-many-locals
     def show_histograms(self, grouping=None, precision_threshold=99.9, **kwargs):
         """Plot histograms for true and false positives, similar
         to https://tech.okcupid.com/evaluating-perceptual-image-hashes-okcupid/
@@ -581,7 +575,6 @@ class BenchmarkHashes(Filterable):
                 .values.T
             )
 
-            # pylint: disable=line-too-long
             (
                 optimal_threshold,
                 optimal_precision,

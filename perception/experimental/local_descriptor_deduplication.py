@@ -1,4 +1,3 @@
-# pylint: disable=no-member,invalid-name,too-many-locals,too-many-arguments,too-many-return-statements
 import concurrent.futures
 import logging
 import typing
@@ -52,7 +51,7 @@ class MatchStats(typing_extensions.TypedDict):
     final_matched_b_pts: typing.Optional[typing.List[np.ndarray]]
 
 
-class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
+class LocalHasher(ABC):
     grayscale = False
     name: str
     hasher: typing.Any
@@ -151,7 +150,6 @@ class LocalHasher(ABC):  # pylint: disable=too-many-instance-attributes
         ):
             return False, stats
 
-        # pylint: disable=no-value-for-parameter
         distances_A2B, indexes_A2B = indexB.search(
             descriptorA["descriptors"].astype("float32"), 2
         )

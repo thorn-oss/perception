@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments,too-many-branches
-
 import os
 import typing
 from typing import Optional

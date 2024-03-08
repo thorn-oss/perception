@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import concurrent.futures
 import typing
 import warnings
@@ -10,14 +9,14 @@ import numpy as np
 import scipy.spatial
 
 try:
-    import tqdm  # pylint: disable=unused-import
+    import tqdm
 except ImportError:  # pragma: no cover
     tqdm = None
 try:
     # We do this so that the documentation generator can
     # resolve the forward reference to PIL in development.
-    import PIL  # pylint: disable=unused-import
-    import PIL.Image  # pylint: disable=unused-import
+    import PIL
+    import PIL.Image
 except ImportError:  # pragma: no cover
     PIL = None
 
@@ -119,7 +118,6 @@ class Hasher(ABC):
     def _compute_distance(self, vector1, vector2):
         raise ValueError("Called a custom distance function but it is not implemented.")
 
-    # pylint: disable=too-many-arguments,too-many-locals
     @typing.no_type_check
     def compute_parallel(
         self,
@@ -176,7 +174,6 @@ class Hasher(ABC):
                 path = future_to_path[future]
                 try:
                     hash_value = future.result()
-                # pylint: disable=broad-except
                 except Exception as exc:
                     records.append({"filepath": path, "hash": None, "error": str(exc)})
                 else:
@@ -215,7 +212,6 @@ class ImageHasher(Hasher):
         """
         if not hasattr(self, "_compute_isometric_from_hash"):
             raise NotImplementedError("This hasher does not support hash rotation.")
-        # pylint: disable=no-member
         rotations = self._compute_isometric_from_hash(  # type: ignore
             hash_string_or_vector
             if isinstance(hash_string_or_vector, np.ndarray)
@@ -229,10 +225,8 @@ class ImageHasher(Hasher):
     def compute_isometric(self, image: tools.ImageInputType):
         image = tools.to_image_array(image)
         if hasattr(self, "_compute_isometric"):
-            # pylint: disable=no-member
             hashes = self._compute_isometric(image)  # type: ignore
         elif hasattr(self, "_compute_isometric_from_hash"):
-            # pylint: disable=no-member
             hashes = self._compute_isometric_from_hash(  # type: ignore
                 self._compute(image)
             )
@@ -356,7 +350,6 @@ class VideoHasher(Hasher):
             for i, scene in enumerate(scenes)
         ]
 
-    # pylint: disable=arguments-differ
     def compute(
         self,
         filepath,

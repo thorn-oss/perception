@@ -1,4 +1,3 @@
-# pylint: disable=protected-access,invalid-name
 import os
 import shutil
 import tempfile
@@ -53,9 +52,7 @@ def test_benchmark_dataset():
     assert len(dataset._df) == len(files)
     assert len(dataset.filter(category=[0])._df) == len(files) / 2
     with pytest.warns(UserWarning, match="Did not find"):
-        assert (
-            len(dataset.filter(category=[3])._df) == 0
-        )  # pylint: disable=len-as-condition
+        assert len(dataset.filter(category=[3])._df) == 0
 
     dataset.save("/tmp/dataset.zip")
     dataset.save("/tmp/dataset_folder")

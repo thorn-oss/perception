@@ -13,7 +13,6 @@ LOGGER = logging.getLogger(__name__)
 KEYPOINT_SIZE: int = 8
 
 
-# pylint: disable=too-many-locals, too-many-arguments
 def vizualize_pair(
     features_1,
     features_2,
@@ -57,13 +56,13 @@ def vizualize_pair(
             img1 = ldd.load_and_preprocess(
                 features_1_path, max_size=max(features_1.dimensions), grayscale=False
             )
-        except:  # pylint:disable=bare-except
+        except Exception:
             LOGGER.warning("Failed to load image %s", features_1_path)
         try:
             img2 = ldd.load_and_preprocess(
                 features_2_path, max_size=max(features_2.dimensions), grayscale=False
             )
-        except:  # pylint:disable=bare-except
+        except Exception:
             LOGGER.warning("Failed to load image %s", features_2_path)
 
     if match_metadata is not None:
@@ -195,7 +194,7 @@ def viz_brute_force(features_1, features_2, img1, img2, ratio: float):
     for nearest_match, next_nearest_match in kn_matches:
         if nearest_match.distance < ratio * next_nearest_match.distance:
             good.append([nearest_match])
-    img_matched = cv2.drawMatchesKnn(
+    img_matched = cv2.drawMatchesKnn(  # type: ignore[call-overload]
         img1,
         kp1_fixed,
         img2,

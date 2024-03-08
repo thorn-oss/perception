@@ -1,5 +1,3 @@
-# pylint: disable=invalid-name
-
 import os
 import string
 

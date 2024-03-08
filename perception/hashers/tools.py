@@ -1,4 +1,3 @@
-# pylint: disable=too-many-locals,too-many-lines
 import base64
 import fractions
 import functools
@@ -63,7 +62,6 @@ def get_ffmpeg():
     return os.environ.get("PERCEPTION_FFMPEG_BINARY", "ffmpeg")
 
 
-# pylint: disable=invalid-name
 def compute_quality(image) -> int:
     """Compute a quality metric, using the calculation proposed by
     `Facebook <https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf/>`_
@@ -85,7 +83,7 @@ def compute_md5(filepath) -> str:
     Args:
         filepath: The path to the file
     """
-    with open(filepath, "rb") as f:  # pylint: disable=invalid-name
+    with open(filepath, "rb") as f:
         hash_str = hashlib.md5(f.read()).hexdigest()
     return hash_str
 
@@ -300,7 +298,6 @@ def get_common_framerates(id_rates: dict):
     # but this seems to do the job for now.
     for grouping in partition(list(set(framerates))):
         current_frame_rates = [
-            # pylint: disable=no-member
             functools.reduce(np.lcm, (np.array(group) * factor).round().astype(int))
             / factor
             for group in grouping
@@ -334,12 +331,10 @@ def get_isometric_transforms(image: ImageInputType, require_color=True):
 
 
 def get_isometric_dct_transforms(dct: np.ndarray):
-    # pylint: disable=invalid-name
     T1 = np.empty_like(dct)
     T1[::2] = 1
     T1[1::2] = -1
 
-    # pylint: disable=invalid-name
     T2 = np.empty_like(dct)
     T2[::2, ::2] = 1
     T2[1::2, 1::2] = 1
@@ -456,7 +451,6 @@ def get_video_properties(filepath):
         )
 
 
-# pylint: disable=too-many-branches,too-many-statements,too-many-arguments
 def read_video_to_generator_ffmpeg(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
@@ -646,7 +640,6 @@ def read_video_to_generator_ffmpeg(
                 raise ValueError(
                     f"Error parsing video: {stdout.decode('utf-8')} {stderr.decode('utf-8')}"
                 )
-    # pylint: disable=broad-except
     except Exception as e:
         if errors not in ["warn", "ignore"]:
             raise e
@@ -656,7 +649,6 @@ def read_video_to_generator_ffmpeg(
             )
 
 
-# pylint: disable=too-many-branches,too-many-locals,too-many-statements
 def read_video_to_generator(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
@@ -676,7 +668,6 @@ def read_video_to_generator(
     Returns:
         See :code:`read_video`.
     """
-    # pylint: disable=no-member
     if cv2.__version__ < "4.1.1" and filepath.lower().endswith("gif"):
         message = "Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended."
         if errors == "raise":
@@ -766,7 +757,6 @@ def read_video_to_generator(
                 while next_desired_timestamp < next_timestamp:
                     yield (frame, grabbed_frame_count - 1, next_desired_timestamp)
                     next_desired_timestamp += seconds_between_desired_frames
-    # pylint: disable=broad-except
     except Exception as e:
         if errors not in ["warn", "ignore"]:
             raise e
@@ -790,7 +780,6 @@ def read_video_into_queue(*args, video_queue, terminate, func, **kwargs):
         video_queue.put((None, None, None))
 
 
-# pylint: disable=too-many-arguments
 def read_video(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,

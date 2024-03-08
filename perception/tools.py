@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments,too-many-locals
-
 import base64
 import json
 import os
@@ -10,7 +8,7 @@ import warnings
 from typing import Optional
 
 try:
-    import tqdm  # pylint: disable=unused-import
+    import tqdm
 except ImportError:  # pragma: no cover
     tqdm = None
 import numpy as np
@@ -43,7 +41,6 @@ def _multiple_hashes_for_ids(
     return len(hash_ids) != len(set(hash_ids))
 
 
-# pylint: disable=too-many-branches,too-many-statements
 def deduplicate_hashes(
     hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
     threshold: float,
@@ -167,7 +164,6 @@ def deduplicate_hashes(
     return list(set(pairs))
 
 
-# pylint: disable=too-many-locals
 def deduplicate(
     files: typing.List[str],
     hashers: typing.List[typing.Tuple[perception_hashers.ImageHasher, float]],
@@ -237,7 +233,6 @@ def deduplicate(
     return list(set(pairs))
 
 
-# pylint: disable=too-few-public-methods
 class SaferMatcher:
     """An object for matching hashes with the known CSAM hashes in the
     Safer matching service.
