@@ -136,7 +136,7 @@ class SimpleSceneDetection(VideoHasher):
                 (
                     self.interscene_threshold is None
                     or not state["scenes"]
-                    or self.compute_distance(state["scenes"][-1][0], subhash)
+                    or self.compute_distance(state["scenes"][-1]['hash'], subhash)
                     > self.interscene_threshold
                 )
             )
