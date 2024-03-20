@@ -63,6 +63,7 @@ types-pillow = "*"
 types-tqdm = "*"
 twine = "*"
 versioneer = "*"
+videoalignment = {git = "https://github.com/facebookresearch/videoalignment.git"}
 
 [tool.poetry.build]
 script = "build.py"
