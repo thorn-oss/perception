@@ -362,7 +362,7 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
         return np.array(filepath_or_buffer.convert("RGB"))
     if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
-        image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
+        decoded_image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif isinstance(filepath_or_buffer, str):
         if validators.url(filepath_or_buffer):
             with request.urlopen(filepath_or_buffer, timeout=timeout) as response:
@@ -371,19 +371,19 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
             raise FileNotFoundError(
                 "Could not find image at path: " + filepath_or_buffer
             )
-        image = cv2.imread(filepath_or_buffer)
+        decoded_image = cv2.imread(filepath_or_buffer)
     else:
         raise RuntimeError(
             "Unhandled filepath_or_buffer type: " + str(type(filepath_or_buffer))
         )
-    if image is None:
+    if decoded_image is None:
         raise ValueError(f"An error occurred reading {filepath_or_buffer}.")
     # We use cvtColor here instead of just ret[..., ::-1]
     # in order to ensure that we provide a contiguous
     # array for later processing. Some hashers use ctypes
     # to pass the array and non-contiguous arrays can lead
     # to erroneous results.
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return cv2.cvtColor(decoded_image, cv2.COLOR_BGR2RGB)
 
 
 def _get_keyframes(filepath):

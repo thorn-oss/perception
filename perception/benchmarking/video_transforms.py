@@ -142,7 +142,7 @@ def get_slideshow_transform(
                 if writer is None:
                     writer = cv2.VideoWriter(
                         filename=output_filepath,
-                        fourcc=cv2.VideoWriter_fourcc(*"mjpg"),
+                        fourcc=cv2.VideoWriter_fourcc(*"mjpg"),  # type: ignore[attr-defined]
                         fps=frame_output_rate,
                         frameSize=tuple(frame.shape[:2][::-1]),
                         isColor=True,

@@ -258,7 +258,7 @@ class SIFT(LocalHasher):
         **kwargs,
     ):
         super().__init__(max_features, ratio, threshold, **kwargs)
-        self.hasher = cv2.SIFT_create(nfeatures=self.max_features)
+        self.hasher = cv2.SIFT_create(nfeatures=self.max_features)  # type: ignore[attr-defined]
 
 
 class AKAZE(LocalHasher):
@@ -273,7 +273,7 @@ class AKAZE(LocalHasher):
     ):
         super().__init__(max_features, ratio, threshold, **kwargs)
         LOGGER.warning("The default AKAZE tuning has issues with some cropped images.")
-        self.hasher = cv2.AKAZE_create()
+        self.hasher = cv2.AKAZE_create()  # type: ignore[attr-defined]
 
 
 def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):

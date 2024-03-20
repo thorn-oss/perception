@@ -349,18 +349,18 @@ class BenchmarkHashes(Filterable):
                 & (hashsets["hasher_name"] == hasher_name)
                 & (hashsets["guid"].isin(hashset["guid"]))
             ]
-            hashset = hashset[hashset["guid"].isin(noops["guid"])]
-            dtype, distance_metric, hash_length = hashset.iloc[0][
+            valid_hashset = hashset[hashset["guid"].isin(noops["guid"])]
+            dtype, distance_metric, hash_length = valid_hashset.iloc[0][
                 ["hasher_dtype", "hasher_distance_metric", "hasher_hash_length"]
             ]
             n_noops = len(noops.guid)
-            n_hashset = len(hashset.guid)
+            n_hashset = len(valid_hashset.guid)
             noop_guids = noops.guid.values
-            mask = create_mask(hashset.guid.values, noops.guid.values)
+            mask = create_mask(valid_hashset.guid.values, noops.guid.values)
             if distance_metric != "custom":
                 X_trans = np.array(
-                    hashset.hash.apply(
-                        string_to_vector,
+                    valid_hashset.hash.apply(
+                        string_to_vector,  # type: ignore[arg-type]
                         hash_length=int(hash_length),
                         dtype=dtype,
                         hash_format="base64",
@@ -409,7 +409,7 @@ class BenchmarkHashes(Filterable):
                     and hasher_name in custom_distance_metrics
                 ), f"You must provide a custom distance metric for {hasher_name}."
                 noops_hash_values = noops.hash.values
-                hashset_hash_values = hashset.hash.values
+                hashset_hash_values = valid_hashset.hash.values
                 distance_matrix = np.zeros((n_hashset, n_noops))
                 distance_function = custom_distance_metrics[hasher_name]
                 for i1, i2 in itertools.product(range(n_hashset), range(n_noops)):
@@ -433,7 +433,7 @@ class BenchmarkHashes(Filterable):
             metrics.append(
                 pd.DataFrame(
                     {
-                        "guid": hashset["guid"].values,
+                        "guid": valid_hashset["guid"].values,
                         "transform_name": transform_name,
                         "hasher_name": hasher_name,
                         "category": category,

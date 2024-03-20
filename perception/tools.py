@@ -8,8 +8,8 @@ import warnings
 from typing import Optional
 
 import numpy as np
-import tqdm
 from scipy import spatial
+from tqdm import tqdm
 
 from . import hashers as perception_hashers
 from .utils import flatten
@@ -46,7 +46,7 @@ def deduplicate_hashes(
     hash_length: Optional[int] = None,
     hash_dtype: Optional[str] = None,
     distance_metric: Optional[str] = None,
-    progress: Optional["tqdm.tqdm"] = None,
+    progress: Optional[tqdm] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates using a list of precomputed hashes.
 
@@ -109,7 +109,7 @@ def deduplicate_hashes(
     if distance_metric != "euclidean" or "int" not in hash_dtype or extensions is None:
         iterator = range(n_hashes)
         if progress is not None:
-            iterator = progress(iterator, total=n_hashes, desc="Deduplicating.")
+            iterator = progress(iterator, total=n_hashes, desc="Deduplicating.")  # type: ignore[operator]
         distances = spatial.distance.pdist(vectors, metric=distance_metric)
         for hash_index in iterator:
             if end_idx is not None:
@@ -165,7 +165,7 @@ def deduplicate(
     files: typing.List[str],
     hashers: typing.List[typing.Tuple[perception_hashers.ImageHasher, float]],
     isometric: bool = False,
-    progress: Optional["tqdm.tqdm"] = None,
+    progress: Optional[tqdm] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates in a list of files.
 

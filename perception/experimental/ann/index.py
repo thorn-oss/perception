@@ -235,7 +235,7 @@ class ApproximateNearestNeighbors:
         """
         if not self.metadata_columns and include_metadata and not include_hashes:
             # There won't be anything to  return.
-            return None
+            return pd.DataFrame()
         extra_columns = []
         if self.metadata_columns and include_metadata:
             extra_columns += self.metadata_columns
