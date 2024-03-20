@@ -16,18 +16,15 @@ import typing
 import warnings
 from collections import Counter
 from http import client
+from numbers import Number
 from typing import Optional
 from urllib import request
 
 import cv2
 import numpy as np
+import PIL
+import PIL.Image
 import validators
-
-try:
-    import PIL
-    import PIL.Image
-except ImportError:  # pragma: no cover
-    PIL = None
 
 LOGGER = logging.getLogger(__name__)
 
@@ -228,7 +225,7 @@ def b64_to_hex(
     )
 
 
-def to_image_array(image: ImageInputType, require_color=True):
+def to_image_array(image: ImageInputType, require_color=True) -> np.ndarray:
     if isinstance(image, np.ndarray):
         assert image.flags["C_CONTIGUOUS"], (
             "Provided arrays must be contiguous to avoid "
@@ -316,17 +313,17 @@ def get_common_framerates(id_rates: dict):
     }
 
 
-def get_isometric_transforms(image: ImageInputType, require_color=True):
-    image = to_image_array(image, require_color=require_color)
+def get_isometric_transforms(image: ImageInputType, require_color=True) -> dict:
+    image_array = to_image_array(image, require_color=require_color)
     return {
-        "r0": image,
-        "fv": np.ascontiguousarray(image[::-1, :]),
-        "fh": np.ascontiguousarray(image[:, ::-1]),
-        "r180": np.ascontiguousarray(image[::-1, ::-1]),
-        "r90": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, :, :]),
-        "r90fv": np.ascontiguousarray(image.transpose(1, 0, 2)),
-        "r90fh": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, ::-1]),
-        "r270": np.ascontiguousarray(image.transpose(1, 0, 2)[:, ::-1]),
+        "r0": image_array,
+        "fv": np.ascontiguousarray(image_array[::-1, :]),
+        "fh": np.ascontiguousarray(image_array[:, ::-1]),
+        "r180": np.ascontiguousarray(image_array[::-1, ::-1]),
+        "r90": np.ascontiguousarray(image_array.transpose(1, 0, 2)[::-1, :, :]),
+        "r90fv": np.ascontiguousarray(image_array.transpose(1, 0, 2)),
+        "r90fh": np.ascontiguousarray(image_array.transpose(1, 0, 2)[::-1, ::-1]),
+        "r270": np.ascontiguousarray(image_array.transpose(1, 0, 2)[:, ::-1]),
     }
 
 
@@ -352,7 +349,7 @@ def get_isometric_dct_transforms(dct: np.ndarray):
     }
 
 
-def read(filepath_or_buffer: ImageInputType, timeout=None):
+def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
     """Read a file into an image object
 
     Args:
@@ -361,7 +358,7 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
         timeout: If filepath_or_buffer is a URL, the timeout to
             use for making the HTTP request.
     """
-    if PIL is not None and isinstance(filepath_or_buffer, PIL.Image.Image):
+    if isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
     if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
@@ -715,10 +712,11 @@ def read_video_to_generator(
             # we can.
             repeat = False
         else:
+            num_frames_per_second = float(frames_per_second)
             frame_indexes = itertools.count(
-                0, max(1, file_frames_per_second / frames_per_second)
+                0, max(1, file_frames_per_second / num_frames_per_second)
             )
-            repeat = file_frames_per_second < frames_per_second
+            repeat = file_frames_per_second < num_frames_per_second
         input_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         input_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         if max_size is not None:
@@ -749,7 +747,7 @@ def read_video_to_generator(
             yield frame, grabbed_frame_count - 1, current_timestamp
             if max_duration is not None and current_timestamp > max_duration:
                 break
-            if repeat:
+            if repeat and isinstance(seconds_between_desired_frames, Number):
                 next_desired_timestamp = (
                     current_timestamp + seconds_between_desired_frames
                 )

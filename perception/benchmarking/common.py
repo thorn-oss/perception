@@ -444,9 +444,9 @@ class BenchmarkHashes(Filterable):
                     }
                 )
             )
-        metrics = pd.concat(metrics)
-        self._metrics = metrics
-        return metrics
+        metrics_df = pd.concat(metrics)
+        self._metrics = metrics_df
+        return metrics_df
 
     def show_histograms(self, grouping=None, precision_threshold=99.9, **kwargs):
         """Plot histograms for true and false positives, similar

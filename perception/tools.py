@@ -7,11 +7,8 @@ import urllib.request
 import warnings
 from typing import Optional
 
-try:
-    import tqdm
-except ImportError:  # pragma: no cover
-    tqdm = None
 import numpy as np
+import tqdm
 from scipy import spatial
 
 from . import hashers as perception_hashers

@@ -7,18 +7,7 @@ from typing import Optional
 
 import numpy as np
 import scipy.spatial
-
-try:
-    import tqdm
-except ImportError:  # pragma: no cover
-    tqdm = None
-try:
-    # We do this so that the documentation generator can
-    # resolve the forward reference to PIL in development.
-    import PIL
-    import PIL.Image
-except ImportError:  # pragma: no cover
-    PIL = None
+import tqdm
 
 from perception.hashers import tools
 
