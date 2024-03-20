@@ -191,6 +191,7 @@ def get_black_frame_padding_transform(duration_s=0, duration_pct=0):
                 "color=c=black:s={width}x{height}:d={duration} [post] ; "
                 "[pre] [in] [post] concat=n=3"
             ).format(width=width, height=height, duration=duration),
+            vsync="vfr",
         ).overwrite_output().run()
         if os.path.isfile(output_filepath):
             return output_filepath
