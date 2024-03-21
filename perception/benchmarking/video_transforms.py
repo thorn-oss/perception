@@ -129,7 +129,7 @@ def get_slideshow_transform(
 
     def transform(input_filepath, output_filepath):
         output_filepath = sanitize_output_filepath(
-            input_filepath, output_filepath, output_ext=".mov"
+            input_filepath, output_filepath, output_ext=".avi"
         )
         writer = None
         frame_count = 0
@@ -142,7 +142,7 @@ def get_slideshow_transform(
                 if writer is None:
                     writer = cv2.VideoWriter(
                         filename=output_filepath,
-                        fourcc=cv2.VideoWriter_fourcc(*"mjpg"),  # type: ignore[attr-defined]
+                        fourcc=cv2.VideoWriter_fourcc(*"MJPG"),  # type: ignore[attr-defined]
                         fps=frame_output_rate,
                         frameSize=tuple(frame.shape[:2][::-1]),
                         isColor=True,
