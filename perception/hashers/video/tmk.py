@@ -1,4 +1,3 @@
-# pylint: disable=invalid-name,too-many-instance-attributes,too-many-locals
 from typing import Optional
 
 import numpy as np
@@ -60,7 +59,6 @@ class TMKL2(VideoHasher):
         # The frame-wise hasher
         self.frame_hasher = frame_hasher
 
-        # pylint: disable=unsubscriptable-object
         self.hash_length = self.T.shape[0] * 2 * self.m * self.frame_hasher.hash_length
 
         self.normalization = normalization
@@ -74,7 +72,6 @@ class TMKL2(VideoHasher):
 
     def hash_from_final_state(self, state):
         timestamps = np.array(state["timestamps"])
-        # pylint: disable=unsubscriptable-object
         features = np.array(state["features"]).reshape(
             (1, 1, timestamps.shape[0], self.frame_hasher.hash_length)
         )
@@ -165,7 +162,6 @@ class TMKL2(VideoHasher):
 class TMKL1(VideoHasher):
     """The TMK L1 video hashing algorithm."""
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         frame_hasher: Optional[ImageHasher] = None,
@@ -186,7 +182,6 @@ class TMKL1(VideoHasher):
         self.distance_metric = distance_metric or self.frame_hasher.distance_metric
         self.quality_threshold = quality_threshold
 
-    # pylint: disable=unused-argument
     def process_frame(self, frame, frame_index, frame_timestamp, state=None):
         if state is None:
             state = {"sum": np.zeros(self.frame_hasher.hash_length), "frame_count": 0}

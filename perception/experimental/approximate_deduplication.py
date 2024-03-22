@@ -1,5 +1,3 @@
-# pylint: disable=invalid-name
-
 import logging
 import math
 import os.path as op
@@ -61,16 +59,15 @@ def build_index(
         for i in range(0, X.shape[0], batch_size):
             index.add(X[i : i + batch_size])
         if gpu:
-            index = faiss.index_gpu_to_cpu(index)  # pylint: disable=no-member
+            index = faiss.index_gpu_to_cpu(index)
         nprobe = max(math.ceil(pct_probe * nlist), 1)
         faiss.ParameterSpace().set_index_parameter(index, "nprobe", nprobe)
     else:
         index = faiss.IndexFlat(d)
-        index.add(X)  # pylint: disable=no-value-for-parameter
+        index.add(X)
     return index
 
 
-# pylint: disable=too-many-locals,too-many-arguments,too-many-branches
 def compute_euclidean_pairwise_duplicates_approx(
     X,
     counts,

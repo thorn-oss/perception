@@ -1,4 +1,3 @@
-# pylint: disable=line-too-long,too-many-arguments
 import asyncio
 import functools
 import json
@@ -61,7 +60,7 @@ async def similarity(request):
     index = request.app["index"]
     try:
         assert is_similarity_valid(request_data, index)
-    except:  # pylint: disable=bare-except
+    except Exception:
         return aiohttp.web.json_response({"reason": "Invalid JSON request"}, status=400)
 
     async with request.app["query_semaphore"]:

@@ -1,4 +1,3 @@
-# pylint: disable=invalid-name
 import logging
 from typing import Optional
 
@@ -14,7 +13,6 @@ from .tmk import TMKL1
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-instance-attributes
 class SimpleSceneDetection(VideoHasher):
     """The SimpleSceneDetection hasher is a wrapper around other video hashers
     to create separate hashes for different scenes / shots in a video. It works
@@ -37,7 +35,6 @@ class SimpleSceneDetection(VideoHasher):
 
     returns_multiple = True
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         base_hasher: Optional[VideoHasher] = None,
@@ -183,7 +180,6 @@ class SimpleSceneDetection(VideoHasher):
         current = cv2.blur(current, ksize=(4, 4))
         return cropped, current, bounds
 
-    # pylint: disable=arguments-differ,too-many-arguments
     def process_frame(
         self, frame, frame_index, frame_timestamp, state=None, batch_mode=False
     ):
@@ -233,7 +229,7 @@ class SimpleSceneDetection(VideoHasher):
             )
             if batch_mode:
                 state["frames"].append((frame, frame_index, frame_timestamp))
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("An error occurred while processing a frame: %s", str(e))
         return state
 

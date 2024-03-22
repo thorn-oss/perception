@@ -1,4 +1,3 @@
-# pylint: disable=protected-access,invalid-name
 import os
 import tempfile
 

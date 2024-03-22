@@ -16,6 +16,7 @@ notebooks
 
 # Local environment
 .venv
+.python-version
 
 # Coverage file
 .coverage

@@ -1,18 +1,14 @@
-# pylint: disable=invalid-name,too-many-locals
 import atexit
 import math
-import os
 import typing
 from contextlib import ExitStack
 from importlib import resources
-from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
 import pandas as pd
 import pytest
-from PIL import Image  # pylint: disable=import-error
+from PIL import Image
 
 from .. import hashers, tools
 
@@ -21,9 +17,7 @@ SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
 def get_low_detail_image():
     v = np.arange(0, 50, 1)
-    v = np.concatenate([v, v[::-1]])[
-        np.newaxis,
-    ]
+    v = np.concatenate([v, v[::-1]])[np.newaxis,]
     image = np.matmul(v.T, v)
     image = (image * 255 / image.max()).astype("uint8")
     image = image[..., np.newaxis].repeat(repeats=3, axis=2)
@@ -95,7 +89,6 @@ def test_opencv_hasher(hasher: hashers.ImageHasher, image1: str, image2: str):
     )
 
 
-# pylint: disable=protected-access
 def hash_dicts_to_df(hash_dicts, returns_multiple):
     assert all(
         h["error"] is None for h in hash_dicts

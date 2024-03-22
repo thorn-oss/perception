@@ -1,18 +1,16 @@
-# pylint: disable=line-too-long
-
 import cv2
 import numpy as np
 
 from ..hasher import ImageHasher
 
 
-class OpenCVHasher(ImageHasher):  # pylint: disable=abstract-method
+class OpenCVHasher(ImageHasher):
     allow_parallel = False
 
     def __init__(self):
         if not hasattr(cv2, "img_hash"):
             raise RuntimeError(
-                "You do not appear to have opencv-contrib installed. It is required for pure OpenCV hashers."  # pylint: disable=line-too-long
+                "You do not appear to have opencv-contrib installed. It is required for pure OpenCV hashers."
             )
 
 
@@ -26,9 +24,7 @@ class MarrHildreth(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = (
-            cv2.img_hash_MarrHildrethHash.create()  # pylint: disable=no-member
-        )
+        self.hasher = cv2.img_hash.MarrHildrethHash.create()
 
     def _compute(self, image):
         return np.unpackbits(self.hasher.compute(image)[0])
@@ -44,7 +40,7 @@ class ColorMoment(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash_ColorMomentHash.create()  # pylint: disable=no-member
+        self.hasher = cv2.img_hash.ColorMomentHash.create()
 
     def _compute(self, image):
         return 10000 * self.hasher.compute(image)[0]
@@ -60,7 +56,7 @@ class BlockMean(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash_BlockMeanHash.create(1)  # pylint: disable=no-member
+        self.hasher = cv2.img_hash.BlockMeanHash.create(1)
 
     def _compute(self, image):
         # https://stackoverflow.com/questions/54762896/why-cv2-norm-hamming-gives-different-value-than-actual-hamming-distance

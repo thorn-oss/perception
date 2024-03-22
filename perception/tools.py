@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments,too-many-locals
-
 import base64
 import json
 import os
@@ -9,12 +7,9 @@ import urllib.request
 import warnings
 from typing import Optional
 
-try:
-    import tqdm  # pylint: disable=unused-import
-except ImportError:  # pragma: no cover
-    tqdm = None
 import numpy as np
 from scipy import spatial
+from tqdm import tqdm
 
 from . import hashers as perception_hashers
 from .utils import flatten
@@ -43,7 +38,6 @@ def _multiple_hashes_for_ids(
     return len(hash_ids) != len(set(hash_ids))
 
 
-# pylint: disable=too-many-branches,too-many-statements
 def deduplicate_hashes(
     hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
     threshold: float,
@@ -52,7 +46,7 @@ def deduplicate_hashes(
     hash_length: Optional[int] = None,
     hash_dtype: Optional[str] = None,
     distance_metric: Optional[str] = None,
-    progress: Optional["tqdm.tqdm"] = None,
+    progress: Optional[tqdm] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates using a list of precomputed hashes.
 
@@ -115,7 +109,7 @@ def deduplicate_hashes(
     if distance_metric != "euclidean" or "int" not in hash_dtype or extensions is None:
         iterator = range(n_hashes)
         if progress is not None:
-            iterator = progress(iterator, total=n_hashes, desc="Deduplicating.")
+            iterator = progress(iterator, total=n_hashes, desc="Deduplicating.")  # type: ignore[operator]
         distances = spatial.distance.pdist(vectors, metric=distance_metric)
         for hash_index in iterator:
             if end_idx is not None:
@@ -167,12 +161,11 @@ def deduplicate_hashes(
     return list(set(pairs))
 
 
-# pylint: disable=too-many-locals
 def deduplicate(
     files: typing.List[str],
     hashers: typing.List[typing.Tuple[perception_hashers.ImageHasher, float]],
     isometric: bool = False,
-    progress: Optional["tqdm.tqdm"] = None,
+    progress: Optional[tqdm] = None,
 ) -> typing.List[typing.Tuple[str, str]]:
     """Find duplicates in a list of files.
 
@@ -237,7 +230,6 @@ def deduplicate(
     return list(set(pairs))
 
 
-# pylint: disable=too-few-public-methods
 class SaferMatcher:
     """An object for matching hashes with the known CSAM hashes in the
     Safer matching service.

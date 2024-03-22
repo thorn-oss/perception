@@ -21,7 +21,6 @@ def _process_row(row, hashers, framerates):
             framerates=framerates,
             hash_format="base64",
         )
-    # pylint: disable=broad-except
     except Exception as exception:
         error = str(exception)
         hashes = {
@@ -118,7 +117,6 @@ class BenchmarkVideoDataset(BenchmarkDataset):
                     ),
                 )
                 error = None
-            # pylint: disable=invalid-name,broad-except
             except Exception as e:
                 output_filepath = None
                 error = str(e)

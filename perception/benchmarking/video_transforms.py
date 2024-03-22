@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments,too-many-branches
-
 import os
 import typing
 from typing import Optional
@@ -131,7 +129,7 @@ def get_slideshow_transform(
 
     def transform(input_filepath, output_filepath):
         output_filepath = sanitize_output_filepath(
-            input_filepath, output_filepath, output_ext=".mov"
+            input_filepath, output_filepath, output_ext=".avi"
         )
         writer = None
         frame_count = 0
@@ -144,7 +142,7 @@ def get_slideshow_transform(
                 if writer is None:
                     writer = cv2.VideoWriter(
                         filename=output_filepath,
-                        fourcc=cv2.VideoWriter_fourcc(*"mjpg"),
+                        fourcc=cv2.VideoWriter_fourcc(*"MJPG"),  # type: ignore[attr-defined]
                         fps=frame_output_rate,
                         frameSize=tuple(frame.shape[:2][::-1]),
                         isColor=True,
@@ -193,6 +191,7 @@ def get_black_frame_padding_transform(duration_s=0, duration_pct=0):
                 "color=c=black:s={width}x{height}:d={duration} [post] ; "
                 "[pre] [in] [post] concat=n=3"
             ).format(width=width, height=height, duration=duration),
+            fps_mode="vfr",
         ).overwrite_output().run()
         if os.path.isfile(output_filepath):
             return output_filepath

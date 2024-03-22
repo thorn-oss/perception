@@ -1,4 +1,3 @@
-# pylint: disable=too-many-locals,too-many-lines
 import base64
 import fractions
 import functools
@@ -17,18 +16,15 @@ import typing
 import warnings
 from collections import Counter
 from http import client
+from numbers import Number
 from typing import Optional
 from urllib import request
 
 import cv2
 import numpy as np
+import PIL
+import PIL.Image
 import validators
-
-try:
-    import PIL
-    import PIL.Image
-except ImportError:  # pragma: no cover
-    PIL = None
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +59,6 @@ def get_ffmpeg():
     return os.environ.get("PERCEPTION_FFMPEG_BINARY", "ffmpeg")
 
 
-# pylint: disable=invalid-name
 def compute_quality(image) -> int:
     """Compute a quality metric, using the calculation proposed by
     `Facebook <https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf/>`_
@@ -85,7 +80,7 @@ def compute_md5(filepath) -> str:
     Args:
         filepath: The path to the file
     """
-    with open(filepath, "rb") as f:  # pylint: disable=invalid-name
+    with open(filepath, "rb") as f:
         hash_str = hashlib.md5(f.read()).hexdigest()
     return hash_str
 
@@ -230,7 +225,7 @@ def b64_to_hex(
     )
 
 
-def to_image_array(image: ImageInputType, require_color=True):
+def to_image_array(image: ImageInputType, require_color=True) -> np.ndarray:
     if isinstance(image, np.ndarray):
         assert image.flags["C_CONTIGUOUS"], (
             "Provided arrays must be contiguous to avoid "
@@ -300,7 +295,6 @@ def get_common_framerates(id_rates: dict):
     # but this seems to do the job for now.
     for grouping in partition(list(set(framerates))):
         current_frame_rates = [
-            # pylint: disable=no-member
             functools.reduce(np.lcm, (np.array(group) * factor).round().astype(int))
             / factor
             for group in grouping
@@ -319,27 +313,25 @@ def get_common_framerates(id_rates: dict):
     }
 
 
-def get_isometric_transforms(image: ImageInputType, require_color=True):
-    image = to_image_array(image, require_color=require_color)
+def get_isometric_transforms(image: ImageInputType, require_color=True) -> dict:
+    image_array = to_image_array(image, require_color=require_color)
     return {
-        "r0": image,
-        "fv": np.ascontiguousarray(image[::-1, :]),
-        "fh": np.ascontiguousarray(image[:, ::-1]),
-        "r180": np.ascontiguousarray(image[::-1, ::-1]),
-        "r90": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, :, :]),
-        "r90fv": np.ascontiguousarray(image.transpose(1, 0, 2)),
-        "r90fh": np.ascontiguousarray(image.transpose(1, 0, 2)[::-1, ::-1]),
-        "r270": np.ascontiguousarray(image.transpose(1, 0, 2)[:, ::-1]),
+        "r0": image_array,
+        "fv": np.ascontiguousarray(image_array[::-1, :]),
+        "fh": np.ascontiguousarray(image_array[:, ::-1]),
+        "r180": np.ascontiguousarray(image_array[::-1, ::-1]),
+        "r90": np.ascontiguousarray(image_array.transpose(1, 0, 2)[::-1, :, :]),
+        "r90fv": np.ascontiguousarray(image_array.transpose(1, 0, 2)),
+        "r90fh": np.ascontiguousarray(image_array.transpose(1, 0, 2)[::-1, ::-1]),
+        "r270": np.ascontiguousarray(image_array.transpose(1, 0, 2)[:, ::-1]),
     }
 
 
 def get_isometric_dct_transforms(dct: np.ndarray):
-    # pylint: disable=invalid-name
     T1 = np.empty_like(dct)
     T1[::2] = 1
     T1[1::2] = -1
 
-    # pylint: disable=invalid-name
     T2 = np.empty_like(dct)
     T2[::2, ::2] = 1
     T2[1::2, 1::2] = 1
@@ -357,7 +349,7 @@ def get_isometric_dct_transforms(dct: np.ndarray):
     }
 
 
-def read(filepath_or_buffer: ImageInputType, timeout=None):
+def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
     """Read a file into an image object
 
     Args:
@@ -366,11 +358,11 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
         timeout: If filepath_or_buffer is a URL, the timeout to
             use for making the HTTP request.
     """
-    if PIL is not None and isinstance(filepath_or_buffer, PIL.Image.Image):
+    if isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
     if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
-        image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
+        decoded_image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif isinstance(filepath_or_buffer, str):
         if validators.url(filepath_or_buffer):
             with request.urlopen(filepath_or_buffer, timeout=timeout) as response:
@@ -379,19 +371,19 @@ def read(filepath_or_buffer: ImageInputType, timeout=None):
             raise FileNotFoundError(
                 "Could not find image at path: " + filepath_or_buffer
             )
-        image = cv2.imread(filepath_or_buffer)
+        decoded_image = cv2.imread(filepath_or_buffer)
     else:
         raise RuntimeError(
             "Unhandled filepath_or_buffer type: " + str(type(filepath_or_buffer))
         )
-    if image is None:
+    if decoded_image is None:
         raise ValueError(f"An error occurred reading {filepath_or_buffer}.")
     # We use cvtColor here instead of just ret[..., ::-1]
     # in order to ensure that we provide a contiguous
     # array for later processing. Some hashers use ctypes
     # to pass the array and non-contiguous arrays can lead
     # to erroneous results.
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return cv2.cvtColor(decoded_image, cv2.COLOR_BGR2RGB)
 
 
 def _get_keyframes(filepath):
@@ -456,7 +448,6 @@ def get_video_properties(filepath):
         )
 
 
-# pylint: disable=too-many-branches,too-many-statements,too-many-arguments
 def read_video_to_generator_ffmpeg(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
@@ -646,7 +637,6 @@ def read_video_to_generator_ffmpeg(
                 raise ValueError(
                     f"Error parsing video: {stdout.decode('utf-8')} {stderr.decode('utf-8')}"
                 )
-    # pylint: disable=broad-except
     except Exception as e:
         if errors not in ["warn", "ignore"]:
             raise e
@@ -656,7 +646,6 @@ def read_video_to_generator_ffmpeg(
             )
 
 
-# pylint: disable=too-many-branches,too-many-locals,too-many-statements
 def read_video_to_generator(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
@@ -676,7 +665,6 @@ def read_video_to_generator(
     Returns:
         See :code:`read_video`.
     """
-    # pylint: disable=no-member
     if cv2.__version__ < "4.1.1" and filepath.lower().endswith("gif"):
         message = "Versions of OpenCV < 4.1.1 may read GIF files improperly. Upgrade recommended."
         if errors == "raise":
@@ -724,10 +712,11 @@ def read_video_to_generator(
             # we can.
             repeat = False
         else:
+            num_frames_per_second = float(frames_per_second)
             frame_indexes = itertools.count(
-                0, max(1, file_frames_per_second / frames_per_second)
+                0, max(1, file_frames_per_second / num_frames_per_second)
             )
-            repeat = file_frames_per_second < frames_per_second
+            repeat = file_frames_per_second < num_frames_per_second
         input_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         input_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         if max_size is not None:
@@ -758,7 +747,7 @@ def read_video_to_generator(
             yield frame, grabbed_frame_count - 1, current_timestamp
             if max_duration is not None and current_timestamp > max_duration:
                 break
-            if repeat:
+            if repeat and isinstance(seconds_between_desired_frames, Number):
                 next_desired_timestamp = (
                     current_timestamp + seconds_between_desired_frames
                 )
@@ -766,7 +755,6 @@ def read_video_to_generator(
                 while next_desired_timestamp < next_timestamp:
                     yield (frame, grabbed_frame_count - 1, next_desired_timestamp)
                     next_desired_timestamp += seconds_between_desired_frames
-    # pylint: disable=broad-except
     except Exception as e:
         if errors not in ["warn", "ignore"]:
             raise e
@@ -790,7 +778,6 @@ def read_video_into_queue(*args, video_queue, terminate, func, **kwargs):
         video_queue.put((None, None, None))
 
 
-# pylint: disable=too-many-arguments
 def read_video(
     filepath,
     frames_per_second: typing.Optional[typing.Union[str, float]] = None,
