@@ -23,6 +23,8 @@ jobs:
             - run: git fetch --prune --unshallow || true
             - name: Setup conda
               uses: s-weigand/setup-conda@v1
+              with:
+                update-conda: true
               if: ${{ matrix.os != 'ubuntu-latest' }}
             - run: build-scripts/macos.sh
               if: ${{ matrix.os == 'macos-latest' }}
