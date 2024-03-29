@@ -13,6 +13,12 @@ import typing_extensions
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
 
+
+# For faiss training on datasets larger than 50,000 vectors, we take a random sample of 50,000 vectors,
+# or 10% of the data, whichever is larger.
+TRAIN_LARGE_SIZE: int = 50_000
+TRAIN_PCT: float = 0.1
+
 ClusterAssignment = typing_extensions.TypedDict(
     "ClusterAssignment", {"cluster": int, "id": typing.Any}
 )
@@ -54,7 +60,14 @@ def build_index(
                 gpu = True
             except AttributeError:
                 LOGGER.info("Building approximate FAISS index on CPU.")
-        index.train(X)
+
+        if X.shape[0] > TRAIN_LARGE_SIZE:
+            # Take random sample of 50,000 or 10% of the data, whichever is larger.
+            sample_size = max(TRAIN_LARGE_SIZE, int(X.shape[0] * TRAIN_PCT))
+            index.train(X[np.random.choice(X.shape[0], sample_size, replace=False)])
+        else:
+            index.train(X)
+
         batch_size = 10_000
         for i in range(0, X.shape[0], batch_size):
             index.add(X[i : i + batch_size])
