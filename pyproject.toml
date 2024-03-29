@@ -16,7 +16,7 @@ pdqhash = "*"
 Pillow = "*"
 pywavelets = "^1.5.0"
 tqdm = "*"
-validators = "^0.22.0"
+validators = ">=0.22, <1.0"
 
 # Benchmarking Extras
 matplotlib = { version = "*", optional = true }
