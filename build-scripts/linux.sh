@@ -2,27 +2,20 @@
 set -e -x
 
 # Install a system package required by our library
-yum install -y atlas-devel python-devel
+yum install -y atlas-devel
 
 # This line is needed to allow Versioneer to get the version from Git.
 git config --global --add safe.directory /io
 git tag
 
 # Compile wheels
-for PYBIN in /opt/python/*/bin; do
-    # Block unsupported Python Versions. This currently blocks 2.7 and 3.11.
-    if [[ ${PYBIN} != *$"cp27"* ]] && [[ ${PYBIN} != *$"cp311"* ]]; then
-        echo ${PYBIN}
-        "${PYBIN}/pip" install cython numpy
-        "${PYBIN}/python" setup.py version
-        "${PYBIN}/python" setup.py sdist
-        "${PYBIN}/pip" wheel --no-deps --wheel-dir dist dist/*.tar.gz
-    fi
+for PYBIN in /opt/python/cp39-cp39/bin /opt/python/cp310-cp310/bin; do
+    echo ${PYBIN}
+    "${PYBIN}/pip" install poetry
+    "${PYBIN}/python" -m poetry build -f wheel
 done
 
 # Bundle external shared libraries into the wheels
 for whl in dist/*.whl; do
-    auditwheel repair "$whl" --plat manylinux2010_x86_64 -w /io/dist
+    auditwheel repair "$whl" --plat manylinux_2_28_x86_64 -w /io/dist
 done
-
-rm dist/*linux_x86_64*.whl
