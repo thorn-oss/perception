@@ -1,5 +1,4 @@
 call conda create -n py39 -y python=3.9
 call conda create -n py310 -y python=3.10
-set PATH="%PATH%;C:\Miniconda\Library\bin;C:\Miniconda\Scripts;"
 call activate py39 && pip install poetry && python -m poetry build -f wheel
 call activate py310 && pip install poetry && python -m poetry build -f wheel
