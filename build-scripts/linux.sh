@@ -12,7 +12,7 @@ git tag
 for PYBIN in /opt/python/cp39-cp39/bin /opt/python/cp310-cp310/bin; do
     echo ${PYBIN}
     "${PYBIN}/pip" install poetry
-    "${PYBIN}/python" -m poetry self add poetry-dynamic-versioning
+    "${PYBIN}/python" -m poetry self add "poetry-dynamic-versioning[plugin]"
     "${PYBIN}/python" -m poetry build -f wheel
 done
 
