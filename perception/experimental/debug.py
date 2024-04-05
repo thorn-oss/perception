@@ -20,6 +20,8 @@ def vizualize_pair(
     match_metadata=None,
     local_path_col: Optional[str] = None,
     sanitized: bool = False,
+    include_all_points=False,
+    circle_size=KEYPOINT_SIZE,
 ):
     """Given two rows from a reference df vizualize their overlap.
 
@@ -33,6 +35,8 @@ def vizualize_pair(
         local_path_col: column in df with path to the image. If None will
             use the index: features_1.name and features_2.name
         sanitized: if True images themselves will not be rendered, only the points.
+        include_all_points: if True will draw all points, not just matched points.
+        circle_size: size of the circle to draw around keypoints.
     Returns:
         An image of the two images concatted together and matching keypoints drawn.
     """
@@ -66,7 +70,15 @@ def vizualize_pair(
             LOGGER.warning("Failed to load image %s", features_2_path)
 
     if match_metadata is not None:
-        img_matched = viz_match_data(features_1, features_2, img1, img2, match_metadata)
+        img_matched = viz_match_data(
+            features_1,
+            features_2,
+            img1,
+            img2,
+            match_metadata,
+            include_all_points=include_all_points,
+            circle_size=circle_size,
+        )
     else:
         LOGGER.warning(
             """No match_metadata provided, recalculating match points,
@@ -77,7 +89,15 @@ def vizualize_pair(
     return img_matched
 
 
-def viz_match_data(features_1, features_2, img1, img2, match_metadata):
+def viz_match_data(
+    features_1,
+    features_2,
+    img1,
+    img2,
+    match_metadata,
+    include_all_points=False,
+    circle_size=KEYPOINT_SIZE,
+):
     """Given match data viz matching points.
 
     Args:
@@ -87,6 +107,8 @@ def viz_match_data(features_1, features_2, img1, img2, match_metadata):
         img2: cv2 of second image
         match_metadata: metadata returned from matching, if None will redo
             brute force matching.
+        include_all_points: if True will draw all points, not just matched points.
+        circle_size: size of the circle to draw around keypoints.
     Returns:
         cv2 img with matching keypoints drawn.
     """
@@ -110,28 +132,34 @@ def viz_match_data(features_1, features_2, img1, img2, match_metadata):
         )
     # draw two images h concat:
     img_matched = np.concatenate((img1, img2), axis=1)
-    # draw all points in kp_1
-    for k in features_1["keypoints"]:
-        new_color = (
-            random.randint(0, 255),
-            random.randint(0, 255),
-            random.randint(0, 255),
-        )
-        cv2.circle(img_matched, (int(k[0]), int(k[1])), KEYPOINT_SIZE, new_color, 1)
-    # draw all points in kp_2
-    for k in features_2["keypoints"]:
-        new_color = (
-            random.randint(0, 255),
-            random.randint(0, 255),
-            random.randint(0, 255),
-        )
-        cv2.circle(
-            img_matched,
-            (int(k[0] + features_1.dimensions[0]), int(k[1])),
-            KEYPOINT_SIZE,
-            new_color,
-            1,
-        )
+
+    overlay = img_matched.copy()
+
+    if include_all_points:
+        # draw all points in kp_1
+        for k in features_1["keypoints"]:
+            new_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
+            # Draw semi transparent circle
+            cv2.circle(img_matched, (int(k[0]), int(k[1])), circle_size, new_color, 1)
+
+        # draw all points in kp_2
+        for k in features_2["keypoints"]:
+            new_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
+            cv2.circle(
+                img_matched,
+                (int(k[0] + features_1.dimensions[0]), int(k[1])),
+                circle_size,
+                new_color,
+                1,
+            )
 
     # draw lines between matching points
     for i in range(len(match_metadata["final_matched_b_pts"])):
@@ -148,8 +176,8 @@ def viz_match_data(features_1, features_2, img1, img2, match_metadata):
             int(match_metadata["final_matched_b_pts"][i][0] + features_1.dimensions[0]),
             int(match_metadata["final_matched_b_pts"][i][1]),
         )
-        cv2.circle(img_matched, a_pt, KEYPOINT_SIZE, new_color, 2)
-        cv2.circle(img_matched, b_pt, KEYPOINT_SIZE, new_color, 2)
+        cv2.circle(img_matched, a_pt, circle_size, new_color, 1)
+        cv2.circle(img_matched, b_pt, circle_size, new_color, 1)
         cv2.line(
             img_matched,
             a_pt,
@@ -157,6 +185,12 @@ def viz_match_data(features_1, features_2, img1, img2, match_metadata):
             new_color,
             1,
         )
+
+    # Re-overlay original image to add some transparency effect to lines and circles.
+    alpha = 0.4  # Transparency factor.
+    # Following line overlays transparent rectangle over the image
+    img_matched = cv2.addWeighted(overlay, alpha, img_matched, 1 - alpha, 0)
+
     return img_matched
 
 

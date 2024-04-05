@@ -14,10 +14,8 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
 
 
-# For faiss training on datasets larger than 50,000 vectors, we take a random sample of 50,000 vectors,
-# or 10% of the data, whichever is larger.
+# For faiss training on datasets larger than 50,000 vectors, we take a random sub-sample.
 TRAIN_LARGE_SIZE: int = 50_000
-TRAIN_PCT: float = 0.1
 
 ClusterAssignment = typing_extensions.TypedDict(
     "ClusterAssignment", {"cluster": int, "id": typing.Any}
@@ -62,8 +60,10 @@ def build_index(
                 LOGGER.info("Building approximate FAISS index on CPU.")
 
         if X.shape[0] > TRAIN_LARGE_SIZE:
-            # Take random sample of 50,000 or 10% of the data, whichever is larger.
-            sample_size = max(TRAIN_LARGE_SIZE, int(X.shape[0] * TRAIN_PCT))
+            # Take random sample of 50,000 or 39 points per centroid.
+            # 39 points per centroid is the min for for not getting warnings.
+            # https://github.com/facebookresearch/faiss/wiki/FAQ#can-i-ignore-warning-clustering-xxx-points-to-yyy-centroids
+            sample_size = max(39 * nlist, TRAIN_LARGE_SIZE)
             index.train(X[np.random.choice(X.shape[0], sample_size, replace=False)])
         else:
             index.train(X)
