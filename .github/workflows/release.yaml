@@ -1,58 +1,60 @@
 name: release
 on:
-    push:
-      tags:
-        - v*
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v4
-        - name: Run precommit
-          run: make precommit_docker
-    build:
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-              os: [ubuntu-latest, windows-latest, macos-latest]
-        name: Build for ${{ matrix.os }}
-        needs: test
-        steps:
-            - uses: actions/checkout@v4
-            - run: git fetch --prune --unshallow || true
-            - name: Setup conda
-              uses: s-weigand/setup-conda@v1
-              with:
-                update-conda: true
-              if: ${{ matrix.os != 'ubuntu-latest' }}
-            - run: build-scripts/macos.sh
-              if: ${{ matrix.os == 'macos-latest' }}
-            - run: build-scripts/windows.bat
-              if: ${{ matrix.os == 'windows-latest' }}
-            - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux_2_28_x86_64 /io/build-scripts/linux.sh
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-            - uses: actions/upload-artifact@v4
-              with:
-                name: wheels-${{ matrix.os }}
-                path: dist/*
-    publish:
-        needs: build
-        runs-on: ubuntu-latest
-        if: ${{ github.repository_owner == 'wearethorn' }}
-        env:
-          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-python@v5
-          with:
-            python-version: '3.10'
-        - name: Download wheels
-          uses: actions/download-artifact@v4
-          with:
-            path: dist
-            pattern: wheels-*
-            merge-multiple: true
-        - name: Publish package
-          run: make publish
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run precommit
+        run: make precommit_docker
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+          os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build for ${{ matrix.os }}
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --prune --unshallow || true
+      - name: Setup conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          update-conda: true
+        if: ${{ matrix.os != 'ubuntu-latest' }}
+      - run: build-scripts/macos.sh
+        if: ${{ matrix.os == 'macos-latest' }}
+      - run: build-scripts/windows.bat
+        if: ${{ matrix.os == 'windows-latest' }}
+      - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux_2_28_x86_64 /io/build-scripts/linux.sh
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'wearethorn' && github.event_name == 'release' }}
+    env:
+      TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: wheels-*
+          merge-multiple: true
+      - name: Publish package
+        run: make publish
