@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Perception"
-version = "0.7.0"
+version = "0.0.0"
 description = "Perception provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use."
 authors = ["Thorn <info@wearethorn.org>"]
 license = "Apache License 2.0"
@@ -62,7 +62,6 @@ torch = { version = "^2", source = "torch" }
 types-pillow = "*"
 types-tqdm = "*"
 twine = "*"
-versioneer = "*"
 videoalignment = {git = "https://github.com/facebookresearch/videoalignment.git"}
 
 [tool.poetry.build]
@@ -79,17 +78,9 @@ exclude = ["/tests/"]
 check_untyped_defs = true
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = ["perception._version", "versioneer"]
-ignore_errors = true
-
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "perception/_version.py"
-versionfile_build = "perception/_version.py"
-tag_prefix = "v"
+[tool.poetry-dynamic-versioning]
+enable = true
 
 [build-system]
-requires = ["poetry-core", "numpy", "Cython", "setuptools", "wheel"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core", "poetry-dynamic-versioning", "numpy", "Cython", "setuptools", "wheel"]
+build-backend = "poetry_dynamic_versioning.backend"
