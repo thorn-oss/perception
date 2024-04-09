@@ -9,6 +9,6 @@ conda create -n py310 -y python=3.10
 for pyenv in py39 py310
 do
 	conda run -n $pyenv pip install poetry
-	conda run -n $pyenv python -m poetry self add "poetry-dynamic-versioning[plugin]"
-	conda run -n $pyenv python -m poetry build -f wheel
+	conda run -n $pyenv poetry self add "poetry-dynamic-versioning[plugin]"
+	conda run -n $pyenv poetry build -f wheel
 done
