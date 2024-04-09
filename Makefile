@@ -39,12 +39,8 @@ format_check:
 	poetry run black .
 	poetry run black --check . || (echo '\nUnexpected format.' && exit 1)
 
-build_ext:
-	poetry run python setup.py build_ext --inplace
-
 precommit:
 	poetry check
-	make build_ext
 	make lint_check
 	make type_check
 	make format_check
