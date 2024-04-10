@@ -1,5 +1,5 @@
 IMAGE_NAME = perception
-DOCKER_ARGS = -v $(PWD):/usr/src --rm
+DOCKER_ARGS = --rm
 IN_DOCKER = docker run $(DOCKER_ARGS)
 NOTEBOOK_PORT = 5000
 JUPYTER_OPTIONS := --ip=0.0.0.0 --port $(NOTEBOOK_PORT) --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
@@ -9,6 +9,9 @@ TEST_SCOPE?=tests/
 
 build:
 	docker build --rm --force-rm -t $(IMAGE_NAME) .
+
+build-dev:
+	docker build -t $(IMAGE_NAME)-dev .
 
 init-project:
 	poetry install -E benchmarking -E matching -E experimental
@@ -39,20 +42,16 @@ format_check:
 	poetry run black .
 	poetry run black --check . || (echo '\nUnexpected format.' && exit 1)
 
-build_ext:
-	poetry run python setup.py build_ext --inplace
-
 precommit:
 	poetry check
-	make build_ext
 	make lint_check
 	make type_check
 	make format_check
 	make test
 
 precommit_docker:
-	make build
-	$(IN_DOCKER) $(IMAGE_NAME) make precommit
+	make build-dev
+	$(IN_DOCKER) $(IMAGE_NAME)-dev make precommit
 
 publish:
 	pip install twine
