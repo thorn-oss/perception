@@ -7,7 +7,7 @@ license = "Apache License 2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9,<3.12"
+python = "^3.9"
 Cython = "^3"
 numpy = "^1.26"
 opencv-contrib-python-headless = "^4.8"
@@ -32,8 +32,8 @@ python-json-logger = { version = "*", optional = true }
 rich = "^13.7.0"
 
 # Experimental Extras
-networkit = {version = "^10.1", optional = true}
-faiss-cpu = {version = "^1.7.4", optional = true}
+networkit = { version = "^11", optional = true }
+faiss-cpu = { version = "^1.7.4", optional = true }
 
 [tool.poetry.extras]
 benchmarking = [
@@ -58,20 +58,15 @@ pre-commit = "*"
 pytest = "*"
 pytest-cov = "*"
 ruff = "*"
-torch = { version = "^2", source = "torch" }
+torch = "^2"
 types-pillow = "*"
 types-tqdm = "*"
 twine = "*"
-videoalignment = {git = "https://github.com/facebookresearch/videoalignment.git"}
+videoalignment = { git = "https://github.com/facebookresearch/videoalignment.git" }
 
 [tool.poetry.build]
 script = "build.py"
 generate-setup-file = true
-
-[[tool.poetry.source]]
-name = "torch"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "supplemental"
 
 [tool.mypy]
 exclude = ["/tests/"]
@@ -82,5 +77,12 @@ ignore_missing_imports = true
 enable = true
 
 [build-system]
-requires = ["poetry-core", "poetry-dynamic-versioning", "numpy", "Cython", "setuptools", "wheel"]
+requires = [
+  "poetry-core",
+  "poetry-dynamic-versioning",
+  "numpy",
+  "Cython",
+  "setuptools",
+  "wheel",
+]
 build-backend = "poetry_dynamic_versioning.backend"

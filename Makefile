@@ -39,7 +39,6 @@ format:
 	poetry run black .
 
 format_check:
-	poetry run black .
 	poetry run black --check . || (echo '\nUnexpected format.' && exit 1)
 
 precommit:

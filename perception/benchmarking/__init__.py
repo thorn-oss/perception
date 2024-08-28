@@ -6,12 +6,12 @@ from . import video
 from . import image
 
 __all__ = [
-    'BenchmarkImageDataset',
-    'BenchmarkImageTransforms',
-    'BenchmarkVideoDataset',
-    'BenchmarkVideoTransforms',
-    'BenchmarkHashes',
-    'video_transforms',
-    'video',
-    'image'
+    "BenchmarkImageDataset",
+    "BenchmarkImageTransforms",
+    "BenchmarkVideoDataset",
+    "BenchmarkVideoTransforms",
+    "BenchmarkHashes",
+    "video_transforms",
+    "video",
+    "image",
 ]
