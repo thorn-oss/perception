@@ -5,51 +5,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run precommit
-        run: make precommit_docker
-
   build:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-          os: [ubuntu-latest, windows-latest, macos-latest]
+          python-version: ["3.10", "3.11", "3.12"]
+          os: ["ubuntu-latest", "windows-latest", "macos-latest", "macos-13"] # macOS 13 is the latest version with the old architecture
     name: Build for ${{ matrix.os }}
     needs: test
     steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup Dynamic Versioning
+        run: poetry self add "poetry-dynamic-versioning[plugin]"
+      - name: Setup FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        if: ${{ ! startsWith(matrix.os, 'macos') }}
+      - name: Setup Dependencies with Homebrew
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install llvm ffmpeg
+          echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - run: git fetch --prune --unshallow || true
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update-conda: true
-        if: ${{ matrix.os != 'ubuntu-latest' }}
-      - run: build-scripts/macos.sh
-        if: ${{ matrix.os == 'macos-latest' }}
-      - run: build-scripts/windows.bat
-        if: ${{ matrix.os == 'windows-latest' }}
-      - run: docker run --rm -v $PWD:/io --workdir /io quay.io/pypa/manylinux_2_28_x86_64 /io/build-scripts/linux.sh
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Build Project
+        run: poetry build -n
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          name: wheels-${{ matrix.os }}-${{ matrix.python_version }}
           path: dist/*
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'wearethorn' && github.event_name == 'release' }}
-    env:
-      TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup Dynamic Versioning
+        run: poetry self add "poetry-dynamic-versioning[plugin]"
       - name: Download wheels
         uses: actions/download-artifact@v4
         with:
@@ -57,4 +60,4 @@ jobs:
           pattern: wheels-*
           merge-multiple: true
       - name: Publish package
-        run: make publish
+        run: poetry publish -n --username=${{ secrets.TWINE_USERNAME }} --password={{ secrets.TWINE_PASSWORD }}

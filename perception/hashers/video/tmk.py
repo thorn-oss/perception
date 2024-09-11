@@ -1,4 +1,6 @@
 from typing import Optional
+import platform
+import warnings
 
 import numpy as np
 import scipy.special
@@ -19,6 +21,9 @@ class TMKL2(VideoHasher):
         frames_per_second: int = 15,
         normalization: str = "matrix",
     ):
+        if platform.machine() == "arm64":
+            warnings.warn("TMK is not supported on ARM64")
+
         T = np.array([2731, 4391, 9767, 14653]).astype("float32")
         m = 32
         if frame_hasher is None:

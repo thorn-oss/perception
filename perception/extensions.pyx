@@ -1,5 +1,3 @@
-# distutils: extra_compile_args=-fopenmp
-# distutils: extra_link_args=-fopenmp
 # cython: language_level=3
 # cython: language=c++
 
@@ -29,7 +27,7 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
     because it computes distances in parallel, avoids computing full distances when they're
     not necessary, skips computing distances for pairs of hashes that are for the
     same file, and skips computing distances for vectors if both have already been matched.
-    
+
     Args:
         X: The vectors with shape (N, D). Vectors for the same file need to be
             supplied sequentially so that we can use the counts argument
@@ -40,7 +38,7 @@ def compute_euclidean_pairwise_duplicates(int[:, :] X, float threshold, counts: 
         compute_overlap: If True, the values returned will be divided by the number
             of hashes in each file. If False, the raw duplicate counts will
             be returned.
-    
+
     Returns:
         duplicates: An array of shape (M!/(2*((M-2)!)), 2) indicating
             the fraction of vectors for each file found in another file.
@@ -156,7 +154,7 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
     """Find the pairwise overlap within an array of vectors, where there may be multiple
     vectors for the same file. This function is similar to compute_euclidean_pairwise_duplicates
     but uses much less memory.
-    
+
     Args:
         X: The vectors with shape (N, D). Vectors for the same file need to be
             supplied sequentially so that we can use the counts argument
@@ -169,7 +167,7 @@ def compute_euclidean_pairwise_duplicates_simple(int[:, :] X, float threshold, n
             Otherwise, assumed to have length M. The counts should add up to N.
         minimum_overlap: The minimum overlap between two groups of hashes to
             call it a match.
-    
+
     Returns:
         pairs: Pairs of indexes that met the matching criteria.
     """

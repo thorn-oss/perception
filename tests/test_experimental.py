@@ -6,6 +6,7 @@ import imgaug
 import pandas as pd
 import pytest
 
+
 import perception.benchmarking.image as pb
 import perception.benchmarking.image_transforms as pbit
 import perception.experimental.approximate_deduplication as ad
@@ -48,12 +49,16 @@ def test_deduplication(hasher):
     pairs = ldd.deduplicate(
         filepaths_or_reference_df=df.index, max_workers=2, hasher=hasher
     )  #  Test throws errors if unset.
+
     clustered = (
-        pd.DataFrame(ad.pairs_to_clusters(ids=df.index, pairs=pairs))
+        pd.DataFrame(
+            ad.pairs_to_clusters(ids=df.index, pairs=pairs, strictness="component")
+        )
         .set_index("id")
         .merge(df, left_index=True, right_index=True)
         .reset_index()
     )
+    print("test2")
     n_clusters = clustered["cluster"].nunique()
     n_transforms = clustered["transform_name"].nunique()
     perfect = (
@@ -151,7 +156,9 @@ def test_handling_bad_file_case(caplog, hasher):
     df.loc[bad_file] = df.iloc[0]
     pairs = ldd.deduplicate(filepaths_or_reference_df=df.index, hasher=hasher)
     clustered = (
-        pd.DataFrame(ad.pairs_to_clusters(ids=df.index, pairs=pairs))
+        pd.DataFrame(
+            ad.pairs_to_clusters(ids=df.index, pairs=pairs, strictness="component")
+        )
         .set_index("id")
         .merge(df, left_index=True, right_index=True)
         .reset_index()

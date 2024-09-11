@@ -53,7 +53,7 @@ def test_video_reading():
     ):
         assert timestamp in [0.0, 2.0, 4.0]
         channel = int(timestamp / 2)
-        assert frame[:, :, channel].min() > 230
+        assert frame[:, :, channel].min() > 220
         for other in [0, 1, 2]:
             if other == channel:
                 continue

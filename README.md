@@ -10,7 +10,7 @@
 
 ### Installation
 
-`pip install opencv-python perception`
+`pip install perception`
 
 ### Hashing
 
@@ -55,15 +55,7 @@ To work on the project, start by doing the following.
 # code completion, etc.
 make init
 
-# Build the Docker container to run
-# tests and such.
-make build
-```
-
-- Running `make init` will update this repository's dependencies and preserve the results in `Pipfile.lock`. We strongly recommend including changes to the lock alongside any other changes that may have been made.
-- You can get a JupyterLab server running to experiment with using `make lab-server`.
 - To do a (close to) comprehensive check before committing code, you can use `make precommit`.
-- To view the documentation, use `make documentation-server`.
 
 To implement new features, please first file an issue proposing your change for discussion.
 
@@ -78,3 +70,4 @@ examples.
 - [imagededup](https://idealo.github.io/imagededup/)
 - [ImageHash](https://github.com/JohannesBuchner/imagehash)
 - [PhotoHash](https://github.com/bunchesofdonald/photohash)
+```

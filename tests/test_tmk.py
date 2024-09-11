@@ -1,59 +1,45 @@
-import numpy as np
-import torch
-import videoalignment.models
-import videoalignment.test_models
+import gzip
+import json
+from pathlib import Path
+from typing import cast
+import platform
 
-from perception.hashers.tools import read_video
+import numpy as np
+import pytest
+
 from perception.hashers.video import tmk
+
+TEST_FILES = Path("perception") / "testing" / "videos"
 
 
 def test_tmk_parity():
-    hasher = tmk.TMKL2()
+    if platform.machine() == "arm64":
+        pytest.xfail("TMK is not supported on ARM64")
 
-    ours = []
-    theirs = []
+    hasher = tmk.TMKL2()
+    with gzip.open(TEST_FILES / "expected_tmk.json.gz", "rt", encoding="utf8") as f:
+        expected_output = json.load(f)
+    expected_output = {k: np.array(v) for k, v in expected_output.items()}
+
+    output = []
 
     for filepath in [
         "perception/testing/videos/v1.m4v",
         "perception/testing/videos/v2.m4v",
     ]:
-        features_timestamps = [
-            (hasher.frame_hasher.compute(frame, hash_format="vector"), timestamp)
-            for frame, _, timestamp in read_video(
-                filepath=filepath,
-                frames_per_second=hasher.frames_per_second,
-                errors="raise",
-            )
-        ]
-        features = np.array([features for features, _ in features_timestamps])
-        timestamps = np.array([timestamp for _, timestamp in features_timestamps])
-        model = videoalignment.models.TMK_Poullot(
-            videoalignment.test_models.ModelArgs(m=32)
+        hash_value: np.ndarray = cast(
+            np.ndarray, hasher.compute(filepath=filepath, hash_format="vector")
         )
-        theirs.append(
-            model.single_fv(
-                ts=torch.from_numpy(features[np.newaxis,]),
-                xs=torch.from_numpy(timestamps[np.newaxis,]),
-            ).numpy()[0]
-        )
-        ours.append(hasher.compute(filepath=filepath, hash_format="vector"))
+        output.append(hash_value.reshape((4, 64, -1)))
 
     # Verify the hashes are the same
-    for o, t in zip(ours, theirs):
-        np.testing.assert_allclose(o.reshape(*t.shape), t, rtol=0.05)
-
-    offsets = np.arange(-5, 5)
+    for o, t in zip(output, expected_output["hashes"]):
+        np.testing.assert_allclose(o.reshape(*t.shape), t)
 
     # Verify the pair-wise scores are the same
     offsets = np.arange(-5, 5)
     for normalization in ["feat", "feat_freq", "matrix"]:
-        model.tmk.normalization = normalization
-        scores_theirs = model.tmk.merge(
-            fv_a=torch.from_numpy(theirs[0][np.newaxis,]),
-            fv_b=torch.from_numpy(theirs[1][np.newaxis,]),
-            offsets=torch.from_numpy(offsets[np.newaxis,]),
-        )[0]
-        scores_ours = hasher._score_pair(
-            theirs[0], theirs[1], offsets=offsets, normalization=normalization
+        score = hasher._score_pair(
+            output[0], output[1], offsets=offsets, normalization=normalization
         )
-        np.testing.assert_allclose(scores_ours, scores_theirs)
+        np.testing.assert_allclose(score, expected_output[normalization])

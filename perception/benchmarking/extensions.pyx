@@ -1,5 +1,3 @@
-# distutils: extra_compile_args=-fopenmp
-# distutils: extra_link_args=-fopenmp
 # cython: language_level=3
 
 import cython
@@ -22,12 +20,12 @@ def compute_euclidean_metrics(int[:, :] X_noop, int[:, :] X_tran, uint8[:, :] ma
     """Compute the positive / negative distance metrics between two sets of vectors
     using euclidean distance. This function obtains the necessary metrics roughly
     10x faster than using scipy.spatial.distance.cdist and numpy functions.
-    
+
     Args:
         X_noop: The vectors for the noop hashes with shape (N, K)
         X_tran: The vectors for the transformed instances with shape (M, K)
         mask: A (M, N) array indicating whether noop n corresponds to transform m
-    
+
     Returns:
         distances: An M by 2 array with the closest false positive and closest
             true positive for each transform.
@@ -71,10 +69,10 @@ def compute_euclidean_metrics(int[:, :] X_noop, int[:, :] X_tran, uint8[:, :] ma
                 n_pos += 1
         assert n_pos > 0, "All transforms must have at least one positive noop."
         assert n_pos < n_mask_noop, "All transforms must have at least one negative noop."
-    
+
     distances = np.zeros((n_tran, 2), dtype=np.float32)
     indexes = np.zeros((n_tran, 2), dtype=np.int32)
-    
+
     cdef np.float32_t[:, :] distances_view = distances
     cdef int[:, :] indexes_view = indexes
 

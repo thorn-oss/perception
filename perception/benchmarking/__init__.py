@@ -1,9 +1,15 @@
-from .image import BenchmarkImageDataset, BenchmarkImageTransforms
-from .video import BenchmarkVideoDataset, BenchmarkVideoTransforms
-from .common import BenchmarkHashes
-from . import video_transforms
-from . import video
-from . import image
+from perception.benchmarking import video_transforms
+from perception.benchmarking import video
+from perception.benchmarking import image
+from perception.benchmarking.image import (
+    BenchmarkImageDataset,
+    BenchmarkImageTransforms,
+)
+from perception.benchmarking.video import (
+    BenchmarkVideoDataset,
+    BenchmarkVideoTransforms,
+)
+from perception.benchmarking.common import BenchmarkHashes
 
 __all__ = [
     "BenchmarkImageDataset",

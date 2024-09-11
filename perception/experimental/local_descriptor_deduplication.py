@@ -467,7 +467,6 @@ def compute_pairs(
         query_df = query_df.dropna(subset=["descriptors"])
         y_counts = query_df["descriptor_count"].values.astype("uint32")
         y_descriptors = np.vstack(query_df["descriptors"].values).astype("float32")
-
     LOGGER.debug("Computing euclid pairs aprox")
     pairs = ad.compute_euclidean_pairwise_duplicates_approx(
         X=descriptors.astype("float32"),
