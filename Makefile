@@ -31,7 +31,8 @@ precommit:
 	make test
 
 build:
-	@pip install repairwheel
+	@poetry run pip install repairwheel
+	@poetry self add "poetry-dynamic-versioning[plugin]"
 	@poetry build -o dist-tmp
 	@poetry run repairwheel -o dist dist-tmp/*.whl
 	@mv dist-tmp/*.tar.gz dist
