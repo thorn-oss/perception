@@ -1,6 +1,6 @@
 TEST_SCOPE?=tests/
 
-.PHONY: init-project init test lint_check type_check format format_check precommit
+.PHONY: build init-project init test lint_check type_check format format_check precommit
 
 init-project:
 	poetry install -E benchmarking -E matching -E experimental
@@ -29,3 +29,10 @@ precommit:
 	make type_check
 	make format_check
 	make test
+
+build:
+	@pip install repairwheel
+	@poetry build -o dist-tmp
+	@poetry run repairwheel -o dist dist-tmp/*.whl
+	@mv dist-tmp/*.tar.gz dist
+	@rm -rf dist-tmp
