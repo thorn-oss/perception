@@ -39,6 +39,6 @@ build-wheel:
 
 build-sdist:
 	@poetry self add "poetry-dynamic-versioning[plugin]"
-	@poetry build --format="wheel" --output="dist"
+	@poetry build --format="sdist" --output="dist"
 
 build: build-wheel build-sdist
