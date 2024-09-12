@@ -1,6 +1,6 @@
 TEST_SCOPE?=tests/
 
-.PHONY: build init-project init test lint_check type_check format format_check precommit
+.PHONY: build build-wheel build-sdist init-project init test lint_check type_check format format_check precommit
 
 init-project:
 	poetry install -E benchmarking -E matching -E experimental
@@ -30,10 +30,15 @@ precommit:
 	make format_check
 	make test
 
-build:
+build-wheel:
 	@poetry run pip install repairwheel
 	@poetry self add "poetry-dynamic-versioning[plugin]"
-	@poetry build -o dist-tmp
+	@poetry build --format="wheel" --output="dist-tmp"
 	@poetry run repairwheel -o dist dist-tmp/*.whl
-	@mv dist-tmp/*.tar.gz dist
 	@rm -rf dist-tmp
+
+build-sdist:
+	@poetry self add "poetry-dynamic-versioning[plugin]"
+	@poetry build --format="wheel" --output="dist"
+
+build: build-wheel build-sdist
