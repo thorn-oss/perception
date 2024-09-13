@@ -31,14 +31,15 @@ precommit:
 	make test
 
 build-wheel:
-	@poetry run pip install repairwheel
-	@poetry self add "poetry-dynamic-versioning[plugin]"
+	@poetry run pip -q install repairwheel
+	@poetry self add -q "poetry-dynamic-versioning[plugin]"
 	@poetry build --format="wheel" --output="dist-tmp"
 	@poetry run repairwheel -o dist dist-tmp/*.whl
+	@find dist -name "*.whl" -type f | sed -n "s/\(.*\)\.linux.*\.whl$$/& \1.whl/p" | xargs -r -n 2 mv # Fix wheel name
 	@rm -rf dist-tmp
 
 build-sdist:
-	@poetry self add "poetry-dynamic-versioning[plugin]"
+	@poetry self add -q "poetry-dynamic-versioning[plugin]"
 	@poetry build --format="sdist" --output="dist"
 
 build: build-wheel build-sdist
