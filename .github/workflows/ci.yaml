@@ -30,7 +30,7 @@ jobs:
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v4
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Cache the venv
         with:
           path: ./.venv
