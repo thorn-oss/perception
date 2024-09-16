@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Setup Poetry
-        uses: abatilo/actions-poetry@v2
+        uses: abatilo/actions-poetry@v3
       - name: Setup FFMPEG
         uses: FedericoCarboni/setup-ffmpeg@v3
         if: ${{ ! startsWith(matrix.os, 'macos') }}
@@ -48,7 +48,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup Poetry
-        uses: abatilo/actions-poetry@v2
+        uses: abatilo/actions-poetry@v3
       - uses: actions/checkout@v4
         with:
           # Full clone for version calculation
@@ -73,7 +73,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup Poetry
-        uses: abatilo/actions-poetry@v2
+        uses: abatilo/actions-poetry@v3
       - name: Setup Dynamic Versioning
         run: poetry self add "poetry-dynamic-versioning[plugin]"
       - name: Download wheels
