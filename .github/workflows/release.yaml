@@ -63,7 +63,7 @@ jobs:
   publish:
     needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'wearethorn' && github.event_name == 'release' }}
+    if: ${{ github.repository_owner == 'thorn-oss' && github.event_name == 'release' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,4 +83,4 @@ jobs:
           pattern: package-*
           merge-multiple: true
       - name: Publish package
-        run: poetry publish -n --username=${{ secrets.TWINE_USERNAME }} --password=${{ secrets.TWINE_PASSWORD }}
+        run: poetry publish -n
