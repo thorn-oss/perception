@@ -35,20 +35,20 @@ class Descriptors(typing_extensions.TypedDict):
     keypoints: np.ndarray
     descriptors: np.ndarray
     descriptor_count: int
-    dimensions: typing.Tuple[int, int]
+    dimensions: tuple[int, int]
     filepath: str
     hasher: str
 
 
 class MatchStats(typing_extensions.TypedDict):
-    match: typing.Optional[float]
-    min_kpBM: typing.Optional[int]
-    MAB: typing.Optional[str]
-    intersection: typing.Optional[float]
-    inliers: typing.Optional[float]
-    bounds_intersection: typing.Optional[float]
-    final_matched_a_pts: typing.Optional[typing.List[np.ndarray]]
-    final_matched_b_pts: typing.Optional[typing.List[np.ndarray]]
+    match: float | None
+    min_kpBM: int | None
+    MAB: str | None
+    intersection: float | None
+    inliers: float | None
+    bounds_intersection: float | None
+    final_matched_a_pts: list[np.ndarray] | None
+    final_matched_b_pts: list[np.ndarray] | None
 
 
 class LocalHasher(ABC):
@@ -76,7 +76,7 @@ class LocalHasher(ABC):
         self.validation_inliers = validation_inliers
         self.validation_intersection = validation_intersection
 
-    def compute(self, image) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def compute(self, image) -> tuple[np.ndarray, np.ndarray]:
         return self.hasher.detectAndCompute(image, None)
 
     def validate_match(
@@ -86,7 +86,7 @@ class LocalHasher(ABC):
         minimum_match: float = DEFAULT_MATCH_PCT,
         minimum_intersection: float = DEFAULT_INTERSECTION,
         minimum_inliers: int = DEFAULT_INLIERS,
-    ) -> typing.Tuple[bool, MatchStats]:
+    ) -> tuple[bool, MatchStats]:
         """Validate the match between two sets of keypoints and descriptors. The
         validation algorithm is as follows:
 
@@ -307,10 +307,10 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):
 
 def generate_image_descriptors(
     filepath: str,
-    hasher: typing.Optional[LocalHasher] = None,
+    hasher: LocalHasher | None = None,
     min_features=DEFAULT_MIN_FEATURES,
     max_size=DEFAULT_MAX_SIZE,
-) -> typing.Optional[Descriptors]:
+) -> Descriptors | None:
     """Generate local descriptors for a file.
 
     Args:
@@ -362,7 +362,7 @@ def generate_image_descriptors(
 
 def build_reference_df(
     filepaths: typing.Iterable[str],
-    hasher: typing.Optional[LocalHasher] = None,
+    hasher: LocalHasher | None = None,
     min_features=DEFAULT_MIN_FEATURES,
     max_size=DEFAULT_MAX_SIZE,
     show_progress=False,
@@ -429,10 +429,10 @@ def check_hasher(df1: pd.DataFrame, df2: pd.DataFrame):
 def compute_pairs(
     match_df,
     query_df=None,
-    hasher: typing.Optional[LocalHasher] = None,
+    hasher: LocalHasher | None = None,
     pct_probe=0.1,
     use_gpu: bool = True,
-    faiss_cache_path: typing.Optional[str] = None,
+    faiss_cache_path: str | None = None,
     show_progress: bool = False,
 ):
     """Compute pairs of matching images from a reference
@@ -537,18 +537,18 @@ def deduplicate_sift_dfs(*args, **kwargs):
 
 def deduplicate_dfs(
     match_df: pd.DataFrame,
-    query_df: typing.Optional[pd.DataFrame] = None,
+    query_df: pd.DataFrame | None = None,
     coarse_pct_probe: float = ad.DEFAULT_PCT_PROBE,
-    max_workers: typing.Optional[int] = None,
+    max_workers: int | None = None,
     use_gpu: bool = True,
-    faiss_cache_path: typing.Optional[str] = None,
+    faiss_cache_path: str | None = None,
     verbose: bool = False,
-    hasher: typing.Optional[LocalHasher] = None,
+    hasher: LocalHasher | None = None,
     show_progress: bool = False,
-) -> typing.Union[
-    typing.List[typing.Tuple[typing.Any, typing.Any]],
-    typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
-]:
+) -> (
+    list[tuple[typing.Any, typing.Any]]
+    | list[tuple[typing.Any, typing.Any, MatchStats]]
+):
     """Deduplicate images within one set of images or between two sets of images:
     #. Given a dataframe (or two) of descriptors and keypoints for images.
     #. Perform a coarse, approximate search for images with common features.
@@ -606,10 +606,10 @@ def deduplicate_dfs(
     ), "Index of query_df must be unique, or it will cause wrong matches."
 
     LOGGER.debug("Validating candidate pairs: %d", len(candidates))
-    keep: typing.Union[
-        typing.List[typing.Tuple[typing.Any, typing.Any]],
-        typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
-    ] = []  # type: ignore
+    keep: (
+        list[tuple[typing.Any, typing.Any]]
+        | list[tuple[typing.Any, typing.Any, MatchStats]]
+    ) = []  # type: ignore
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         batch_size = 10_000
         for start in tqdm.tqdm(range(0, len(candidates), batch_size)):
@@ -638,20 +638,18 @@ def deduplicate_dfs(
 
 
 def deduplicate(
-    filepaths_or_reference_df: typing.Union[typing.Iterable[str], pd.DataFrame],
-    query_filepaths_or_df: typing.Optional[
-        typing.Union[typing.Iterable[str], pd.DataFrame]
-    ] = None,
+    filepaths_or_reference_df: typing.Iterable[str] | pd.DataFrame,
+    query_filepaths_or_df: None | (typing.Iterable[str] | pd.DataFrame) = None,
     max_features: int = DEFAULT_MAX_FEATURES,
     min_features: int = DEFAULT_MIN_FEATURES,
     max_size: int = DEFAULT_MAX_SIZE,
-    hasher: typing.Optional[LocalHasher] = None,
+    hasher: LocalHasher | None = None,
     show_progress: bool = False,
     **kwargs,
-) -> typing.Union[
-    typing.List[typing.Tuple[typing.Any, typing.Any]],
-    typing.List[typing.Tuple[typing.Any, typing.Any, MatchStats]],
-]:
+) -> (
+    list[tuple[typing.Any, typing.Any]]
+    | list[tuple[typing.Any, typing.Any, MatchStats]]
+):
     """Deduplicate images by doing the following:
     #. Unletterbox all images and resize to some maximum size, preserving
        aspect ratio.

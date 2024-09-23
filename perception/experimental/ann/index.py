@@ -1,7 +1,6 @@
 import time
 import typing
 import warnings
-from typing import Optional
 
 import faiss
 import numpy as np
@@ -10,11 +9,15 @@ import typing_extensions
 
 import perception.hashers.tools as pht
 
-QueryInput = typing_extensions.TypedDict("QueryInput", {"id": str, "hash": str})
 
-QueryMatch = typing_extensions.TypedDict(
-    "QueryMatch", {"id": typing.Any, "matches": typing.List[dict]}
-)
+class QueryInput(typing_extensions.TypedDict):
+    id: str
+    hash: str
+
+
+class QueryMatch(typing_extensions.TypedDict):
+    id: typing.Any
+    matches: list[dict]
 
 
 class TuningFailure(Exception):
@@ -260,7 +263,7 @@ class ApproximateNearestNeighbors:
             s, hash_format=hash_format, dtype=self.dtype, hash_length=self.hash_length
         )
 
-    def vector_to_string(self, vector, hash_format="base64") -> typing.Optional[str]:
+    def vector_to_string(self, vector, hash_format="base64") -> str | None:
         """Convert a vector back to string
 
         Args:
@@ -272,9 +275,9 @@ class ApproximateNearestNeighbors:
 
     def search(
         self,
-        queries: typing.List[QueryInput],
-        threshold: Optional[int] = None,
-        threshold_func: Optional[typing.Callable[[np.ndarray], np.ndarray]] = None,
+        queries: list[QueryInput],
+        threshold: int | None = None,
+        threshold_func: typing.Callable[[np.ndarray], np.ndarray] | None = None,
         hash_format="base64",
         k=1,
     ):
@@ -318,7 +321,7 @@ class ApproximateNearestNeighbors:
             if not self.metadata_columns
             else self.query_by_id(ids=np.unique(indices[distances < thresholds]))
         )
-        matches: typing.List[QueryMatch] = []
+        matches: list[QueryMatch] = []
         for match_distances, match_ids, q, q_threshold in zip(
             distances, indices, queries, thresholds
         ):

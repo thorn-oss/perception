@@ -3,12 +3,10 @@ import logging
 import os
 import shutil
 import tempfile
-import typing
 import uuid
 import warnings
 import zipfile
 from abc import ABC
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -101,7 +99,7 @@ def compute_threshold_precision_recall(pos, neg, precision_threshold=99.9):
 
 class Filterable(ABC):
     _df: pd.DataFrame
-    expected_columns: typing.List
+    expected_columns: list
 
     def __init__(self, df):
         assert sorted(df.columns) == sorted(
@@ -135,7 +133,7 @@ class Saveable(Filterable):
     def load(
         cls,
         path_to_zip_or_directory: str,
-        storage_dir: Optional[str] = None,
+        storage_dir: str | None = None,
         verify_md5=True,
     ):
         """Load a dataset from a ZIP file or directory.
@@ -311,7 +309,7 @@ class BenchmarkHashes(Filterable):
 
     def __init__(self, df: pd.DataFrame):
         super().__init__(df)
-        self._metrics: Optional[pd.DataFrame] = None
+        self._metrics: pd.DataFrame | None = None
 
     def __add__(self, other):
         return BenchmarkHashes(df=pd.concat([self._df, other._df]).drop_duplicates())
@@ -327,7 +325,7 @@ class BenchmarkHashes(Filterable):
         self._df.to_csv(filepath, index=False)
 
     def compute_metrics(
-        self, custom_distance_metrics: Optional[dict] = None
+        self, custom_distance_metrics: dict | None = None
     ) -> pd.DataFrame:
         if self._metrics is not None:
             return self._metrics
@@ -610,7 +608,7 @@ class BenchmarkDataset(Saveable):
     expected_columns = ["filepath", "category"]
 
     @classmethod
-    def from_tuples(cls, files: typing.List[typing.Tuple[str, str]]):
+    def from_tuples(cls, files: list[tuple[str, str]]):
         """Build dataset from a set of files.
 
         Args:

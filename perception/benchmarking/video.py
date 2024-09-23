@@ -68,7 +68,7 @@ def _process_row(row, hashers, framerates):
 class BenchmarkVideoDataset(BenchmarkDataset):
     def transform(
         self,
-        transforms: typing.Dict[str, typing.Callable],
+        transforms: dict[str, typing.Callable],
         storage_dir: str,
         errors: str = "raise",
     ):
@@ -171,7 +171,7 @@ class BenchmarkVideoTransforms(BenchmarkTransforms):
     ]
 
     def compute_hashes(
-        self, hashers: typing.Dict[str, VideoHasher], max_workers: int = 5
+        self, hashers: dict[str, VideoHasher], max_workers: int = 5
     ) -> BenchmarkHashes:
         """Compute hashes for a series of files given some set of hashers.
 
