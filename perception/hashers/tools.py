@@ -17,7 +17,6 @@ import warnings
 from collections import Counter
 from http import client
 from numbers import Number
-from typing import Optional
 from urllib import request
 
 import cv2
@@ -47,7 +46,7 @@ CUDA_CODECS = {
 }
 
 FramesWithIndexesAndTimestamps = typing.Generator[
-    typing.Tuple[np.ndarray, typing.Optional[int], typing.Optional[float]], None, None
+    tuple[np.ndarray, int | None, float | None], None, None
 ]
 
 
@@ -105,9 +104,7 @@ def get_string_length(hash_length: int, dtype: str, hash_format="hex") -> int:
     raise NotImplementedError("Unknown hash format: " + hash_format)
 
 
-def vector_to_string(
-    vector: np.ndarray, dtype: str, hash_format: str
-) -> typing.Optional[str]:
+def vector_to_string(vector: np.ndarray, dtype: str, hash_format: str) -> str | None:
     """Convert vector to hash.
 
     Args:
@@ -287,8 +284,8 @@ def get_common_framerates(id_rates: dict):
         min(framerates) >= 1 / factor
     ), "Framerates must be at least 1 frame per hour."
     best_frame_count = np.inf
-    best_grouping: typing.Optional[typing.List] = None
-    best_frame_rates: typing.Optional[typing.List] = None
+    best_grouping: list | None = None
+    best_frame_rates: list | None = None
 
     # We try every possible grouping of framerates to minimize the number
     # of frames we decode. There is likely a better way to do this,
@@ -432,7 +429,7 @@ def get_video_properties(filepath):
             raise ValueError(f"{str(out)}: {str(err)}")
         data = json.loads(out.decode("utf-8"))["streams"][0]
         numerator, denominator = tuple(map(int, data["avg_frame_rate"].split("/")[:2]))
-        avg_frame_rate: typing.Optional[fractions.Fraction]
+        avg_frame_rate: fractions.Fraction | None
         if numerator > 0 and denominator > 0:
             avg_frame_rate = fractions.Fraction(
                 numerator=numerator, denominator=denominator
@@ -450,11 +447,11 @@ def get_video_properties(filepath):
 
 def read_video_to_generator_ffmpeg(
     filepath,
-    frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+    frames_per_second: str | float | None = None,
     errors="raise",
-    max_duration: Optional[float] = None,
-    max_size: Optional[int] = None,
-    interp: Optional[str] = None,
+    max_duration: float | None = None,
+    max_size: int | None = None,
+    interp: str | None = None,
     frame_rounding: str = "up",
     draw_timestamps=False,
     use_cuda=False,
@@ -519,7 +516,7 @@ def read_video_to_generator_ffmpeg(
             start_time,
         ) = get_video_properties(filepath)
         start_time_offset = (
-            0.0 if avg_frame_rate is None else float((1 / (2 * avg_frame_rate)))
+            0.0 if avg_frame_rate is None else float(1 / (2 * avg_frame_rate))
         )
         LOGGER.debug(
             "raw_width: %s, raw_height: %s, avg_frame_rate: %s, codec_name: %s, start_time: %s",
@@ -597,8 +594,8 @@ def read_video_to_generator_ffmpeg(
             bufsize=bufsize,
         ) as p:
             assert p.stdout is not None, "Could not launch subprocess pipe."
-            timestamp: typing.Optional[float] = 0
-            frame_index: typing.Optional[int] = 0
+            timestamp: float | None = 0
+            frame_index: int | None = 0
             while True:
                 batch = p.stdout.read(bufsize)
                 if not batch:
@@ -648,10 +645,10 @@ def read_video_to_generator_ffmpeg(
 
 def read_video_to_generator(
     filepath,
-    frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+    frames_per_second: str | float | None = None,
     errors="raise",
-    max_duration: Optional[float] = None,
-    max_size: Optional[int] = None,
+    max_duration: float | None = None,
+    max_size: int | None = None,
 ) -> FramesWithIndexesAndTimestamps:
     """This is used by :code:`read_video` when :code:`use_ffmpeg` is False (default).
 
@@ -674,7 +671,7 @@ def read_video_to_generator(
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"Could not find {filepath}.")
     if not os.access(filepath, os.R_OK):
-        raise IOError(f"{filepath} is not readable")
+        raise OSError(f"{filepath} is not readable")
     cap = cv2.VideoCapture(filename=filepath, apiPreference=cv2.CAP_FFMPEG)
     try:
         # The purpose of the following block is largely to create a
@@ -702,9 +699,9 @@ def read_video_to_generator(
         seconds_between_grabbed_frames = 1 / file_frames_per_second
         grabbed_frame_count = 0
         if frames_per_second == "keyframes":
-            frame_indexes: typing.Union[
-                range, typing.List[int], typing.Iterator[int]
-            ] = _get_keyframes(filepath)
+            frame_indexes: range | list[int] | typing.Iterator[int] = _get_keyframes(
+                filepath
+            )
             # The repeat flag is used to handle the case where the
             # desired sampling rate is higher than the file's frame
             # rate. In this case, we will need to repeat frames in
@@ -723,7 +720,7 @@ def read_video_to_generator(
             scale = min(max_size / max(input_width, input_height), 1)
         else:
             scale = 1
-        target_size: typing.Optional[typing.Tuple[int, int]]
+        target_size: tuple[int, int] | None
         if scale < 1:
             target_size = (int(scale * input_width), int(scale * input_height))
         else:
@@ -780,7 +777,7 @@ def read_video_into_queue(*args, video_queue, terminate, func, **kwargs):
 
 def read_video(
     filepath,
-    frames_per_second: typing.Optional[typing.Union[str, float]] = None,
+    frames_per_second: str | float | None = None,
     max_queue_size=128,
     use_queue=True,
     errors="raise",
@@ -822,12 +819,12 @@ def read_video(
         generator = read_video_to_generator_ffmpeg
     else:
         generator = read_video_to_generator
-    frame_index: typing.Optional[int]
-    timestamp: typing.Optional[float]
+    frame_index: int | None
+    timestamp: float | None
     if use_queue:
-        video_queue = queue.Queue(
+        video_queue: queue.Queue[tuple[np.ndarray, int, float]] = queue.Queue(
             maxsize=max_queue_size
-        )  # type: queue.Queue[typing.Tuple[np.ndarray, int, float]]
+        )
         terminate = threading.Event()
         thread = threading.Thread(
             target=read_video_into_queue,
@@ -964,7 +961,7 @@ def compute_synchronized_video_hashes(
 
 def unletterbox(
     image, only_remove_black: bool = False, min_fraction_meaningful_pixels: float = 0.1
-) -> typing.Optional[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]:
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
     """Return bounds of non-trivial region of image or None.
 
     Unletterboxing is cropping an image such that trivial edge regions

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 
 from .. import tools
@@ -17,7 +15,7 @@ class FramewiseHasher(VideoHasher):
         frame_hasher: ImageHasher,
         interframe_threshold: float,
         frames_per_second: int = 15,
-        quality_threshold: Optional[float] = None,
+        quality_threshold: float | None = None,
     ):
         self.hash_length = frame_hasher.hash_length
         self.frames_per_second = frames_per_second
@@ -25,10 +23,8 @@ class FramewiseHasher(VideoHasher):
         self.distance_metric = frame_hasher.distance_metric
         if self.distance_metric == "hamming" and interframe_threshold > 1:
             raise ValueError(
-                (
-                    "Hamming distance is always between 0 and 1 but "
-                    f"`interframe_threshold` was set to {interframe_threshold}."
-                )
+                "Hamming distance is always between 0 and 1 but "
+                f"`interframe_threshold` was set to {interframe_threshold}."
             )
         self.dtype = frame_hasher.dtype
         self.interframe_threshold = interframe_threshold

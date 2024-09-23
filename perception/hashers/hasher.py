@@ -3,7 +3,6 @@ import typing
 import warnings
 from abc import ABC, abstractmethod
 from logging import warning
-from typing import Optional
 
 import numpy as np
 import scipy.spatial
@@ -50,7 +49,7 @@ class Hasher(ABC):
 
     def vector_to_string(
         self, vector: np.ndarray, hash_format: str = "base64"
-    ) -> typing.Optional[str]:
+    ) -> str | None:
         """Convert vector to hash string.
 
         Args:
@@ -61,8 +60,8 @@ class Hasher(ABC):
 
     def compute_distance(
         self,
-        hash1: typing.Union[np.ndarray, str],
-        hash2: typing.Union[np.ndarray, str],
+        hash1: np.ndarray | str,
+        hash2: np.ndarray | str,
         hash_format="base64",
     ):
         """Compute the distance between two hashes.
@@ -110,9 +109,9 @@ class Hasher(ABC):
     @typing.no_type_check
     def compute_parallel(
         self,
-        filepaths: typing.List[str],
-        progress: Optional["tqdm.tqdm"] = None,
-        progress_desc: Optional[str] = None,
+        filepaths: list[str],
+        progress: tqdm.tqdm | None = None,
+        progress_desc: str | None = None,
         max_workers: int = 5,
         isometric: bool = False,
     ):
@@ -231,9 +230,7 @@ class ImageHasher(Hasher):
 
     def compute(
         self, image: tools.ImageInputType, hash_format="base64"
-    ) -> typing.Union[
-        np.ndarray, typing.Optional[str], typing.List[typing.Optional[str]]
-    ]:
+    ) -> np.ndarray | str | None | list[str | None]:
         """Compute a hash from an image.
 
         Args:
@@ -259,10 +256,8 @@ class ImageHasher(Hasher):
 
     def compute_with_quality(
         self, image: tools.ImageInputType, hash_format="base64"
-    ) -> typing.Tuple[
-        typing.Union[
-            np.ndarray, typing.Optional[str], typing.List[typing.Optional[str]]
-        ],
+    ) -> tuple[
+        (np.ndarray | str | None | list[str | None]),
         int,
     ]:
         """Compute hash and hash quality from image.
@@ -287,7 +282,7 @@ class ImageHasher(Hasher):
             )
         return (self.vector_to_string(vector, hash_format=hash_format), quality)
 
-    def _compute_with_quality(self, image: np.ndarray) -> typing.Tuple[np.ndarray, int]:
+    def _compute_with_quality(self, image: np.ndarray) -> tuple[np.ndarray, int]:
         return self._compute(image), tools.compute_quality(image)
 
 
@@ -300,9 +295,9 @@ class VideoHasher(Hasher):
     def process_frame(
         self,
         frame: np.ndarray,
-        frame_index: typing.Optional[int],
-        frame_timestamp: typing.Optional[float],
-        state: Optional[dict] = None,
+        frame_index: int | None,
+        frame_timestamp: float | None,
+        state: dict | None = None,
     ) -> dict:
         """Called for each frame in the video. For all
         but the first frame, a state is provided recording the state from
@@ -327,7 +322,7 @@ class VideoHasher(Hasher):
     def compute_with_timestamps(
         self, filepath, errors="raise", hash_format="base64", **kwargs
     ):
-        scenes: typing.List[dict] = []
+        scenes: list[dict] = []
         hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
         return [
             {

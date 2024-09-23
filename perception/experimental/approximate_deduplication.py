@@ -2,7 +2,6 @@ import logging
 import math
 import os.path as op
 import typing
-from typing import Optional
 
 import faiss
 import networkit as nk
@@ -17,9 +16,10 @@ DEFAULT_PCT_PROBE = 0
 # For faiss training on datasets larger than 50,000 vectors, we take a random sub-sample.
 TRAIN_LARGE_SIZE: int = 50_000
 
-ClusterAssignment = typing_extensions.TypedDict(
-    "ClusterAssignment", {"cluster": int, "id": typing.Any}
-)
+
+class ClusterAssignment(typing_extensions.TypedDict):
+    cluster: int
+    id: typing.Any
 
 
 def build_index(
@@ -90,7 +90,7 @@ def compute_euclidean_pairwise_duplicates_approx(
     y_counts=None,
     pct_probe=0.1,
     use_gpu: bool = True,
-    faiss_cache_path: Optional[str] = None,
+    faiss_cache_path: str | None = None,
     show_progress: bool = False,
 ):
     """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
@@ -199,12 +199,12 @@ def compute_euclidean_pairwise_duplicates_approx(
 
 def pairs_to_clusters(
     ids: typing.Iterable[str],
-    pairs: typing.Iterable[typing.Tuple[str, str]],
+    pairs: typing.Iterable[tuple[str, str]],
     strictness: typing_extensions.Literal[
         "clique", "community", "component"
     ] = "clique",
     max_clique_batch_size: int = 1000,
-) -> typing.List[ClusterAssignment]:
+) -> list[ClusterAssignment]:
     """Given a list of pairs of matching files, compute sets
     of cliques where all files in a clique are connected.
     Args:
@@ -232,7 +232,7 @@ def pairs_to_clusters(
     for node_pair in node_pairs:
         graph.addEdge(node_pair[0], node_pair[1])
 
-    assignments: typing.List[ClusterAssignment] = []
+    assignments: list[ClusterAssignment] = []
     cluster_index = 0
     cc_query = nk.components.ConnectedComponents(graph)
     cc_query.run()
