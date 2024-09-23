@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -37,7 +36,7 @@ class SimpleSceneDetection(VideoHasher):
 
     def __init__(
         self,
-        base_hasher: Optional[VideoHasher] = None,
+        base_hasher: VideoHasher | None = None,
         interscene_threshold=None,
         min_frame_size=50,
         similarity_threshold=0.95,
@@ -131,12 +130,10 @@ class SimpleSceneDetection(VideoHasher):
         if subhash is not None and (
             self.base_hasher.returns_multiple
             or (
-                (
-                    self.interscene_threshold is None
-                    or not state["scenes"]
-                    or self.compute_distance(state["scenes"][-1]["hash"], subhash)
-                    > self.interscene_threshold
-                )
+                self.interscene_threshold is None
+                or not state["scenes"]
+                or self.compute_distance(state["scenes"][-1]["hash"], subhash)
+                > self.interscene_threshold
             )
         ):
             # Persist the scene's hash, frames, start timestamp, and end timestamp.

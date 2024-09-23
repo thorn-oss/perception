@@ -1,4 +1,3 @@
-from typing import Optional
 import platform
 import warnings
 
@@ -17,7 +16,7 @@ class TMKL2(VideoHasher):
 
     def __init__(
         self,
-        frame_hasher: Optional[ImageHasher] = None,
+        frame_hasher: ImageHasher | None = None,
         frames_per_second: int = 15,
         normalization: str = "matrix",
     ):
@@ -119,23 +118,23 @@ class TMKL2(VideoHasher):
             fv_b = fv_b / norm_b
 
         if "freq" in normalization:
-            norm_a, norm_b = [
+            norm_a, norm_b = (
                 np.sqrt((fv**2).sum(axis=1, keepdims=True) / self.m + eps) + eps
                 for fv in [fv_a, fv_b]
-            ]
+            )
             fv_a = fv_a / norm_a
             fv_b = fv_b / norm_b
 
         if normalization == "matrix":
-            norm_a, norm_b = [
+            norm_a, norm_b = (
                 np.sqrt(np.sum(fv**2, axis=(1, 2)) + eps)[..., np.newaxis] + eps
                 for fv in [fv_a, fv_b]
-            ]  # (T, 1)
+            )  # (T, 1)
 
-        fv_a_sin, fv_b_sin = [fv[:, : self.m] for fv in [fv_a, fv_b]]  # (T, m, d)
-        fv_a_cos, fv_b_cos = [fv[:, self.m :] for fv in [fv_a, fv_b]]  # (T, m, d)
+        fv_a_sin, fv_b_sin = (fv[:, : self.m] for fv in [fv_a, fv_b])  # (T, m, d)
+        fv_a_cos, fv_b_cos = (fv[:, self.m :] for fv in [fv_a, fv_b])  # (T, m, d)
         ms = self.ms.reshape(-1, 1)  # (m, 1)
-        dot_sin_sin, dot_sin_cos, dot_cos_cos, dot_cos_sin = [
+        dot_sin_sin, dot_sin_cos, dot_cos_cos, dot_cos_sin = (
             np.sum(p, axis=2, keepdims=True)
             for p in [
                 fv_a_sin * fv_b_sin,
@@ -143,7 +142,7 @@ class TMKL2(VideoHasher):
                 fv_a_cos * fv_b_cos,
                 fv_a_cos * fv_b_sin,
             ]
-        ]  # (T, m, 1)
+        )  # (T, m, 1)
         delta = (
             ms.reshape(1, -1, 1) * offsets.reshape(1, -1) / self.T.reshape((-1, 1, 1))
         )
@@ -169,7 +168,7 @@ class TMKL1(VideoHasher):
 
     def __init__(
         self,
-        frame_hasher: Optional[ImageHasher] = None,
+        frame_hasher: ImageHasher | None = None,
         frames_per_second: int = 15,
         dtype="float32",
         distance_metric="cosine",

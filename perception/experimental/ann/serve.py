@@ -3,7 +3,6 @@ import functools
 import json
 import logging
 import typing
-from typing import Optional
 
 import aiohttp.web
 import numpy as np
@@ -96,8 +95,8 @@ def get_logger(name, log_level):
 
 async def serve(
     index: ApproximateNearestNeighbors,
-    default_threshold: Optional[int] = None,
-    default_threshold_func: Optional[typing.Callable[[np.ndarray], np.ndarray]] = None,
+    default_threshold: int | None = None,
+    default_threshold_func: typing.Callable[[np.ndarray], np.ndarray] | None = None,
     default_k: int = 1,
     concurrency: int = 2,
     log_level=logging.INFO,

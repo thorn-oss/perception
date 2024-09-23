@@ -1,6 +1,5 @@
 import logging
 import random
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -18,7 +17,7 @@ def vizualize_pair(
     features_2,
     ratio: float,
     match_metadata=None,
-    local_path_col: Optional[str] = None,
+    local_path_col: str | None = None,
     sanitized: bool = False,
     include_all_points=False,
     circle_size=KEYPOINT_SIZE,

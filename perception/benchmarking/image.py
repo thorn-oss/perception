@@ -1,6 +1,5 @@
 import logging
 import os
-import typing
 import uuid
 import warnings
 
@@ -19,7 +18,7 @@ log = logging.getLogger(__name__)
 
 class BenchmarkImageTransforms(BenchmarkTransforms):
     def compute_hashes(
-        self, hashers: typing.Dict[str, ImageHasher], max_workers: int = 5
+        self, hashers: dict[str, ImageHasher], max_workers: int = 5
     ) -> BenchmarkHashes:
         """Compute hashes for a series of files given some set of hashers.
 
@@ -86,7 +85,7 @@ class BenchmarkImageTransforms(BenchmarkTransforms):
 class BenchmarkImageDataset(BenchmarkDataset):
     def deduplicate(
         self, hasher: ImageHasher, threshold=0.001, isometric=False
-    ) -> typing.Tuple["BenchmarkImageDataset", typing.Set[typing.Tuple[str, str]]]:
+    ) -> tuple["BenchmarkImageDataset", set[tuple[str, str]]]:
         """Remove duplicate files from dataset.
 
         Args:
@@ -99,7 +98,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
             A list where each entry is a list of files that are
             duplicates of each other. We keep only the last entry.
         """
-        pairs: typing.Set[typing.Tuple[str, str]] = set()
+        pairs: set[tuple[str, str]] = set()
         for _, group in tqdm(
             self._df.groupby(["category"]), desc="Deduplicating categories."
         ):
@@ -120,7 +119,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
 
     def transform(
         self,
-        transforms: typing.Dict[str, imgaug.augmenters.meta.Augmenter],
+        transforms: dict[str, imgaug.augmenters.meta.Augmenter],
         storage_dir: str,
         errors: str = "raise",
     ) -> BenchmarkImageTransforms:

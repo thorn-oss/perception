@@ -127,7 +127,7 @@ def test_hasher_parallelization(hasher, test_filepaths):
 
 
 def test_video_hasher_integrity(
-    hasher: hashers.VideoHasher, test_videos: typing.List[str] = DEFAULT_TEST_VIDEOS
+    hasher: hashers.VideoHasher, test_videos: list[str] = DEFAULT_TEST_VIDEOS
 ):
     test_hasher_parallelization(hasher, test_videos)
 
@@ -136,7 +136,7 @@ def test_image_hasher_integrity(
     hasher: hashers.ImageHasher,
     pil_opencv_threshold: float,
     transform_threshold: float,
-    test_images: typing.List[str] = DEFAULT_TEST_IMAGES,
+    test_images: list[str] = DEFAULT_TEST_IMAGES,
     opencv_hasher: bool = False,
 ):
     """Test to ensure a hasher works correctly.

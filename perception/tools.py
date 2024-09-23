@@ -1,11 +1,9 @@
 import base64
 import json
 import os
-import typing
 import urllib.parse
 import urllib.request
 import warnings
-from typing import Optional
 
 import numpy as np
 from scipy import spatial
@@ -25,9 +23,7 @@ except ImportError:
     extensions = None
 
 
-def _multiple_hashes_for_ids(
-    hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]]
-):
+def _multiple_hashes_for_ids(hashes: list[tuple[str, str | np.ndarray]]):
     """Check if a list of (hash_id, hash) tuples has more
     than one hash for a hash_id.
 
@@ -39,15 +35,15 @@ def _multiple_hashes_for_ids(
 
 
 def deduplicate_hashes(
-    hashes: typing.List[typing.Tuple[str, typing.Union[str, np.ndarray]]],
+    hashes: list[tuple[str, str | np.ndarray]],
     threshold: float,
     hash_format: str = "base64",
-    hasher: Optional[perception_hashers.ImageHasher] = None,
-    hash_length: Optional[int] = None,
-    hash_dtype: Optional[str] = None,
-    distance_metric: Optional[str] = None,
-    progress: Optional[tqdm] = None,
-) -> typing.List[typing.Tuple[str, str]]:
+    hasher: perception_hashers.ImageHasher | None = None,
+    hash_length: int | None = None,
+    hash_dtype: str | None = None,
+    distance_metric: str | None = None,
+    progress: tqdm | None = None,
+) -> list[tuple[str, str]]:
     """Find duplicates using a list of precomputed hashes.
 
     Args:
@@ -102,7 +98,7 @@ def deduplicate_hashes(
         ]
     )
     files = np.array([identifier for identifier, _ in hashes])
-    pairs: typing.List[typing.Tuple[str, str]] = []
+    pairs: list[tuple[str, str]] = []
     n_hashes = len(vectors)
     start_idx = 0
     end_idx = None
@@ -134,7 +130,7 @@ def deduplicate_hashes(
         # this so we can pass it to the compute_euclidean_pairwise_duplicates
         # function.
         if multiple_hashes_per_id:
-            counts = np.zeros(shape=len(set(hash_id for hash_id, _ in hashes))).astype(
+            counts = np.zeros(shape=len({hash_id for hash_id, _ in hashes})).astype(
                 "uint32"
             )
             previous_hash_id = None
@@ -162,11 +158,11 @@ def deduplicate_hashes(
 
 
 def deduplicate(
-    files: typing.List[str],
-    hashers: typing.List[typing.Tuple[perception_hashers.ImageHasher, float]],
+    files: list[str],
+    hashers: list[tuple[perception_hashers.ImageHasher, float]],
     isometric: bool = False,
-    progress: Optional[tqdm] = None,
-) -> typing.List[typing.Tuple[str, str]]:
+    progress: tqdm | None = None,
+) -> list[tuple[str, str]]:
     """Find duplicates in a list of files.
 
     Args:
@@ -187,7 +183,7 @@ def deduplicate(
             category=UserWarning,
         )
         files = list(files_dedup)
-    pairs: typing.List[typing.Tuple[str, str]] = []
+    pairs: list[tuple[str, str]] = []
     for hasher_idx, (hasher, threshold) in enumerate(hashers):
         hash_dicts = hasher.compute_parallel(
             filepaths=files,
@@ -271,12 +267,12 @@ class SaferMatcher:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        url: Optional[str] = None,
-        hasher: Optional[perception_hashers.ImageHasher] = None,
-        hasher_api_id: Optional[str] = None,
+        api_key: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        url: str | None = None,
+        hasher: perception_hashers.ImageHasher | None = None,
+        hasher_api_id: str | None = None,
         quality_threshold: int = 90,
     ):
         if (
@@ -322,11 +318,7 @@ class SaferMatcher:
 
     def match(
         self,
-        images: typing.List[
-            typing.Union[
-                str, typing.Tuple[perception_hashers.tools.ImageInputType, str]
-            ]
-        ],
+        images: list[(str | tuple[perception_hashers.tools.ImageInputType, str])],
     ) -> dict:
         """Match hashes with the Safer matching service.
 
