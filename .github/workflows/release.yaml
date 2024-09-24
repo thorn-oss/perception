@@ -89,6 +89,6 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          PYPI_API_KEY: op://data-science-oss/perception-pypi-api-key/secret/value
+          POETRY_PYPI_TOKEN_PYPI: op://data-science-oss/perception-pypi-api-key/secret/value
       - name: Publish package
         run: poetry publish -n
