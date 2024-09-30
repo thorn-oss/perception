@@ -9,11 +9,11 @@ import pytest
 
 import perception.benchmarking.image as pb
 import perception.benchmarking.image_transforms as pbit
-import perception.experimental.approximate_deduplication as ad
-import perception.experimental.local_descriptor_deduplication as ldd
+import perception.approximate_deduplication as ad
+import perception.local_descriptor_deduplication as ldd
 import perception.hashers.tools as pht
 import perception.testing as pt
-from perception.experimental.debug import vizualize_pair
+from perception.approximate_deduplication.debug import vizualize_pair
 
 # Params for object level matching.
 OBJECT_MATCH_PARAMS = {

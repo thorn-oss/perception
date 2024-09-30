@@ -4,7 +4,7 @@ import random
 import cv2
 import numpy as np
 
-import perception.experimental.local_descriptor_deduplication as ldd
+import perception.local_descriptor_deduplication as ldd
 
 LOGGER = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ import pandas as pd
 import tqdm
 import typing_extensions
 
-import perception.experimental.approximate_deduplication as ad
+import perception.approximate_deduplication as ad
 import perception.hashers.tools as pht
 
 LOGGER = logging.getLogger(__name__)
