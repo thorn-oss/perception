@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 Cython = "^3"
-numpy = "^1.26"
+numpy = "^2"
 opencv-contrib-python-headless = "^4.10"
 pandas = "*"
 pdqhash = "*"
