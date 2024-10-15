@@ -2,6 +2,7 @@ from .hasher import ImageHasher, VideoHasher
 from .image.average import AverageHash
 from .image.dhash import DHash
 from .image.opencv import BlockMean, ColorMoment, MarrHildreth
+from .image.pdq import PDQHash, PDQHashF
 from .image.phash import PHash, PHashF, PHashU8
 from .image.wavelet import WaveletHash
 from .video.framewise import FramewiseHasher
@@ -21,6 +22,8 @@ __all__ = [
     "FramewiseHasher",
     "TMKL1",
     "TMKL2",
+    "PDQHash",
+    "PDQHashF",
     "PHashU8",
     "PHashF",
     "SimpleSceneDetection",
