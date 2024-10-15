@@ -4,7 +4,7 @@ import uuid
 import warnings
 
 import cv2
-import imgaug
+import albumentations
 import pandas as pd
 from tqdm import tqdm
 
@@ -119,7 +119,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
 
     def transform(
         self,
-        transforms: dict[str, imgaug.augmenters.meta.Augmenter],
+        transforms: dict[str, albumentations.BasicTransform],
         storage_dir: str,
         errors: str = "raise",
     ) -> BenchmarkImageTransforms:
@@ -129,7 +129,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
             transforms: A dictionary of transformations. The only required
                 key is `noop` which determines how the original, untransformed
                 image is saved. For a true copy, simply make the `noop` key
-                `imgaug.augmenters.Noop()`.
+                `albumentations.NoOp`
             storage_dir: A directory to store all the images along with
                 their transformed counterparts.
             errors: How to handle errors reading files. If "raise", exceptions are
