@@ -320,19 +320,52 @@ class VideoHasher(Hasher):
         """
 
     def compute_with_timestamps(
-        self, filepath, errors="raise", hash_format="base64", **kwargs
+        self,
+        filepath,
+        errors="raise",
+        hash_format="base64",
+        lambda_batch_filter: typing.Callable = None,
+        **kwargs,
     ):
-        scenes: list[dict] = []
-        hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
-        return [
-            {
-                "hash": hashes[i],
-                "start_timestamp": scene.get("start_timestamp"),
-                "end_timestamp": scene.get("end_timestamp"),
-                "frame_index": scene.get("frame_index"),
-            }
-            for i, scene in enumerate(scenes)
-        ]
+        """Compute a hash for a video at a given filepath, returning
+        a list of dictionaries with scene information.
+        Args:
+            filepath: Path to video file
+            errors: One of "raise", "ignore", or "warn". Passed
+                to perception.hashers.tools.read_video.
+            hash_format: One of "vector", "base64", or "hex"
+            lambda_batch_filter: A function that takes a batch of scenes and filters to
+                return a subset of the scenes we want to keep.
+        """
+
+        return_hashes = []
+        # This iterates over batches of scenes as determined by each hasher.
+        for batch in self.compute_batches(
+            filepath=filepath,
+            batch_size=32,  # put as optional argument?
+            errors=errors,
+            max_size=512,  # TODO see if 384 is faster?
+            hash_format=hash_format,
+            use_ffmpeg=True,  # covered in kwargs i think.
+            keep_frame=lambda_batch_filter
+            is not None,  # if we have a filter, we want to keep the frame, consider making extra flag.
+            **kwargs,
+        ):
+            if lambda_batch_filter is not None:
+                batch = lambda_batch_filter(batch)
+            return_hashes.extend(
+                [
+                    {
+                        "hash": scene.get("hash"),
+                        "start_timestamp": scene.get("start_timestamp"),
+                        "end_timestamp": scene.get("end_timestamp"),
+                        "frame_index": scene.get("frame_index"),
+                    }
+                    for scene in batch
+                ]
+            )
+
+        return return_hashes
 
     def compute(
         self,

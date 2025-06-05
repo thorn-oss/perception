@@ -70,7 +70,13 @@ class SimpleSceneDetection(VideoHasher):
         self.similarity_threshold = similarity_threshold
 
     def compute_batches(
-        self, filepath, errors="raise", hash_format="base64", batch_size=10
+        self,
+        filepath,
+        errors="raise",
+        hash_format="base64",
+        batch_size=10,
+        keep_frame=False,
+        # TODO: missing **kwargs support for read_video...if this class is used for anything in practice, benchmarking?..?
     ):
         """Compute a hash for a video at a given filepath and
         yield hashes in a given batch size.
@@ -81,12 +87,14 @@ class SimpleSceneDetection(VideoHasher):
                 to perception.hashers.tools.read_video.
             hash_format: The hash format to use when returning hashes.
             batch_size: The minimum number of hashes to include in each batch.
+            keep_frame: Whether to return frames after processing.
         """
 
         def convert(scenes):
             if hash_format == "vector":
                 return scenes
             if self.base_hasher.returns_multiple:
+                # TODO: swap to dict? either way align with hashingtoolkit changes.
                 return [
                     (
                         [
@@ -114,7 +122,7 @@ class SimpleSceneDetection(VideoHasher):
                 frame_index=frame_index,
                 frame_timestamp=frame_timestamp,
                 state=state,
-                batch_mode=True,
+                keep_frame=keep_frame,
             )
             if len(state["scenes"]) >= batch_size:
                 yield convert(state["scenes"])
@@ -178,7 +186,7 @@ class SimpleSceneDetection(VideoHasher):
         return cropped, current, bounds
 
     def process_frame(
-        self, frame, frame_index, frame_timestamp, state=None, batch_mode=False
+        self, frame, frame_index, frame_timestamp, state=None, keep_frame=False
     ):
         if not state:
             state = {
@@ -224,7 +232,7 @@ class SimpleSceneDetection(VideoHasher):
             state["substate"] = self.base_hasher.process_frame(
                 cropped, frame_index, frame_timestamp, state=state["substate"]
             )
-            if batch_mode:
+            if keep_frame:
                 state["frames"].append((frame, frame_index, frame_timestamp))
         except Exception as e:
             logger.warning("An error occurred while processing a frame: %s", str(e))
