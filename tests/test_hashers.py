@@ -315,3 +315,37 @@ class TestSimpleSceneDetection:
 
         # Sanity check frame index between scenes
         assert scene_1_hash["frame_index"] <= scene_2_hash["frame_index"]
+
+    def test_compute_with_timestamps_lambda_filter(self):
+        def lambda_filter(scene):
+            return scene["start_timestamp"] < 2.0
+
+        hasher = hashers.SimpleSceneDetection(
+            base_hasher=hashers.TMKL1(
+                frames_per_second=30,
+                frame_hasher=hashers.PHashU8(),
+                norm=None,
+                distance_metric="euclidean",
+            ),
+            max_scene_length=10,
+        )
+        hashes = hasher.compute_with_timestamps(
+            "perception/testing/videos/v2s.mov", 
+            errors="raise",
+            lambda_hash_filter=lambda_filter,
+        )
+
+        # Confirm we have two hashes
+        assert len(hashes) == 2
+        scene_1_hash = hashes[0]
+        scene_2_hash = hashes[1]
+
+        # Sanity check timestamps within a given scene
+        assert scene_1_hash["start_timestamp"] < scene_1_hash["end_timestamp"]
+        assert scene_2_hash["start_timestamp"] < scene_2_hash["end_timestamp"]
+
+        # Sanity check timestamps between scenes
+        assert scene_1_hash["end_timestamp"] <= scene_2_hash["start_timestamp"]
+
+        # Sanity check frame index between scenes
+        assert scene_1_hash["frame_index"] <= scene_2_hash["frame_index"]
