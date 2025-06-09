@@ -168,8 +168,12 @@ pairs of videos that have matching frames.
     with zipfile.ZipFile('thorn-perceptual-video-deduplication-example.zip') as f:
         f.extractall('.')
 
-    # By default, this will use TMK L1 with PHashU8.
-    hasher = perception.hashers.SimpleSceneDetection(max_scene_length=5)
+    frame_hasher = hashers.PHash(hash_size=16)
+ 
+    hasher = perception.hashers.FramewiseHasher(frames_per_second=1, 
+        frame_hasher=frame_hasher, 
+        interframe_threshold=50, 
+        quality_threshold=90)
 
     # Set a threshold for matching frames within videos and across videos.
     filepaths = glob.glob('thorn-perceptual-video-deduplication-example/*.m4v') + \

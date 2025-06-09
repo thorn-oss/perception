@@ -610,13 +610,11 @@ The below example does the following:
     hashers = {
         'phashu8_framewise': perception.hashers.FramewiseHasher(
             frames_per_second=1, frame_hasher=phashu8, interframe_threshold=50, quality_threshold=90),
-        'phashu8_tmkl1': perception.hashers.SimpleSceneDetection(
+        'phashu8_tmkl1': perception.hashers.FramewiseHasher(
             base_hasher=perception.hashers.TMKL1(
                 frames_per_second=5, frame_hasher=phashu8,
                 distance_metric='euclidean', dtype='uint8',
-                norm=None, quality_threshold=90),
-            max_scene_length=1,
-            interscene_threshold=50
+                norm=None, quality_threshold=90)
         )
     }
     if not os.path.isfile('hashes.csv'):
