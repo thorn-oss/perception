@@ -324,7 +324,7 @@ class VideoHasher(Hasher):
         filepath,
         errors="raise",
         hash_format="base64",
-        lambda_batch_filter: typing.Callable = None,
+        lambda_scene_filter: typing.Callable = None,
         **kwargs,
     ):
         """Compute a hash for a video at a given filepath, returning
@@ -334,7 +334,7 @@ class VideoHasher(Hasher):
             errors: One of "raise", "ignore", or "warn". Passed
                 to perception.hashers.tools.read_video.
             hash_format: One of "vector", "base64", or "hex"
-            lambda_batch_filter: A function that takes a batch of scenes and filters to
+            lambda_scene_filter: A function that takes a batch of scenes and filters to
                 return a subset of the scenes we want to keep.
         """
 
@@ -347,12 +347,12 @@ class VideoHasher(Hasher):
             max_size=512,  # TODO see if 384 is faster?
             hash_format=hash_format,
             use_ffmpeg=True,  # covered in kwargs i think.
-            keep_frame=lambda_batch_filter
+            keep_frame=lambda_scene_filter
             is not None,  # if we have a filter, we want to keep the frame, consider making extra flag.
             **kwargs,
         ):
-            if lambda_batch_filter is not None:
-                batch = lambda_batch_filter(batch)
+            if lambda_scene_filter is not None:
+                batch = lambda_scene_filter(batch)
             return_hashes.extend(
                 [
                     {
