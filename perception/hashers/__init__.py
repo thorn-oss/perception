@@ -7,6 +7,7 @@ from .image.wavelet import WaveletHash
 from .video.framewise import FramewiseHasher
 from .video.tmk import TMKL1, TMKL2
 
+
 __all__ = [
     "ImageHasher",
     "VideoHasher",

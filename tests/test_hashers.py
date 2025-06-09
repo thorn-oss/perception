@@ -104,7 +104,6 @@ def test_synchronized_hashing():
         assert hashes1 == hashes2
 
 
-
 def test_hex_b64_conversion():
     b64_string = (
         """
@@ -138,4 +137,3 @@ def test_hex_b64_conversion():
         hashers.tools.b64_to_hex(b64_string, dtype="uint8", hash_length=144)
         == hex_string
     )
-
