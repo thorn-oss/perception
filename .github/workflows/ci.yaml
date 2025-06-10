@@ -8,6 +8,7 @@ on:
 jobs:
   test:
     strategy:
+      max-parallel: 1
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
