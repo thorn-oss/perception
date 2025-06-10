@@ -8,7 +8,6 @@ on:
 jobs:
   test:
     strategy:
-      max-parallel: 1
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
         os: ["ubuntu-latest", "windows-latest", "macos-latest", "macos-13"] # macOS 13 is the latest version with the old architecture
