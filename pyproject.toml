@@ -35,8 +35,8 @@ rich = "^13.7.0"
 
 # Experimental Extras
 networkit = [
-  { version = "^11.1", optional = true, markers = "platform_machine != 'arm64'" },
-  { git = "https://github.com/networkit/networkit.git", optional = true, markers = "platform_machine == 'arm64'" }
+  { version = "^11.1", optional = true, markers = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+  { git = "https://github.com/networkit/networkit.git", optional = true, markers = "sys_platform != 'linux' or platform_machine != 'x86_64'" }
 ]
 faiss-cpu = { version = "^1.8.0.post1", optional = true }
 
