@@ -101,8 +101,8 @@ def hash_dicts_to_df(hash_dicts, returns_multiple):
                 ),
                 "hash": tools.flatten([h["hash"] for h in hash_dicts]),
             }
-        ).assign(error=None)
-    return pd.DataFrame.from_records(hash_dicts).assign(error=None)
+        ).assign(error=np.nan)
+    return pd.DataFrame.from_records(hash_dicts).assign(error=np.nan)
 
 
 def test_hasher_parallelization(hasher, test_filepaths):

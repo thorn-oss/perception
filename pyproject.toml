@@ -1,10 +1,12 @@
-[tool.poetry]
+[project]
 name = "Perception"
 version = "0.0.0"
 description = "Perception provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use."
-authors = ["Thorn <info@wearethorn.org>"]
-license = "Apache License 2.0"
+authors = [{ name = "Thorn", email = "info@wearethorn.org" }]
+license = "Apache-2.0"
 readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = ["opencv-contrib-python-headless (>=4.10,<5.0)"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -21,7 +23,7 @@ validators = ">=0.22, <1.0"
 # Benchmarking Extras
 matplotlib = { version = "*", optional = true }
 scipy = { version = "*", optional = true }
-albumentations = { version = "^1.4", optional = true }
+albumentations = { version = "^2.0.8", optional = true }
 tabulate = { version = "*", optional = true }
 scikit-learn = { version = "*", optional = true }
 ffmpeg-python = { version = "*", optional = true }
@@ -32,10 +34,13 @@ python-json-logger = { version = "*", optional = true }
 rich = "^13.7.0"
 
 # Experimental Extras
-networkit = { version = "^11", optional = true }
+networkit = [
+  { version = "^11.1", optional = true, markers = "platform_machine != 'arm64'" },
+  { git = "https://github.com/networkit/networkit.git", optional = true, markers = "platform_machine == 'arm64'" }
+]
 faiss-cpu = { version = "^1.8.0.post1", optional = true }
 
-[tool.poetry.extras]
+[project.optional-dependencies]
 benchmarking = [
   "matplotlib",
   "scipy",
@@ -61,6 +66,7 @@ ruff = "*"
 types-pillow = "*"
 types-tqdm = "*"
 twine = "*"
+albumentations = "^2.0.8"
 
 
 [tool.poetry.build]

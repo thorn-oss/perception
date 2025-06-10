@@ -166,6 +166,9 @@ class BenchmarkImageDataset(BenchmarkDataset):
                     continue
                 try:
                     transformed = transform(image=image)
+                    # If albumentations, output is a dict with 'image' key
+                    if isinstance(transformed, dict) and "image" in transformed:
+                        transformed = transformed["image"]
                 except Exception as e:
                     raise RuntimeError(
                         f"An exception occurred while processing {filepath} "
