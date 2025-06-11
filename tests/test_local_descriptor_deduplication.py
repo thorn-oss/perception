@@ -1,8 +1,8 @@
 import os
 import tempfile
 
+import albumentations
 import cv2
-import imgaug
 import pandas as pd
 import pytest
 
@@ -38,10 +38,10 @@ def test_deduplication(hasher):
         files=[(filepath, "test") for filepath in pt.DEFAULT_TEST_IMAGES]
     ).transform(
         transforms={
-            "noop": lambda image: image,
-            "pad": imgaug.augmenters.Pad(percent=0.1),
-            "crop": imgaug.augmenters.Crop(percent=0.1),
-            "watermark": pbit.apply_watermark(watermark, alpha=1, size=0.8),
+            "noop": albumentations.NoOp(p=1),
+            "pad": albumentations.CropAndPad(percent=0.1, p=1),
+            "crop": albumentations.CropAndPad(percent=-0.1, p=1),
+            "watermark": pbit.apply_watermark(watermark, alpha=1, size=0.8),  # type: ignore
         },
         storage_dir=tdir.name,
     )
@@ -87,10 +87,10 @@ def test_deduplication_across_sets(hasher):
         files=[(filepath, "test") for filepath in pt.DEFAULT_TEST_IMAGES]
     ).transform(
         transforms={
-            "noop": lambda image: image,
-            "pad": imgaug.augmenters.Pad(percent=0.1),
-            "crop": imgaug.augmenters.Crop(percent=0.1),
-            "watermark": pbit.apply_watermark(watermark, alpha=1, size=0.8),
+            "noop": albumentations.NoOp(p=1),
+            "pad": albumentations.CropAndPad(percent=0.1, p=1),
+            "crop": albumentations.CropAndPad(percent=0.1, p=1),
+            "watermark": pbit.apply_watermark(watermark, alpha=1, size=0.8),  # type: ignore
         },
         storage_dir=tdir.name,
     )

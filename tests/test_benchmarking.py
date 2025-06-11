@@ -5,7 +5,7 @@ import tempfile
 
 import numpy as np
 import pytest
-from imgaug import augmenters as iaa
+import albumentations
 from scipy import spatial
 
 from perception import benchmarking, hashers, testing
@@ -35,8 +35,8 @@ def test_bad_dataset():
         [(fn, i % 2) for i, fn in enumerate(bad_files)]
     )
     transforms = {
-        "blur0.05": iaa.GaussianBlur(0.05),
-        "noop": iaa.Resize(size=(256, 256)),
+        "blur0.05": albumentations.GaussianBlur(sigma_limit=0.05, p=1),
+        "noop": albumentations.Resize(height=256, width=256, p=1),
     }
     with pytest.raises(Exception):
         transformed = bad_dataset.transform(
@@ -71,8 +71,8 @@ def test_benchmark_dataset():
 def test_benchmark_transforms():
     transformed = dataset.transform(
         transforms={
-            "blur0.05": iaa.GaussianBlur(0.05),
-            "noop": iaa.Resize(size=(256, 256)),
+            "blur0.05": albumentations.GaussianBlur(sigma_limit=0.05, p=1),
+            "noop": albumentations.Resize(height=256, width=256, p=1),
         },
         storage_dir="/tmp/transforms",
     )
