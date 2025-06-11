@@ -319,21 +319,6 @@ class VideoHasher(Hasher):
             state: The state dictionary at the end of processing.
         """
 
-    def compute_with_timestamps(
-        self, filepath, errors="raise", hash_format="base64", **kwargs
-    ):
-        scenes: list[dict] = []
-        hashes = self.compute(filepath, errors, hash_format, scenes, **kwargs)
-        return [
-            {
-                "hash": hashes[i],
-                "start_timestamp": scene.get("start_timestamp"),
-                "end_timestamp": scene.get("end_timestamp"),
-                "frame_index": scene.get("frame_index"),
-            }
-            for i, scene in enumerate(scenes)
-        ]
-
     def compute(
         self,
         filepath,

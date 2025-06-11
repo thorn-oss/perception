@@ -5,8 +5,8 @@ from .image.opencv import BlockMean, ColorMoment, MarrHildreth
 from .image.phash import PHash, PHashF, PHashU8
 from .image.wavelet import WaveletHash
 from .video.framewise import FramewiseHasher
-from .video.scenes import SimpleSceneDetection
 from .video.tmk import TMKL1, TMKL2
+
 
 __all__ = [
     "ImageHasher",
@@ -23,5 +23,4 @@ __all__ = [
     "TMKL2",
     "PHashU8",
     "PHashF",
-    "SimpleSceneDetection",
 ]
