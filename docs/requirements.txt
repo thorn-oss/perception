@@ -1,8 +1,8 @@
-sphinx-autodoc-typehints==1.6.0
-sphinx-autobuild==0.7.1
-sphinx==1.8.3
-sphinx_rtd_theme==0.4.3
-m2r==0.2.1
+sphinx-autodoc-typehints==3.2.0
+# sphinx-autobuild==3.0.2
+# sphinx==1.8.3
+sphinx_rtd_theme==3.0.2
+m2r==0.3.1
 opencv-contrib-python-headless
 tqdm
 imgaug
