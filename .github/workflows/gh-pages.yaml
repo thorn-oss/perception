@@ -1,0 +1,31 @@
+name: Deploy Sphinx documentation to Pages
+
+on:
+  push:
+    branches:
+      - dunnack/sphinx-to-github-pages
+      - main
+    paths:
+      - .github/workflows/gh-pages.yaml
+      - docs/**
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: deployment
+        uses: sphinx-notes/pages@v3
+        with:
+          checkout: false
+          documentation_path: docs
+          requirements_path: docs/requirements.txt
