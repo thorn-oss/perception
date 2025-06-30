@@ -11,6 +11,7 @@ import os
 import queue
 import shlex
 import subprocess
+import tempfile
 import threading
 import typing
 import warnings
@@ -27,7 +28,7 @@ import validators
 
 LOGGER = logging.getLogger(__name__)
 
-ImageInputType = typing.Union[str, np.ndarray, "PIL.Image.Image", io.BytesIO]
+ImageInputType = typing.Union[str, np.ndarray, "PIL.Image.Image", io.BytesIO, tempfile.SpooledTemporaryFile]
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
@@ -357,7 +358,7 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
     """
     if isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
-    if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
+    if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse, tempfile.SpooledTemporaryFile)):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
         decoded_image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif isinstance(filepath_or_buffer, str):
