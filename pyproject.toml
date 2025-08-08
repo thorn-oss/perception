@@ -17,10 +17,10 @@ Pillow = "*"
 pywavelets = "^1.5.0"
 tqdm = "*"
 validators = ">=0.22, <1.0"
+scipy = "*"
 
 # Benchmarking Extras
 matplotlib = { version = "*", optional = true }
-scipy = { version = "*", optional = true }
 imgaug = { version = "*", optional = true }
 tabulate = { version = "*", optional = true }
 scikit-learn = { version = "*", optional = true }
