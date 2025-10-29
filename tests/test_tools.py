@@ -241,3 +241,24 @@ def test_ffmpeg_video():
                 timestamp1, timestamp2
             ), f"Timestamp mismatch for {filename}"
             assert np.percentile(diff, 75) < 25, f"Frame mismatch for {filename}"
+
+
+def test_videos_with_extra_channels():
+    frames_per_second = 1
+    test_videos = [
+        "perception/testing/videos/extra_channel_attached_pic.mp4",
+        "perception/testing/videos/extra_channel_attached_pic_audio.mp4",
+    ]
+    expected_frames = 10
+    for filepath in test_videos:
+        filename = os.path.basename(filepath)
+        frame_count = 0
+        for frame1, index1, timestamp1 in hashers.tools.read_video_to_generator_ffmpeg(
+            filepath, frames_per_second=frames_per_second
+        ):
+            print("timestamp1", timestamp1)
+            frame_count += 1
+        print(frame_count)
+        print(timestamp1)
+        assert frame_count == expected_frames, f"Frame count mismatch for {filename}"
+    # assert False, "Debugging for failing test"
