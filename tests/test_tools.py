@@ -66,7 +66,7 @@ def test_deduplicate_hashes_multiple():
         (2, hasher.compute(testing.DEFAULT_TEST_IMAGES[1])),
     ]
     pairs = tools.deduplicate_hashes(
-        hashes=hashes,
+        hashes=hashes,  # type: ignore[arg-type]
         threshold=10,
         hash_format="base64",
         hash_length=hasher.hash_length,
@@ -162,11 +162,40 @@ def test_unletterbox():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
     padded = np.zeros((image.shape[0] + 100, image.shape[1] + 50, 3), dtype="uint8")
     padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
-    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded)
+    result = hashers.tools.unletterbox(padded)
+    assert result is not None
+    (x1, x2), (y1, y2) = result
     assert y1 == 50
     assert y2 == 50 + image.shape[0]
     assert x1 == 25
     assert x2 == 25 + image.shape[1]
+
+
+def test_unletterbox_crop():
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    padded = np.zeros((image.shape[0] + 100, image.shape[1] + 50, 3), dtype="uint8")
+    padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
+    cropped_image = hashers.tools.unletterbox_crop(padded)
+    assert cropped_image is not None
+    assert image.shape[0] == cropped_image.shape[0]
+    assert image.shape[1] == cropped_image.shape[1]
+
+
+def test_unletterbox_crop_meaningful_pixels():
+    """Test the value of .5  min_fraction_meaningful_pixels in unletterbox()."""
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    h, w, _ = image.shape
+
+    # make tall skinny images with lots of padding around the content
+    # so its below min_fraction_meaningful_pixels threshold
+    padding_size = int(5 * h)
+
+    padded = np.r_[
+        np.zeros((padding_size, w, 3)), image, np.zeros((padding_size, w, 3))
+    ]
+    assert None is hashers.tools.unletterbox_crop(
+        padded, min_fraction_meaningful_pixels=0.5
+    )
 
 
 def test_unletterbox_color():
@@ -175,14 +204,18 @@ def test_unletterbox_color():
     padded[:, :] = (200, 0, 200)
     padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
     # Should not unletterbox since not black.
-    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded, only_remove_black=True)
+    results = hashers.tools.unletterbox(padded, only_remove_black=True)
+    assert results is not None
+    (x1, x2), (y1, y2) = results
     assert y1 == 0
     assert y2 == padded.shape[0]
     assert x1 == 0
     assert x2 == padded.shape[1]
 
     # Should  unletterbox color:
-    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded, only_remove_black=False)
+    results = hashers.tools.unletterbox(padded, only_remove_black=False)
+    assert results is not None
+    (x1, x2), (y1, y2) = results
     assert y1 == 50
     assert y2 == 50 + image.shape[0]
     assert x1 == 25
@@ -203,7 +236,10 @@ def test_unletterbox_aspect_ratio():
     assert None is hashers.tools.unletterbox(padded)
 
     padded = np.r_[np.zeros((h_pass, w, 3)), image, np.zeros((h_pass, w, 3))]
-    (x1, x2), (y1, y2) = hashers.tools.unletterbox(padded)
+
+    results = hashers.tools.unletterbox(padded)
+    assert results is not None
+    (x1, x2), (y1, y2) = results
 
     assert y1 == h_pass
     assert y2 == h_pass + image.shape[0]
@@ -213,7 +249,10 @@ def test_unletterbox_aspect_ratio():
 
 def test_unletterbox_noblackbars():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
-    (x1, x2), (y1, y2) = hashers.tools.unletterbox(image)
+
+    results = hashers.tools.unletterbox(image)
+    assert results is not None
+    (x1, x2), (y1, y2) = results
     assert x1 == 0
     assert y1 == 0
     assert x2 == image.shape[1]
