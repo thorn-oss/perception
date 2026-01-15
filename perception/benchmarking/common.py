@@ -366,7 +366,7 @@ class BenchmarkHashes(Filterable):
                 )
                 X_noop = np.array(
                     noops.hash.apply(
-                        string_to_vector,
+                        string_to_vector,  # type: ignore[arg-type]
                         dtype=dtype,
                         hash_format="base64",
                         hash_length=int(hash_length),

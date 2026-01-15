@@ -145,7 +145,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
         os.makedirs(storage_dir, exist_ok=True)
 
         files = self._df.copy()
-        files["guid"] = [uuid.uuid4() for n in range(len(files))]
+        files["guid"] = [str(uuid.uuid4()) for n in range(len(files))]
 
         def apply_transform(files, transform_name):
             transform = transforms[transform_name]
