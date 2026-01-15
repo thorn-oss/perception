@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import io
 
 import numpy as np
 import pytest
@@ -280,3 +281,20 @@ def test_ffmpeg_video():
                 timestamp1, timestamp2
             ), f"Timestamp mismatch for {filename}"
             assert np.percentile(diff, 75) < 25, f"Frame mismatch for {filename}"
+
+
+def test_image_input_types():
+    image_expected = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+
+    with open(testing.DEFAULT_TEST_IMAGES[0], "rb") as f:
+        image_data = f.read()
+
+    image_bytes_io = hashers.tools.read(io.BytesIO(image_data))
+    assert (image_expected == image_bytes_io).all()
+
+    with tempfile.SpooledTemporaryFile() as f:
+        f.write(image_data)
+        f.seek(0)
+        image_tempfile = hashers.tools.read(f)
+
+    assert (image_expected == image_tempfile).all()
