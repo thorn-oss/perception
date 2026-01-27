@@ -296,10 +296,7 @@ def test_videos_with_extra_channels():
         for frame1, index1, timestamp1 in hashers.tools.read_video_to_generator_ffmpeg(
             filepath, frames_per_second=frames_per_second
         ):
-            print("timestamp1", timestamp1)
             frame_count += 1
-        print(frame_count)
-        print(timestamp1)
         assert frame_count == expected_frames, f"Frame count mismatch for {filename}"
 
 
