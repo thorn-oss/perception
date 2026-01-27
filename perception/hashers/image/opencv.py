@@ -24,7 +24,7 @@ class MarrHildreth(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash.MarrHildrethHash.create()
+        self.hasher = cv2.img_hash.MarrHildrethHash.create()  # type: ignore[attr-defined]
 
     def _compute(self, image):
         return np.unpackbits(self.hasher.compute(image)[0])
@@ -40,7 +40,7 @@ class ColorMoment(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash.ColorMomentHash.create()
+        self.hasher = cv2.img_hash.ColorMomentHash.create()  # type: ignore[attr-defined]
 
     def _compute(self, image):
         return 10000 * self.hasher.compute(image)[0]
@@ -56,7 +56,7 @@ class BlockMean(OpenCVHasher):
 
     def __init__(self):
         super().__init__()
-        self.hasher = cv2.img_hash.BlockMeanHash.create(1)
+        self.hasher = cv2.img_hash.BlockMeanHash.create(1)  # type: ignore[attr-defined]
 
     def _compute(self, image):
         # https://stackoverflow.com/questions/54762896/why-cv2-norm-hamming-gives-different-value-than-actual-hamming-distance

@@ -11,6 +11,7 @@ import os
 import queue
 import shlex
 import subprocess
+import tempfile
 import threading
 import typing
 import warnings
@@ -27,7 +28,9 @@ import validators
 
 LOGGER = logging.getLogger(__name__)
 
-ImageInputType = typing.Union[str, np.ndarray, "PIL.Image.Image", io.BytesIO]
+ImageInputType = typing.Union[
+    str, np.ndarray, "PIL.Image.Image", io.BytesIO, tempfile.SpooledTemporaryFile
+]
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
@@ -357,7 +360,10 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
     """
     if isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
-    if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
+    if isinstance(
+        filepath_or_buffer,
+        (io.BytesIO, client.HTTPResponse, tempfile.SpooledTemporaryFile),
+    ):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
         decoded_image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif isinstance(filepath_or_buffer, str):
@@ -1070,3 +1076,31 @@ def unletterbox(
     bounds = (x1, x2 + 1), (y1, y2 + 1)
 
     return bounds
+
+
+def unletterbox_crop(
+    image: np.ndarray, min_fraction_meaningful_pixels: float = 0.1
+) -> np.ndarray | None:
+    """Detect and crop the letterboxed regions from an image.
+
+    Args:
+        image: The image from which to remove letterboxing.
+        min_fraction_meaningful_pixels: 0 to 1: if cropped version is
+        smaller than this fraction of the image do not unletterbox.
+        0.1 == 10% of the image.
+    Returns:
+        The cropped image or None if the image is mostly blank space.
+    """
+    assert isinstance(
+        image, np.ndarray
+    ), "Please send np.ndarray to unletterbox_image()."
+
+    bounds = unletterbox(
+        image, min_fraction_meaningful_pixels=min_fraction_meaningful_pixels
+    )
+    if bounds is None:
+        return None
+    (x1, x2), (y1, y2) = bounds
+    cropped = np.ascontiguousarray(image[y1:y2, x1:x2])
+    assert cropped.data.contiguous
+    return cropped

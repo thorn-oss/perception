@@ -4,7 +4,7 @@ import uuid
 import warnings
 
 import cv2
-import imgaug
+import albumentations
 import pandas as pd
 from tqdm import tqdm
 
@@ -119,7 +119,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
 
     def transform(
         self,
-        transforms: dict[str, imgaug.augmenters.meta.Augmenter],
+        transforms: dict[str, albumentations.BasicTransform],
         storage_dir: str,
         errors: str = "raise",
     ) -> BenchmarkImageTransforms:
@@ -129,7 +129,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
             transforms: A dictionary of transformations. The only required
                 key is `noop` which determines how the original, untransformed
                 image is saved. For a true copy, simply make the `noop` key
-                `imgaug.augmenters.Noop()`.
+                `albumentations.NoOp`
             storage_dir: A directory to store all the images along with
                 their transformed counterparts.
             errors: How to handle errors reading files. If "raise", exceptions are
@@ -145,7 +145,7 @@ class BenchmarkImageDataset(BenchmarkDataset):
         os.makedirs(storage_dir, exist_ok=True)
 
         files = self._df.copy()
-        files["guid"] = [uuid.uuid4() for n in range(len(files))]
+        files["guid"] = [str(uuid.uuid4()) for n in range(len(files))]
 
         def apply_transform(files, transform_name):
             transform = transforms[transform_name]
@@ -166,6 +166,9 @@ class BenchmarkImageDataset(BenchmarkDataset):
                     continue
                 try:
                     transformed = transform(image=image)
+                    # If albumentations, output is a dict with 'image' key
+                    if isinstance(transformed, dict) and "image" in transformed:
+                        transformed = transformed["image"]
                 except Exception as e:
                     raise RuntimeError(
                         f"An exception occurred while processing {filepath} "
