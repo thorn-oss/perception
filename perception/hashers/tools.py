@@ -1042,6 +1042,7 @@ def unletterbox(
         raise ValueError("min_fraction_meaningful_pixels must be between 0 and 1")
     if not 0 <= min_reduction <= 1:
         raise ValueError("min_reduction must be between 0 and 1")
+    image = image.astype(np.uint8)
 
     shape = image.shape
     h, w = shape[0:2]
@@ -1063,10 +1064,13 @@ def unletterbox(
 
         if len(corners) == 4:
             LOGGER.debug("No common corner color detected, skipping content detection.")
-            return None
+            return (
+                (0, w),
+                (0, h),
+            )  # Return full image bounds instead of None to maintain backwards compatibility
         # Use the most common corner value as the background intensity.
         counts = Counter(corners)
-        bg_gray = np.array(counts.most_common(1)[0][0])
+        bg_gray = counts.most_common(1)[0][0]
 
     # Mark pixels whose grayscale intensity differs from the background
     # by more than color_threshold as content (True).
@@ -1075,7 +1079,10 @@ def unletterbox(
     # If every pixel is classified as content, there is no border to remove.
     if content_mask.all():
         LOGGER.debug("All pixels differ from background; no letterbox detected.")
-        return None
+        return (
+            (0, w),
+            (0, h),
+        )  # Return full image bounds instead of None to maintain backwards compatibility
 
     # Find the content bounding box by projecting the mask onto rows and
     # columns. cv2.reduce is used instead of np.sum for performance.
@@ -1109,7 +1116,10 @@ def unletterbox(
             "Crop would not reduce either dimension by %.0f%%; skipping.",
             min_reduction * 100,
         )
-        return None
+        return (
+            (0, w),
+            (0, h),
+        )  # Return full image bounds instead of None to maintain backwards compatibility
     # Reject if the remaining content region is too small to be useful.
     if width <= min_side_length or height <= min_side_length:
         LOGGER.debug(
@@ -1118,7 +1128,10 @@ def unletterbox(
             height,
             min_side_length,
         )
-        return None
+        return (
+            (0, w),
+            (0, h),
+        )  # Return full image bounds instead of None to maintain backwards compatibility
 
     return ((left, right), (top, bottom))
 
