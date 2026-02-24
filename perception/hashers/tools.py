@@ -1055,14 +1055,14 @@ def unletterbox(
     else:
         # Sample the four corner pixels. If all four are unique there is no
         # consistent background color, so we bail out early (O(1) rejection).
-        corners = {
+        corners = (
             image[0, 0],
             image[0, w - 1],
             image[h - 1, 0],
             image[h - 1, w - 1],
-        }
+        )
 
-        if len(corners) == 4:
+        if len(set(corners)) == 4:
             LOGGER.debug("No common corner color detected, skipping content detection.")
             return (
                 (0, w),
