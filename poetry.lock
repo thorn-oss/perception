@@ -2917,9 +2917,10 @@ tests = ["pytest (>=9)", "typing-extensions (>=4.15)"]
 name = "pdqhash"
 version = "0.2.8"
 description = "\"Python bindings for Facebook's PDQ hash\""
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
+markers = "extra == \"pdq\""
 files = [
     {file = "pdqhash-0.2.8-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:01e615089a7a22067627e97c383e371d6db363aca9587f4080a6e43cb6228fff"},
     {file = "pdqhash-0.2.8-cp310-cp310-win_amd64.whl", hash = "sha256:fa49dfeb82b1549318bd3743ae112e4a1feb3dfeb8a6bb859d7f0cbdc5b7c0be"},
@@ -4943,4 +4944,4 @@ pdq = ["pdqhash"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "c2b9bc21a8e96f4c49b1490819a63db453f53538da1325fc50f1e11b5866dd91"
+content-hash = "266c4a733251262845a2f9dc0fc676b290a38a58b78da0d94ec045d281f92887"
