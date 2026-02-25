@@ -15,14 +15,14 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
           cache-dependency-path: poetry.lock
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
       - name: Setup FFMPEG
         uses: FedericoCarboni/setup-ffmpeg@v3
         if: ${{ ! startsWith(matrix.os, 'macos') }}
