@@ -274,9 +274,10 @@ def test_ffmpeg_video():
         ):
             diff = np.abs(frame1.astype("int32") - frame2.astype("int32")).flatten()
             assert index1 == index2, f"Index mismatch for {filename}"
-            (
-                np.testing.assert_allclose(timestamp1, timestamp2),
-                f"Timestamp mismatch for {filename}",
+            np.testing.assert_allclose(
+                timestamp1,
+                timestamp2,
+                err_msg=f"Timestamp mismatch for {filename}",
             )
             assert np.percentile(diff, 75) < 25, f"Frame mismatch for {filename}"
 
