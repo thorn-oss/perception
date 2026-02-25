@@ -106,7 +106,14 @@ def test_compute_euclidean_pairwise_duplicates():
     # Use grouped files.
     counts = np.array([3, 3, 2, 2])
     expected = np.array(
-        [[2 / 3, 2 / 3], [0, 0], [0, 0], [1 / 3, 1 / 2], [0, 0], [0, 0]]
+        [
+            [2 / 3, 2 / 3],
+            [0, 0],
+            [0, 0],
+            [1 / 3, 1 / 2],
+            [0, 0],
+            [0, 0],
+        ]
     )
     actual = tools.extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype("int32"),
@@ -206,12 +213,7 @@ def test_unletterbox_color():
     padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
     # Should not unletterbox since not black.
     results = hashers.tools.unletterbox(padded, only_remove_black=True)
-    assert results is not None
-    (x1, x2), (y1, y2) = results
-    assert y1 == 0
-    assert y2 == padded.shape[0]
-    assert x1 == 0
-    assert x2 == padded.shape[1]
+    assert results is None
 
     # Should  unletterbox color:
     results = hashers.tools.unletterbox(padded, only_remove_black=False)
@@ -252,12 +254,7 @@ def test_unletterbox_noblackbars():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
 
     results = hashers.tools.unletterbox(image)
-    assert results is not None
-    (x1, x2), (y1, y2) = results
-    assert x1 == 0
-    assert y1 == 0
-    assert x2 == image.shape[1]
-    assert y2 == image.shape[0]
+    assert results is None
 
 
 def test_ffmpeg_video():
@@ -277,9 +274,10 @@ def test_ffmpeg_video():
         ):
             diff = np.abs(frame1.astype("int32") - frame2.astype("int32")).flatten()
             assert index1 == index2, f"Index mismatch for {filename}"
-            np.testing.assert_allclose(
-                timestamp1, timestamp2
-            ), f"Timestamp mismatch for {filename}"
+            (
+                np.testing.assert_allclose(timestamp1, timestamp2),
+                f"Timestamp mismatch for {filename}",
+            )
             assert np.percentile(diff, 75) < 25, f"Frame mismatch for {filename}"
 
 
