@@ -12,7 +12,6 @@ Cython = "^3"
 numpy = "^1.26"
 opencv-contrib-python-headless = "^4.10"
 pandas = "*"
-pdqhash = "*"
 Pillow = "*"
 pywavelets = "^1.5.0"
 tqdm = "*"
@@ -35,6 +34,9 @@ rich = "^13.7.0"
 networkit = { version = "^11", optional = true }
 faiss-cpu = { version = "^1.8.0.post1", optional = true }
 
+# PDQ Extras
+pdqhash = { version = "*", optional = true }
+
 [tool.poetry.extras]
 benchmarking = [
   "matplotlib",
@@ -46,6 +48,7 @@ benchmarking = [
 ]
 matching = ["aiohttp", "python-json-logger"]
 experimental = ["networkit", "faiss-cpu"]
+pdq = ["pdqhash"]
 
 
 [tool.poetry.group.dev.dependencies]
