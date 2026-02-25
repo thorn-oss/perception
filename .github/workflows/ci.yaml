@@ -13,12 +13,16 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
+          cache: poetry
+          cache-dependency-path: poetry.lock
       - name: Setup FFMPEG
         uses: FedericoCarboni/setup-ffmpeg@v3
         if: ${{ ! startsWith(matrix.os, 'macos') }}
@@ -28,14 +32,11 @@ jobs:
           brew install llvm ffmpeg
           echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
-      - name: checkout
-        uses: actions/checkout@v6
-      - uses: actions/cache@v5
-        name: Cache the venv
-        with:
-          path: ./.venv
-          key: venv-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
       - name: Setup Project
         run: make init-project
+      - name: Normalize OpenCV package
+        run: |
+          poetry run python -m pip uninstall -y opencv-python-headless
+          poetry run python -m pip install --no-deps --force-reinstall opencv-contrib-python-headless
       - name: Run precommit
         run: make precommit

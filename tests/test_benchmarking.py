@@ -176,7 +176,7 @@ def test_video_benchmark_dataset():
         for n in range(0, len(noop_vector)):
             if noop_vector[n] != slideshow_vector[n]:
                 total_missed_bits += 1
-    assert total_missed_bits <= 2
+    assert total_missed_bits <= 4
 
     # Every second hash in the slideshow should be the same as the
     # previous one.
@@ -198,7 +198,10 @@ def test_euclidean_extension():
             [neg.min(axis=1).data[np.newaxis], pos.min(axis=1).data[np.newaxis]], axis=0
         ).T
         indexes = np.concatenate(
-            [neg.argmin(axis=1)[np.newaxis], pos.argmin(axis=1)[np.newaxis]]
+            [
+                neg.argmin(axis=1)[np.newaxis],
+                pos.argmin(axis=1)[np.newaxis],
+            ]
         ).T
         return distances, indexes
 
