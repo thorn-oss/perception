@@ -24,3 +24,10 @@ __all__ = [
     "PHashU8",
     "PHashF",
 ]
+
+try:
+    from .image.pdq import PDQHash as PDQHash, PDQHashF as PDQHashF
+except ImportError:
+    pass
+else:
+    __all__.extend(["PDQHash", "PDQHashF"])

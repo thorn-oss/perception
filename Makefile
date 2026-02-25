@@ -3,7 +3,7 @@ TEST_SCOPE?=tests/
 .PHONY: build build-wheel build-sdist init-project init test lint_check type_check format format_check precommit
 
 init-project:
-	poetry install -E benchmarking -E matching -E experimental
+	poetry install --all-extras
 
 init: init-project
 	poetry run pre-commit install
