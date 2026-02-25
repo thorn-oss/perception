@@ -35,6 +35,8 @@ jobs:
       - name: Setup Project
         run: make init-project
       - name: Normalize OpenCV package
-        run: poetry run python -m pip uninstall -y opencv-python-headless
+        run: |
+          poetry run python -m pip uninstall -y opencv-python-headless
+          poetry run python -m pip install --no-deps --force-reinstall opencv-contrib-python-headless
       - name: Run precommit
         run: make precommit
