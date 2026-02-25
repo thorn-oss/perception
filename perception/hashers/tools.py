@@ -1121,7 +1121,7 @@ def unletterbox(
             (0, h),
         )  # Return full image bounds instead of None to maintain backwards compatibility
     # Reject if the remaining content region is too small to be useful.
-    if width <= min_side_length or height <= min_side_length:
+    if width < min_side_length or height < min_side_length:
         LOGGER.debug(
             "Cropped region (%dx%d) smaller than min_side_length=%d; skipping.",
             width,
