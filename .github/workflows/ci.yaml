@@ -34,5 +34,7 @@ jobs:
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - name: Setup Project
         run: make init-project
+      - name: Normalize OpenCV package
+        run: poetry run python -m pip uninstall -y opencv-python-headless
       - name: Run precommit
         run: make precommit
