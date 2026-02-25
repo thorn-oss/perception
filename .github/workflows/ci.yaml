@@ -17,6 +17,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: poetry
+          cache-dependency-path: poetry.lock
       - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
       - name: Setup FFMPEG
@@ -30,11 +32,6 @@ jobs:
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v4
-      - uses: actions/cache@v5
-        name: Cache the venv
-        with:
-          path: ./.venv
-          key: venv-${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
       - name: Setup Project
         run: make init-project
       - name: Run precommit
