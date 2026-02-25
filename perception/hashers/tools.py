@@ -973,8 +973,8 @@ def unletterbox(
     only_remove_black: bool = False,
     min_fraction_meaningful_pixels: float = 0.1,
     color_threshold: float = 2,
-    min_side_length: int = 100,
-    min_reduction: float = 0.05,
+    min_side_length: int = 50,
+    min_reduction: float = 0.02,
 ) -> tuple[tuple[int, int], tuple[int, int]] | None:
     """Return bounds of the non-trivial (content) region of an image, or None.
 
@@ -1027,11 +1027,11 @@ def unletterbox(
             pixel to be classified as content. Defaults to 2.
         min_side_length: The minimum width or height (in pixels) of the
             cropped region. If the crop would be smaller, ``None`` is
-            returned. Defaults to 100.
+            returned. Defaults to 50.
         min_reduction: The minimum fraction (0–1) of the original width
             or height that must be removed for the crop to be worthwhile.
             If the crop removes less than this from both dimensions,
-            ``None`` is returned. Defaults to 0.05 (5%).
+            ``None`` is returned. Defaults to 0.02 (2%).
 
     Returns:
         A tuple ``((x1, x2), (y1, y2))`` giving the left, right, top,
@@ -1128,24 +1128,35 @@ def unletterbox(
             height,
             min_side_length,
         )
-        return (
-            (0, w),
-            (0, h),
-        )  # Return full image bounds instead of None to maintain backwards compatibility
+        return None
 
     return ((left, right), (top, bottom))
 
 
 def unletterbox_crop(
-    image: np.ndarray, min_fraction_meaningful_pixels: float = 0.1
+    image: np.ndarray,
+    min_fraction_meaningful_pixels: float = 0.1,
+    color_threshold: float = 2,
+    min_side_length: int = 50,
+    min_reduction: float = 0.02,
 ) -> np.ndarray | None:
     """Detect and crop the letterboxed regions from an image.
 
     Args:
         image: The image from which to remove letterboxing.
         min_fraction_meaningful_pixels: 0 to 1: if cropped version is
-        smaller than this fraction of the image do not unletterbox.
-        0.1 == 10% of the image.
+            smaller than this fraction of the image do not unletterbox.
+            0.1 == 10% of the image.
+        color_threshold: The minimum absolute difference in grayscale
+            intensity between a pixel and the background color for that
+            pixel to be classified as content. Defaults to 2.
+        min_side_length: The minimum width or height (in pixels) of the
+            cropped region. If the crop would be smaller, ``None`` is
+            returned. Defaults to 50.
+        min_reduction: The minimum fraction (0–1) of the original width
+            or height that must be removed for the crop to be worthwhile.
+            If the crop removes less than this from both dimensions,
+            the original image is returned. Defaults to 0.02 (2%).
     Returns:
         The cropped image or None if the image is mostly blank space.
     """
@@ -1153,7 +1164,11 @@ def unletterbox_crop(
         raise TypeError(f"Expected np.ndarray, got {type(image).__name__}")
 
     bounds = unletterbox(
-        image, min_fraction_meaningful_pixels=min_fraction_meaningful_pixels
+        image,
+        min_fraction_meaningful_pixels=min_fraction_meaningful_pixels,
+        color_threshold=color_threshold,
+        min_side_length=min_side_length,
+        min_reduction=min_reduction,
     )
     if bounds is None:
         return None
