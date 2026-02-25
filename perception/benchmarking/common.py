@@ -366,7 +366,7 @@ class BenchmarkHashes(Filterable):
                 )
                 X_noop = np.array(
                     noops.hash.apply(
-                        string_to_vector,
+                        string_to_vector,  # type: ignore[arg-type]
                         dtype=dtype,
                         hash_format="base64",
                         hash_length=int(hash_length),
@@ -502,8 +502,11 @@ class BenchmarkHashes(Filterable):
                 ax = axs[rowIdx if nrows > 1 else colIdx]
 
             # Plot the charts
+            inner_keys = ["guid"] + (
+                ["transform_name"] if "transform_name" in subset.columns else []
+            )
             pos, neg = (
-                subset.groupby(["guid", "transform_name"])[
+                subset.groupby(inner_keys)[
                     [
                         "distance_to_closest_correct_image",
                         "distance_to_closest_incorrect_image",
@@ -562,8 +565,11 @@ class BenchmarkHashes(Filterable):
             grouping = ["category", "transform_name"]
 
         def group_func(subset):
+            inner_keys = ["guid"] + (
+                ["transform_name"] if "transform_name" in subset.columns else []
+            )
             pos, neg = (
-                subset.groupby(["guid", "transform_name"])[
+                subset.groupby(inner_keys)[
                     [
                         "distance_to_closest_correct_image",
                         "distance_to_closest_incorrect_image",

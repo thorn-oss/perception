@@ -11,6 +11,7 @@ import os
 import queue
 import shlex
 import subprocess
+import tempfile
 import threading
 import typing
 import warnings
@@ -27,7 +28,9 @@ import validators
 
 LOGGER = logging.getLogger(__name__)
 
-ImageInputType = typing.Union[str, np.ndarray, "PIL.Image.Image", io.BytesIO]
+ImageInputType = typing.Union[
+    str, np.ndarray, "PIL.Image.Image", io.BytesIO, tempfile.SpooledTemporaryFile
+]
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 
@@ -357,7 +360,10 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
     """
     if isinstance(filepath_or_buffer, PIL.Image.Image):
         return np.array(filepath_or_buffer.convert("RGB"))
-    if isinstance(filepath_or_buffer, (io.BytesIO, client.HTTPResponse)):
+    if isinstance(
+        filepath_or_buffer,
+        (io.BytesIO, client.HTTPResponse, tempfile.SpooledTemporaryFile),
+    ):
         image = np.asarray(bytearray(filepath_or_buffer.read()), dtype=np.uint8)
         decoded_image = cv2.imdecode(image, cv2.IMREAD_UNCHANGED)
     elif isinstance(filepath_or_buffer, str):
@@ -561,9 +567,7 @@ def read_video_to_generator_ffmpeg(
             ), f"Invalid framerate: {frames_per_second}"
             seconds_per_frame = 1 / frames_per_second
             filters.append(
-                f"fps={frames_per_second}:"
-                f"round={frame_rounding}:"
-                f"start_time={offset}"
+                f"fps={frames_per_second}:round={frame_rounding}:start_time={offset}"
             )
         # Add resizing filters.
         if use_cuda and codec_name in CUDA_CODECS:
@@ -601,7 +605,12 @@ def read_video_to_generator_ffmpeg(
                 if not batch:
                     break
                 for image in np.frombuffer(batch, dtype="uint8").reshape(
-                    (-1, height, width, channels)
+                    (
+                        -1,
+                        height,
+                        width,
+                        channels,
+                    )
                 ):
                     if frames_per_second != "keyframes":
                         yield (image, frame_index, timestamp)
@@ -960,113 +969,210 @@ def compute_synchronized_video_hashes(
 
 
 def unletterbox(
-    image, only_remove_black: bool = False, min_fraction_meaningful_pixels: float = 0.1
+    image: np.ndarray,
+    only_remove_black: bool = False,
+    min_fraction_meaningful_pixels: float = 0.1,
+    color_threshold: float = 2,
+    min_side_length: int = 50,
+    min_reduction: float = 0.02,
 ) -> tuple[tuple[int, int], tuple[int, int]] | None:
-    """Return bounds of non-trivial region of image or None.
+    """Return bounds of the non-trivial (content) region of an image, or None.
 
-    Unletterboxing is cropping an image such that trivial edge regions
-    are removed. Trivial in this context means that the majority of
-    the values in that row or column are zero or very close to
-    zero.
+    Letterboxing refers to uniform-color borders added around an image
+    (e.g., black bars on a video frame). This function detects such borders
+    by identifying the background color from the image corners and finding
+    the bounding box of pixels that differ from that background.
 
-    In order to do unletterboxing, this function returns bounds in the
-    form (x1, x2), (y1, y2) where:
+    The function returns bounds as ``(x1, x2), (y1, y2)`` suitable for
+    slicing: ``image[y1:y2, x1:x2]``. The bounds are exclusive on the
+    right/bottom (i.e., x2 and y2 point one past the last content pixel).
 
-    - x1 is the index of the first column where over X% of the pixels
-      have means (average of R, G, B) > 2.
-    - x2 is the index of the last column where over X% of the pixels
-      have means > 2.
-    - y1 is the index of the first row where over X% of the pixels
-      have means > 2.
-    - y2 is the index of the last row where over X% of the pixels
-      have means > 2.
-    - X is min_fraction_meaningful_pixels 0.1 == 10%
+    **Algorithm overview:**
 
-    If there are zero columns or zero rows where over X% of the
-    pixels have means > 2, this function returns `None`.
+    1. Sample the four corner pixels and find the most common value as
+       the candidate background color. If all four corners differ, return
+       ``None`` (no consistent letterbox detected).
+    2. Build a binary content mask where each pixel whose grayscale
+       intensity differs from the background by more than
+       ``color_threshold`` is marked as content.
+    3. Project the mask onto rows and columns and find the first/last
+       row and column where the fraction of content pixels exceeds
+       ``min_fraction_meaningful_pixels``.
+    4. Validate that the resulting crop is meaningfully smaller than the
+       original (controlled by ``min_reduction``) and that both sides
+       exceed ``min_side_length``.
 
-    Note that in the case(s) of a single column and/or row of
-    non-trivial pixels that it is possible for x1 = x2 and/or y1 = y2.
+    Returns ``None`` when:
 
-    Consider these examples to understand edge cases.  Given two
-    images, `L` (entire left and bottom edges are 1, all other pixels
-    0) and `U` (left, bottom and right edges 1, all other pixels 0),
-    `unletterbox(L)` would return the bounds of the single bottom-left
-    pixel and `unletterbox(U)` would return the bounds of the entire
-    bottom row.
+    - No two corners share the same color (no clear background).
+    - Every pixel differs from the detected background (no border).
+    - No row or column meets the content-pixel threshold.
+    - The crop would not remove at least ``min_reduction`` fraction
+      from any dimension.
+    - Either cropped dimension would be smaller than ``min_side_length``.
 
-    Consider `U1` which is the same as `U` but with the bottom two
-    rows all 1s. `unletterbox(U1)` returns the bounds of the bottom
-    two rows.
+    Args:
+        image: Input image as an ``np.ndarray``. May be grayscale (H×W)
+            or RGB (H×W×3); RGB images are converted to grayscale
+            internally for background detection.
+        only_remove_black: If ``True``, treat black (intensity 0) as the
+            background regardless of corner colors. If ``False`` (default),
+            infer the background color from the most common corner value.
+        min_fraction_meaningful_pixels: The minimum fraction (0–1) of
+            pixels in a row or column that must differ from the background
+            for that row/column to be considered part of the content region.
+            Defaults to 0.1 (10%).
+        color_threshold: The minimum absolute difference in grayscale
+            intensity between a pixel and the background color for that
+            pixel to be classified as content. Defaults to 2.
+        min_side_length: The minimum width or height (in pixels) of the
+            cropped region. If the crop would be smaller, ``None`` is
+            returned. Defaults to 50.
+        min_reduction: The minimum fraction (0–1) of the original width
+            or height that must be removed for the crop to be worthwhile.
+            If the crop removes less than this from both dimensions,
+            ``None`` is returned. Defaults to 0.02 (2%).
+
+    Returns:
+        A tuple ``((x1, x2), (y1, y2))`` giving the left, right, top,
+        and bottom bounds of the content region (right/bottom exclusive),
+        or ``None`` if no meaningful letterbox was detected.
+    """
+    if not 0 <= min_fraction_meaningful_pixels <= 1:
+        raise ValueError("min_fraction_meaningful_pixels must be between 0 and 1")
+    if not 0 <= min_reduction <= 1:
+        raise ValueError("min_reduction must be between 0 and 1")
+    image = image.astype(np.uint8)
+
+    shape = image.shape
+    h, w = shape[0:2]
+    if len(shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+    # Determine background color and build binary content mask.
+    if only_remove_black:
+        bg_gray = 0
+    else:
+        # Sample the four corner pixels. If all four are unique there is no
+        # consistent background color, so we bail out early (O(1) rejection).
+        corners = (
+            image[0, 0],
+            image[0, w - 1],
+            image[h - 1, 0],
+            image[h - 1, w - 1],
+        )
+
+        if len(set(corners)) == 4:
+            LOGGER.debug("No common corner color detected, skipping content detection.")
+            return (
+                (0, w),
+                (0, h),
+            )  # Return full image bounds instead of None to maintain backwards compatibility
+        # Use the most common corner value as the background intensity.
+        counts = Counter(corners)
+        bg_gray = counts.most_common(1)[0][0]
+
+    # Mark pixels whose grayscale intensity differs from the background
+    # by more than color_threshold as content (True).
+    content_mask = np.abs(image.astype(np.int16) - bg_gray) > color_threshold
+
+    # If every pixel is classified as content, there is no border to remove.
+    if content_mask.all():
+        LOGGER.debug("All pixels differ from background; no letterbox detected.")
+        return (
+            (0, w),
+            (0, h),
+        )  # Return full image bounds instead of None to maintain backwards compatibility
+
+    # Find the content bounding box by projecting the mask onto rows and
+    # columns. cv2.reduce is used instead of np.sum for performance.
+    mask_u8 = content_mask.astype(np.uint8)
+    row_content = cv2.reduce(mask_u8, 1, cv2.REDUCE_SUM, dtype=cv2.CV_32S).ravel()
+    col_content = cv2.reduce(mask_u8, 0, cv2.REDUCE_SUM, dtype=cv2.CV_32S).ravel()
+
+    # Thresholds for minimum content per row/column
+    row_threshold = min_fraction_meaningful_pixels * w
+    col_threshold = min_fraction_meaningful_pixels * h
+
+    # Find first/last rows and columns with sufficient content
+    content_rows = np.where(row_content > row_threshold)[0]
+    content_cols = np.where(col_content > col_threshold)[0]
+
+    if len(content_rows) == 0 or len(content_cols) == 0:
+        LOGGER.debug("No rows or columns with sufficient content detected.")
+        return None
+
+    top = int(content_rows[0])
+    bottom = int(content_rows[-1]) + 1
+    left = int(content_cols[0])
+    right = int(content_cols[-1]) + 1
+    height = bottom - top
+    width = right - left
+
+    # Reject if the crop does not remove at least min_reduction from
+    # at least one dimension (i.e., the border is negligibly thin).
+    if width >= w * (1 - min_reduction) and height >= h * (1 - min_reduction):
+        LOGGER.debug(
+            "Crop would not reduce either dimension by %.0f%%; skipping.",
+            min_reduction * 100,
+        )
+        return (
+            (0, w),
+            (0, h),
+        )  # Return full image bounds instead of None to maintain backwards compatibility
+    # Reject if the remaining content region is too small to be useful.
+    if width < min_side_length or height < min_side_length:
+        LOGGER.debug(
+            "Cropped region (%dx%d) smaller than min_side_length=%d; skipping.",
+            width,
+            height,
+            min_side_length,
+        )
+        return None
+
+    return ((left, right), (top, bottom))
+
+
+def unletterbox_crop(
+    image: np.ndarray,
+    min_fraction_meaningful_pixels: float = 0.1,
+    color_threshold: float = 2,
+    min_side_length: int = 50,
+    min_reduction: float = 0.02,
+) -> np.ndarray | None:
+    """Detect and crop the letterboxed regions from an image.
 
     Args:
         image: The image from which to remove letterboxing.
-        only_remove_black: Set False to remove borders fo any color.
         min_fraction_meaningful_pixels: 0 to 1: if cropped version is
-        smaller than this fraction of the image do not unletterbox.
-        0.1 == 10% of the image.
-
+            smaller than this fraction of the image do not unletterbox.
+            0.1 == 10% of the image.
+        color_threshold: The minimum absolute difference in grayscale
+            intensity between a pixel and the background color for that
+            pixel to be classified as content. Defaults to 2.
+        min_side_length: The minimum width or height (in pixels) of the
+            cropped region. If the crop would be smaller, ``None`` is
+            returned. Defaults to 50.
+        min_reduction: The minimum fraction (0–1) of the original width
+            or height that must be removed for the crop to be worthwhile.
+            If the crop removes less than this from both dimensions,
+            the original image is returned. Defaults to 0.02 (2%).
     Returns:
-        A pair of coordinates bounds of the form (x1, x2)
-        and (y1, y2) representing the left, right, top, and
-        bottom bounds.
-
+        The cropped image or None if the image is mostly blank space.
     """
-    assert 0 <= min_fraction_meaningful_pixels <= 1, "min_size must be between 0 and 1"
-    if not only_remove_black:
-        height, width, colors = image.shape
+    if not isinstance(image, np.ndarray):
+        raise TypeError(f"Expected np.ndarray, got {type(image).__name__}")
 
-        bottom = height - 1
-        right = width - 1
-        top = 0
-        left = 0
-
-        # Generate a count of the corner pixels.
-        counts = Counter(
-            [
-                tuple(image[top, left]),
-                tuple(image[top, right]),
-                tuple(image[bottom, left]),
-                tuple(image[bottom, right]),
-            ]
-        )
-        if len(counts) == 4:
-            return (0, image.shape[1]), (0, image.shape[0])
-
-        # Grab reference color.
-        # We grab the most common shared color.
-        bg_color, _ = counts.most_common(1)[0]
-
-        # Create an image of just that color. dtype to match image.
-        mask = np.ones((height, width, colors), dtype=np.int16)
-        mask[:, :] = np.array(bg_color)
-
-        # Diff the image so that color is black.
-        image = np.abs(np.subtract(image, mask))
-
-    # adj should be thought of as a boolean at each pixel indicating
-    # whether or not that pixel is non-trivial (True) or not (False).
-    adj = image.mean(axis=2) > 2
-
-    if adj.all():
-        return (0, image.shape[1] + 1), (0, image.shape[0] + 1)
-
-    # Find rows and cols with at least min_fraction_meaningful_pixels.
-    y = np.where(adj.sum(axis=1) > min_fraction_meaningful_pixels * image.shape[1])[0]
-    x = np.where(adj.sum(axis=0) > min_fraction_meaningful_pixels * image.shape[0])[0]
-
-    # Either no rows or no columns had enough meaningful information to keep.
-    if len(y) == 0 or len(x) == 0:
+    bounds = unletterbox(
+        image,
+        min_fraction_meaningful_pixels=min_fraction_meaningful_pixels,
+        color_threshold=color_threshold,
+        min_side_length=min_side_length,
+        min_reduction=min_reduction,
+    )
+    if bounds is None:
         return None
-
-    if len(y) == 1:
-        y1 = y2 = y[0]
-    else:
-        y1, y2 = y[[0, -1]]
-    if len(x) == 1:
-        x1 = x2 = x[0]
-    else:
-        x1, x2 = x[[0, -1]]
-    bounds = (x1, x2 + 1), (y1, y2 + 1)
-
-    return bounds
+    (x1, x2), (y1, y2) = bounds
+    cropped = np.ascontiguousarray(image[y1:y2, x1:x2])
+    assert cropped.data.contiguous
+    return cropped

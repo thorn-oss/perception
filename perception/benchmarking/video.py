@@ -94,7 +94,7 @@ class BenchmarkVideoDataset(BenchmarkDataset):
         os.makedirs(storage_dir, exist_ok=True)
 
         files = self._df.copy()
-        files["guid"] = [uuid.uuid4() for n in range(len(files))]
+        files["guid"] = [str(uuid.uuid4()) for n in range(len(files))]
 
         def apply_transform_to_file(input_filepath, guid, transform_name, category):
             if input_filepath is None:

@@ -24,7 +24,7 @@ The below example does the following:
     import urllib.request
 
     import cv2
-    import imgaug
+    import albumentations
     import tabulate # Optional: Only used for generating tables for the Sphinx documentation
     import numpy as np
 
@@ -38,7 +38,7 @@ The below example does the following:
 
     with zipfile.ZipFile('thorn-perceptual-benchmark-v0.zip') as f:
         f.extractall('.')
-    
+
     # Load the dataset
     dataset = benchmarking.BenchmarkImageDataset.from_tuples(files=[
         (filepath, filepath.split(os.path.sep)[-2]) for filepath in glob.glob(
@@ -93,15 +93,15 @@ The below example does the following:
 
     transforms={
         'watermark': watermark,
-        'blur2': imgaug.augmenters.GaussianBlur(sigma=2.0),
+        'blur2': albumentations.GaussianBlur(sigma_limit=2.0, p=1),
         'vignette': vignette,
-        'gamma2': imgaug.augmenters.GammaContrast(gamma=2),
-        'jpeg95': imgaug.augmenters.JpegCompression(95),
-        'pad0.2': imgaug.augmenters.Pad(percent=((0.2, 0.2), (0, 0), (0.2, 0.2), (0, 0)), keep_size=False),
-        'crop0.05': imgaug.augmenters.Crop(percent=((0.05, 0.05), (0.05, 0.05), (0.05, 0.05), (0.05, 0.05)), keep_size=False),
-        'noise0.2': imgaug.augmenters.AdditiveGaussianNoise(scale=0.2*255),
-        'rotate4': imgaug.augmenters.Affine(rotate=4),
-        'noop': imgaug.augmenters.Resize({"longer-side": 256, "shorter-side": "keep-aspect-ratio"}),
+        'gamma2': albumentations.RandomGamma(gamma_limit=2, p=1),
+        'jpeg95': albumentations.ImageCompression(quality=95, p=1),
+        'pad0.2': albumentations.CropAndPad(percent=(0.2, 2), p=1),
+        'crop0.05': albumentations.CropAndPad(percent=-0.05, p=1),
+        'noise0.2': albumentations.GaussNoise(noise_scale_factor=0.2, p=1),
+        'rotate4': albumentations.Affine(rotate=4, p=1),
+        'noop': albumentations.NoOp(p=1),
     }
 
     # Compute the transformed versions of the images.
@@ -127,16 +127,16 @@ The below example does the following:
         It just shrinks images to 8x8 pixels and then flattens
         the result.
         """
-        
+
         # We have to let perception know
         # the shape and type of our hash.
         hash_length = 64
         dtype = 'uint8'
-        
+
         # We need to specify how distance is
         # computed between hashes.
         distance_metric = 'euclidean'
-        
+
         def _compute(self, image):
             gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
             resized = cv2.resize(gray, dsize=(8, 8))
@@ -159,7 +159,7 @@ The below example does the following:
     # Get performance metrics (i.e., recall) for each hash function based on
     # a minimum precision threshold. Here we use 99.99%.
     precision_threshold = 99.99
-    
+
     # The metrics are just pandas dataframes. We use tabulate here to obtain the tables
     # formatted for the documentation.
     metrics = hashes.compute_threshold_recall(precision_threshold=precision_threshold).reset_index()
@@ -610,13 +610,11 @@ The below example does the following:
     hashers = {
         'phashu8_framewise': perception.hashers.FramewiseHasher(
             frames_per_second=1, frame_hasher=phashu8, interframe_threshold=50, quality_threshold=90),
-        'phashu8_tmkl1': perception.hashers.SimpleSceneDetection(
+        'phashu8_tmkl1': perception.hashers.FramewiseHasher(
             base_hasher=perception.hashers.TMKL1(
                 frames_per_second=5, frame_hasher=phashu8,
                 distance_metric='euclidean', dtype='uint8',
-                norm=None, quality_threshold=90),
-            max_scene_length=1,
-            interscene_threshold=50
+                norm=None, quality_threshold=90)
         )
     }
     if not os.path.isfile('hashes.csv'):

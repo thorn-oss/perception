@@ -56,7 +56,7 @@ class TMKL2(VideoHasher):
                 for i in range(1, self.m)
             ]
         )
-        a = a.reshape(1, -1).repeat(repeats=len(self.T), axis=0)
+        a = a.reshape(1, -1).repeat(repeats=len(self.T), axis=0)  # type: ignore
         a = np.sqrt(a)
         self.a = a[..., np.newaxis]
 
@@ -77,7 +77,12 @@ class TMKL2(VideoHasher):
     def hash_from_final_state(self, state):
         timestamps = np.array(state["timestamps"])
         features = np.array(state["features"]).reshape(
-            (1, 1, timestamps.shape[0], self.frame_hasher.hash_length)
+            (
+                1,
+                1,
+                timestamps.shape[0],
+                self.frame_hasher.hash_length,
+            )
         )
         x = self.ms_normed * timestamps
         yw1 = np.sin(x) * self.a

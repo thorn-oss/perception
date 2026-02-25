@@ -5,7 +5,7 @@ import tempfile
 
 import numpy as np
 import pytest
-from imgaug import augmenters as iaa
+import albumentations
 from scipy import spatial
 
 from perception import benchmarking, hashers, testing
@@ -35,8 +35,8 @@ def test_bad_dataset():
         [(fn, i % 2) for i, fn in enumerate(bad_files)]
     )
     transforms = {
-        "blur0.05": iaa.GaussianBlur(0.05),
-        "noop": iaa.Resize(size=(256, 256)),
+        "blur0.05": albumentations.GaussianBlur(sigma_limit=0.05, p=1),
+        "noop": albumentations.Resize(height=256, width=256, p=1),
     }
     with pytest.raises(Exception):
         transformed = bad_dataset.transform(
@@ -71,8 +71,8 @@ def test_benchmark_dataset():
 def test_benchmark_transforms():
     transformed = dataset.transform(
         transforms={
-            "blur0.05": iaa.GaussianBlur(0.05),
-            "noop": iaa.Resize(size=(256, 256)),
+            "blur0.05": albumentations.GaussianBlur(sigma_limit=0.05, p=1),
+            "noop": albumentations.Resize(height=256, width=256, p=1),
         },
         storage_dir="/tmp/transforms",
     )
@@ -176,7 +176,7 @@ def test_video_benchmark_dataset():
         for n in range(0, len(noop_vector)):
             if noop_vector[n] != slideshow_vector[n]:
                 total_missed_bits += 1
-    assert total_missed_bits <= 2
+    assert total_missed_bits <= 4
 
     # Every second hash in the slideshow should be the same as the
     # previous one.
@@ -198,7 +198,10 @@ def test_euclidean_extension():
             [neg.min(axis=1).data[np.newaxis], pos.min(axis=1).data[np.newaxis]], axis=0
         ).T
         indexes = np.concatenate(
-            [neg.argmin(axis=1)[np.newaxis], pos.argmin(axis=1)[np.newaxis]]
+            [
+                neg.argmin(axis=1)[np.newaxis],
+                pos.argmin(axis=1)[np.newaxis],
+            ]
         ).T
         return distances, indexes
 

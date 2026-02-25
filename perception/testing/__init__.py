@@ -101,8 +101,8 @@ def hash_dicts_to_df(hash_dicts, returns_multiple):
                 ),
                 "hash": tools.flatten([h["hash"] for h in hash_dicts]),
             }
-        ).assign(error=None)
-    return pd.DataFrame.from_records(hash_dicts).assign(error=None)
+        ).assign(error=np.nan)
+    return pd.DataFrame.from_records(hash_dicts).assign(error=np.nan)
 
 
 def test_hasher_parallelization(hasher, test_filepaths):
@@ -156,7 +156,9 @@ def test_image_hasher_integrity(
     image2 = test_images[1]
     hash1_1 = str(hasher.compute(image1))  # str() games for mypy, not proud
     hash1_2 = str(hasher.compute(Image.open(image1)))
-    hash1_3 = str(hasher.compute(cv2.cvtColor(cv2.imread(image1), cv2.COLOR_BGR2RGB)))
+    image_cv = cv2.imread(image1)
+    assert image_cv is not None, f"Failed to load image: {image1}"
+    hash1_3 = str(hasher.compute(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)))
 
     hash2_1 = str(hasher.compute(image2))
 
