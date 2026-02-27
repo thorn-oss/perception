@@ -66,9 +66,6 @@ ignore_missing_imports = true
 enable = true
 vcs = "git"
 
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
-
 [build-system]
 requires = [
   "poetry-core",
