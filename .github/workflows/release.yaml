@@ -32,6 +32,8 @@ jobs:
         with:
           # Full clone for version calculation
           fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
       - name: Build Project
         run: make build-wheel
       - uses: actions/upload-artifact@v6
@@ -53,6 +55,8 @@ jobs:
         with:
           # Full clone for version calculation
           fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
       - name: Build Project
         run: make build-sdist
       - uses: actions/upload-artifact@v6
@@ -69,6 +73,8 @@ jobs:
         with:
           # Full clone for version calculation
           fetch-depth: 0
+          fetch-tags: true
+          ref: refs/tags/${{ github.event.release.tag_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -90,5 +96,17 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           POETRY_PYPI_TOKEN_PYPI: op://data-science-oss/perception-pypi-api-key/secret/value
+      - name: Verify artifacts
+        run: |
+          mapfile -t artifacts < <(find dist -type f \( -name "*.whl" -o -name "*.tar.gz" \))
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "No artifacts found in dist"
+            exit 1
+          fi
+          printf '%s\n' "${artifacts[@]}"
+          if printf '%s\n' "${artifacts[@]}" | grep -E -- '-0\.0\.0([.-]|$)'; then
+            echo "Refusing to publish placeholder version 0.0.0 artifacts"
+            exit 1
+          fi
       - name: Publish package
         run: poetry publish -n

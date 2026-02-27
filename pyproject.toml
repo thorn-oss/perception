@@ -1,6 +1,6 @@
 [project]
 name = "Perception"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Perception provides flexible, well-documented, and comprehensively tested tooling for perceptual hashing research, development, and production use."
 authors = [{ name = "Thorn", email = "info@wearethorn.org" }]
 license = "Apache-2.0"
@@ -33,6 +33,10 @@ experimental = ["networkit>=11.1,<12.0.0", "faiss-cpu>=1.8.0,<2.0.0"]
 pdq = ["pdqhash>=0.2.7,<0.3.0"]
 
 
+[tool.poetry]
+version = "0.0.0"
+
+
 [tool.poetry.group.dev.dependencies]
 black = "^24"
 coverage = "*"
@@ -60,6 +64,7 @@ ignore_missing_imports = true
 
 [tool.poetry-dynamic-versioning]
 enable = true
+vcs = "git"
 
 [build-system]
 requires = [
