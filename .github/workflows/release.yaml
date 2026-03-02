@@ -83,7 +83,7 @@ jobs:
       - name: Setup Dynamic Versioning
         run: poetry self add "poetry-dynamic-versioning[plugin]"
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: package-*
