@@ -36,7 +36,7 @@ jobs:
           ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
       - name: Build Project
         run: make build-wheel
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: package-wheels-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist/*
@@ -59,7 +59,7 @@ jobs:
           ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
       - name: Build Project
         run: make build-sdist
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: package-sdist
           path: dist/*
