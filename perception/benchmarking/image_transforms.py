@@ -17,7 +17,7 @@ def apply_watermark(watermark, alpha: float = 1.0, size: float = 1.0):
 
     # Why do we have to do this? It's not clear. But the process doesn't work
     # without it.
-    (B, G, R, A) = cv2.split(watermark)
+    B, G, R, A = cv2.split(watermark)
     B = cv2.bitwise_and(B, B, mask=A)
     G = cv2.bitwise_and(G, G, mask=A)
     R = cv2.bitwise_and(R, R, mask=A)
@@ -25,7 +25,7 @@ def apply_watermark(watermark, alpha: float = 1.0, size: float = 1.0):
 
     def transform(image):
         # Add alpha channel
-        (h, w) = image.shape[:2]
+        h, w = image.shape[:2]
         wh, ww = watermark.shape[:2]
         scale = size * min(h / wh, w / ww)
         image = np.dstack([image, np.ones((h, w), dtype="uint8") * 255])

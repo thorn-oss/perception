@@ -1,7 +1,6 @@
 from Cython.Build import cythonize
 import numpy as np
 
-
 compiler_directives = {"language_level": 3, "embedsignature": True}
 
 

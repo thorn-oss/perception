@@ -79,10 +79,8 @@ def vizualize_pair(
             circle_size=circle_size,
         )
     else:
-        LOGGER.warning(
-            """No match_metadata provided, recalculating match points,
-            won't match perception match points."""
-        )
+        LOGGER.warning("""No match_metadata provided, recalculating match points,
+            won't match perception match points.""")
         img_matched = viz_brute_force(features_1, features_2, img1, img2, ratio=ratio)
 
     return img_matched
