@@ -94,7 +94,7 @@ jobs:
           # Export loaded secrets as environment variables
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.DATA_SCIENCE_OP_SERVICE_ACCOUNT_TOKEN }}
           POETRY_PYPI_TOKEN_PYPI: op://data-science-oss/perception-pypi-api-key/secret/value
       - name: Verify artifacts
         run: |
