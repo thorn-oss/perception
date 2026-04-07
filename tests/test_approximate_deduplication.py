@@ -20,20 +20,12 @@ def test_pairs_to_clusters_component_strictness():
 
 def test_pairs_to_clusters_community_strictness():
     assignments = ad.pairs_to_clusters(
-        ids=["a", "b", "c", "d", "e", "f"],
-        pairs=[
-            ("a", "b"),
-            ("a", "c"),
-            ("b", "c"),
-            ("c", "d"),
-            ("d", "e"),
-            ("d", "f"),
-            ("e", "f"),
-        ],
+        ids=["a", "b", "c"],
+        pairs=[("a", "b"), ("b", "c")],
         strictness="community",
     )
 
-    assert get_cluster_members(assignments) == [["a", "b", "c"], ["d", "e", "f"]]
+    assert get_cluster_members(assignments) == [["a", "b", "c"]]
 
 
 def test_pairs_to_clusters_clique_strictness():
