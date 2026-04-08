@@ -10,7 +10,9 @@ ext_modules = cythonize(
 )
 
 for extension in ext_modules:
-    extension.include_dirs = list(getattr(extension, "include_dirs", [])) + [np.get_include()]
+    extension.include_dirs = list(getattr(extension, "include_dirs", [])) + [
+        np.get_include()
+    ]
 
 setup(
     ext_modules=ext_modules,
