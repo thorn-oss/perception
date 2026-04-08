@@ -24,6 +24,17 @@ class ClusterAssignment(typing_extensions.TypedDict):
 
 
 def _community_detector(graph: nk.Graph):
+    """This is a temporary fix for a segfault in PLP on MacOS. This maintains
+    the current behavior on other platforms while unblocking community level
+    detection on Mac.
+
+    Args:
+        graph (nk.Graph): The input graph for community detection.
+
+    Returns:
+        nk.community.CommunityDetection: The community detection algorithm instance.
+    """
+
     if sys.platform == "darwin":
         return nk.community.LPDegreeOrdered(graph)
     return nk.community.PLP(graph, maxIterations=32)
