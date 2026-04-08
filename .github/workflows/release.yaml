@@ -13,7 +13,7 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     name: Build for ${{ matrix.os }} on Python ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Full clone for version calculation
           fetch-depth: 0
@@ -25,7 +25,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: false
       - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@v3
+        uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
         if: ${{ ! startsWith(matrix.os, 'macos') }}
       - name: Setup Dependencies with Homebrew
         if: startsWith(matrix.os, 'macos')
@@ -44,7 +44,7 @@ jobs:
           uv tool run --from repairwheel repairwheel -o dist dist-tmp/*.whl
           find dist -name "*.whl" -type f | sed -n "s/\(.*\)\.linux.*\.whl$/& \1.whl/p" | xargs -r -n 2 mv
           rm -rf dist-tmp
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: package-wheels-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist/*
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build sdist
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Full clone for version calculation
           fetch-depth: 0
@@ -72,7 +72,7 @@ jobs:
           echo "Python: $(uv run python --version)"
           echo "Git describe: $(git describe --tags --always)"
           uv build --sdist --out-dir="dist"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: package-sdist
           path: dist/*
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'thorn-oss' && github.event_name == 'release' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Full clone for version calculation
           fetch-depth: 0
@@ -94,13 +94,13 @@ jobs:
           python-version: "3.13"
           enable-cache: false
       - name: Download wheels
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: dist
           pattern: package-*
           merge-multiple: true
       - name: Load PyPI Token
-        uses: 1password/load-secrets-action@v4
+        uses: 1password/load-secrets-action@7ce42673ba9ed69053d678faeba29ea36bd25755 # v4.0.0
         with:
           # Export loaded secrets as environment variables
           export-env: true
