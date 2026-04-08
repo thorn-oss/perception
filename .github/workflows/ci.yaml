@@ -36,10 +36,6 @@ jobs:
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - name: Setup Project
         run: uv sync --all-extras --frozen
-      - name: Normalize OpenCV package
-        run: |
-          uv run python -m pip uninstall -y opencv-python-headless
-          uv run python -m pip install --no-deps --force-reinstall opencv-contrib-python-headless
       - name: Run checks
         run: |
           uv lock --check

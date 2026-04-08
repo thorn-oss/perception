@@ -76,6 +76,13 @@ ignore_missing_imports = true
 [tool.black]
 target-version = ["py310"]
 
+[tool.uv]
+# Albumentations pulls in `opencv-python-headless`, but perception needs
+# contrib modules like `cv2.img_hash` and `cv2.SIFT_create`, which come from
+# `opencv-contrib-python-headless`. Installing both distributions together
+# causes file-level conflicts in the environment.
+exclude-dependencies = ["opencv-python-headless"]
+
 [build-system]
 requires = [
   "Cython>=3.0.0,<4.0.0",
