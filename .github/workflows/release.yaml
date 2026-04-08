@@ -24,13 +24,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: false
-      - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
-        if: ${{ ! startsWith(matrix.os, 'macos') }}
-      - name: Setup Dependencies with Homebrew
+      - name: Setup Build Dependencies with Homebrew
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install llvm ffmpeg
+          brew install llvm
           echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
       - name: Build Project

@@ -25,15 +25,24 @@ jobs:
             pyproject.toml
             uv.lock
           cache-suffix: ${{ runner.os }}-${{ matrix.python-version }}
-      - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
-        if: ${{ ! startsWith(matrix.os, 'macos') }}
+      - name: Setup FFMPEG on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Setup FFMPEG on Windows
+        if: startsWith(matrix.os, 'windows')
+        run: choco install ffmpeg --yes --no-progress
       - name: Setup Dependencies with Homebrew
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install llvm ffmpeg
           echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
+      - name: Verify FFMPEG
+        run: |
+          ffmpeg -version
+          ffprobe -version
       - name: Setup Project
         run: uv sync --all-extras --frozen
       - name: Run checks
