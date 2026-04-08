@@ -81,6 +81,8 @@ target-version = ["py310"]
 # contrib modules like `cv2.img_hash` and `cv2.SIFT_create`, which come from
 # `opencv-contrib-python-headless`. Installing both distributions together
 # causes file-level conflicts in the environment.
+# NOTE: this setting only applies to uv. If you are using pip with the
+# `benchmarking` extra, see the README for the required install procedure.
 exclude-dependencies = ["opencv-python-headless"]
 
 [build-system]
