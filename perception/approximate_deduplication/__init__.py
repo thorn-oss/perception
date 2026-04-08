@@ -1,10 +1,11 @@
 import logging
 import math
 import os.path as op
+import sys
 import typing
 
-import faiss
 import networkit as nk
+import faiss
 import numpy as np
 import tqdm
 import typing_extensions
@@ -20,6 +21,12 @@ TRAIN_LARGE_SIZE: int = 50_000
 class ClusterAssignment(typing_extensions.TypedDict):
     cluster: int
     id: typing.Any
+
+
+def _community_detector(graph: nk.Graph):
+    if sys.platform == "darwin":
+        return nk.community.LPDegreeOrdered(graph)
+    return nk.community.PLP(graph, maxIterations=32)
 
 
 def build_index(
@@ -249,7 +256,7 @@ def pairs_to_clusters(
         # Map between node values for a connected component
         component_node_map = dict(enumerate(component))
         cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
-        algo = nk.community.PLP(cc_sub_graph, maxIterations=32)
+        algo = _community_detector(cc_sub_graph)
         algo.run()
         communities = algo.getPartition()
         community_map = communities.subsetSizeMap()
