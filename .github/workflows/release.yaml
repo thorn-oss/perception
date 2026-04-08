@@ -13,12 +13,17 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     name: Build for ${{ matrix.os }} on Python ${{ matrix.python-version }}
     steps:
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+        with:
+          # Full clone for version calculation
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
+          enable-cache: false
       - name: Setup FFMPEG
         uses: FedericoCarboni/setup-ffmpeg@v3
         if: ${{ ! startsWith(matrix.os, 'macos') }}
@@ -28,14 +33,17 @@ jobs:
           brew install llvm ffmpeg
           echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
-      - uses: actions/checkout@v6
-        with:
-          # Full clone for version calculation
-          fetch-depth: 0
-          fetch-tags: true
-          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
       - name: Build Project
-        run: make build-wheel
+        shell: bash
+        run: |
+          rm -rf build Perception.egg-info
+          echo "uv: $(uv --version)"
+          echo "Python: $(uv run python --version)"
+          echo "Git describe: $(git describe --tags --always)"
+          uv build --wheel --out-dir="dist-tmp" --clear
+          uv tool run --from repairwheel repairwheel -o dist dist-tmp/*.whl
+          find dist -name "*.whl" -type f | sed -n "s/\(.*\)\.linux.*\.whl$/& \1.whl/p" | xargs -r -n 2 mv
+          rm -rf dist-tmp
       - uses: actions/upload-artifact@v7
         with:
           name: package-wheels-${{ matrix.os }}-${{ matrix.python-version }}
@@ -45,20 +53,25 @@ jobs:
     runs-on: ubuntu-latest
     name: Build sdist
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
       - uses: actions/checkout@v6
         with:
           # Full clone for version calculation
           fetch-depth: 0
           fetch-tags: true
           ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          python-version: "3.13"
+          enable-cache: false
       - name: Build Project
-        run: make build-sdist
+        shell: bash
+        run: |
+          rm -rf build Perception.egg-info
+          echo "uv: $(uv --version)"
+          echo "Python: $(uv run python --version)"
+          echo "Git describe: $(git describe --tags --always)"
+          uv build --sdist --out-dir="dist"
       - uses: actions/upload-artifact@v7
         with:
           name: package-sdist
@@ -75,13 +88,11 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           ref: refs/tags/${{ github.event.release.tag_name }}
-      - uses: actions/setup-python@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.13"
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
-      - name: Setup Dynamic Versioning
-        run: poetry self add "poetry-dynamic-versioning[plugin]"
+          enable-cache: false
       - name: Download wheels
         uses: actions/download-artifact@v8
         with:
@@ -95,7 +106,7 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.DATA_SCIENCE_OP_SERVICE_ACCOUNT_TOKEN }}
-          POETRY_PYPI_TOKEN_PYPI: op://data-science-oss/perception-pypi-api-key/secret/value
+          UV_PUBLISH_TOKEN: op://data-science-oss/perception-pypi-api-key/secret/value
       - name: Verify artifacts
         run: |
           mapfile -t artifacts < <(find dist -type f \( -name "*.whl" -o -name "*.tar.gz" \))
@@ -109,4 +120,4 @@ jobs:
             exit 1
           fi
       - name: Publish package
-        run: poetry publish -n
+        run: uv publish --trusted-publishing never --no-attestations

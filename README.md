@@ -51,11 +51,12 @@ See below for end-to-end examples for common use cases for perceptual hashes.
 To work on the project, start by doing the following.
 
 ```bash
-# Install local dependencies for
-# code completion, etc.
+# Install local dependencies for code completion,
+# testing, and linting.
 make init
+```
 
-- To do a (close to) comprehensive check before committing code, you can use `make precommit`.
+To do a (close to) comprehensive check before committing code, use `make precommit`.
 
 To implement new features, please first file an issue proposing your change for discussion.
 
@@ -70,4 +71,3 @@ examples.
 - [imagededup](https://idealo.github.io/imagededup/)
 - [ImageHash](https://github.com/JohannesBuchner/imagehash)
 - [PhotoHash](https://github.com/bunchesofdonald/photohash)
-```
