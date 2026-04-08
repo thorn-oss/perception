@@ -10,6 +10,9 @@ dependencies = [
   "Cython>=3.0.0,<4.0.0",
   "numpy>=1.26.4,<3.0.0",
   "opencv-contrib-python-headless>=4.10.0,<5.0.0",
+  "faiss-cpu>=1.8.0,<2.0.0",
+  "networkit>=11.1,<12.0.0; sys_platform != 'darwin'",
+  "networkx>=3.0,<4.0; sys_platform == 'darwin'",
   "pandas",
   "Pillow",
   "pywavelets>=1.5.0,<2.0.0",
@@ -29,7 +32,6 @@ benchmarking = [
   "ffmpeg-python",
 ]
 matching = ["aiohttp", "python-json-logger"]
-experimental = ["networkit>=11.1,<12.0.0", "faiss-cpu>=1.8.0,<2.0.0"]
 pdq = ["pdqhash>=0.2.7,<0.3.0"]
 
 

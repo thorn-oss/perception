@@ -4,10 +4,11 @@ import os.path as op
 import typing
 
 import faiss
-import networkit as nk
 import numpy as np
 import tqdm
 import typing_extensions
+
+from ._graph_backend import get_graph_backend
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0
@@ -227,16 +228,13 @@ def pairs_to_clusters(
     node_to_id_map = {v: k for k, v in id_to_node_map.items()}
 
     LOGGER.debug("Building graph.")
-    graph = nk.Graph(len(list_ids))
     node_pairs = {(id_to_node_map[pair[0]], id_to_node_map[pair[1]]) for pair in pairs}
-    for node_pair in node_pairs:
-        graph.addEdge(node_pair[0], node_pair[1])
+    backend = get_graph_backend()
+    graph = backend.build_graph(len(list_ids), node_pairs)
 
     assignments: list[ClusterAssignment] = []
     cluster_index = 0
-    cc_query = nk.components.ConnectedComponents(graph)
-    cc_query.run()
-    components = cc_query.getComponents()
+    components = backend.connected_components(graph)
 
     for component in components:
         LOGGER.debug("Got component with size: %s", len(component))
@@ -246,19 +244,9 @@ def pairs_to_clusters(
             )
             cluster_index += 1
             continue
-        # Map between node values for a connected component
-        component_node_map = dict(enumerate(component))
-        cc_sub_graph = nk.graphtools.subgraphFromNodes(graph, component, compact=True)
-        algo = nk.community.PLP(cc_sub_graph)
-        algo.run()
-        communities = algo.getPartition()
-        community_map = communities.subsetSizeMap()
-        for community, size in community_map.items():
-            LOGGER.debug("Got community with size: %s", size)
-            community_members = list(
-                communities.getMembers(community)
-            )  # Need to do this to do batching.
-            community_members = [component_node_map[i] for i in community_members]
+        communities = backend.communities(graph, component)
+        for community_members in communities:
+            LOGGER.debug("Got community with size: %s", len(community_members))
             if strictness == "community":
                 assignments.extend(
                     [
@@ -269,33 +257,20 @@ def pairs_to_clusters(
                 cluster_index += 1
                 continue
 
-            for start in range(0, len(community_members), max_clique_batch_size):
-                community_nodes = community_members[
-                    start : start + max_clique_batch_size
-                ]
-                LOGGER.debug("Creating subgraph with %s nodes.", len(community_nodes))
-                # Map between node values for a community
-                community_node_map = dict(enumerate(community_nodes))
-                subgraph = nk.graphtools.subgraphFromNodes(
-                    graph, community_nodes, compact=True
+            for clique_members in backend.maximal_cliques(
+                graph,
+                community_members,
+                max_clique_batch_size=max_clique_batch_size,
+            ):
+                assignments.extend(
+                    [
+                        {
+                            "id": node_to_id_map[n],
+                            "cluster": cluster_index,
+                        }
+                        for n in clique_members
+                    ]
                 )
-
-                while subgraph.numberOfNodes() > 0:
-                    LOGGER.debug("Subgraph size: %s", subgraph.numberOfNodes())
-                    clique = nk.clique.MaximalCliques(subgraph, maximumOnly=True)
-                    clique.run()
-                    clique_members = clique.getCliques()[0]
-                    assignments.extend(
-                        [
-                            {
-                                "id": node_to_id_map[community_node_map[n]],
-                                "cluster": cluster_index,
-                            }
-                            for n in clique_members
-                        ]
-                    )
-                    cluster_index += 1
-                    for n in clique_members:
-                        subgraph.removeNode(n)
+                cluster_index += 1
 
     return assignments
