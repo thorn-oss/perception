@@ -14,29 +14,41 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
-        uses: actions/checkout@v6
-      - name: Setup Poetry
-        uses: abatilo/actions-poetry@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
-          cache-dependency-path: poetry.lock
-      - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        if: ${{ ! startsWith(matrix.os, 'macos') }}
+          enable-cache: true
+          cache-python: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+          cache-suffix: ${{ runner.os }}-${{ matrix.python-version }}
+      - name: Setup FFMPEG on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Setup FFMPEG on Windows
+        if: startsWith(matrix.os, 'windows')
+        run: choco install ffmpeg --yes --no-progress
       - name: Setup Dependencies with Homebrew
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install llvm ffmpeg
           echo "CC=$(brew --prefix)/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix)/opt/llvm/bin/clang++" >> $GITHUB_ENV
-      - name: Setup Project
-        run: make init-project
-      - name: Normalize OpenCV package
+      - name: Verify FFMPEG
         run: |
-          poetry run python -m pip uninstall -y opencv-python-headless
-          poetry run python -m pip install --no-deps --force-reinstall opencv-contrib-python-headless
-      - name: Run precommit
-        run: make precommit
+          ffmpeg -version
+          ffprobe -version
+      - name: Setup Project
+        run: uv sync --all-extras --frozen
+      - name: Run checks
+        run: |
+          uv lock --check
+          uv run ruff check perception tests
+          uv run mypy perception
+          uv run black --check .
+          uv run pytest tests/

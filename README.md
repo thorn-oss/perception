@@ -12,6 +12,35 @@
 
 `pip install perception`
 
+#### Optional extras
+
+`perception` provides optional extras for additional functionality:
+
+- `benchmarking` – tools for benchmarking perceptual hashes
+- `matching` – async matching utilities
+- `pdq` – Facebook's PDQ hash support
+
+**Note for `benchmarking` extra users:** The `benchmarking` extra depends on
+`albumentations`, which in turn requires `opencv-python-headless`. However,
+`perception` already depends on `opencv-contrib-python-headless` (needed for
+contrib modules such as `cv2.img_hash` and `cv2.SIFT_create`). Installing both
+OpenCV distributions simultaneously causes file-level conflicts.
+
+If you are using [uv](https://docs.astral.sh/uv/), this is handled
+automatically:
+
+```bash
+uv pip install "perception[benchmarking]"
+```
+
+If you are using plain `pip`, install the extra and then force-reinstall the
+contrib variant to remove the conflicting headless package:
+
+```bash
+pip install "perception[benchmarking]"
+pip install --force-reinstall --no-deps opencv-contrib-python-headless
+```
+
 ### Hashing
 
 Hashing with different functions is simple with `perception`.
@@ -51,11 +80,12 @@ See below for end-to-end examples for common use cases for perceptual hashes.
 To work on the project, start by doing the following.
 
 ```bash
-# Install local dependencies for
-# code completion, etc.
+# Install local dependencies for code completion,
+# testing, and linting.
 make init
+```
 
-- To do a (close to) comprehensive check before committing code, you can use `make precommit`.
+To do a (close to) comprehensive check before committing code, use `make precommit`.
 
 To implement new features, please first file an issue proposing your change for discussion.
 
@@ -70,4 +100,3 @@ examples.
 - [imagededup](https://idealo.github.io/imagededup/)
 - [ImageHash](https://github.com/JohannesBuchner/imagehash)
 - [PhotoHash](https://github.com/bunchesofdonald/photohash)
-```
