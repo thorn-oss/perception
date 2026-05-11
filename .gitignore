@@ -17,6 +17,7 @@ notebooks
 # Local environment
 .venv
 .python-version
+.pre-commit-cache/
 
 # Coverage file
 .coverage
