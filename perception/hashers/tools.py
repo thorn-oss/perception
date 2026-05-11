@@ -1064,10 +1064,7 @@ def unletterbox(
 
         if len(set(corners)) == 4:
             LOGGER.debug("No common corner color detected, skipping content detection.")
-            return (
-                (0, w),
-                (0, h),
-            )  # Return full image bounds instead of None to maintain backwards compatibility
+            return None
         # Use the most common corner value as the background intensity.
         counts = Counter(corners)
         bg_gray = counts.most_common(1)[0][0]
@@ -1079,10 +1076,7 @@ def unletterbox(
     # If every pixel is classified as content, there is no border to remove.
     if content_mask.all():
         LOGGER.debug("All pixels differ from background; no letterbox detected.")
-        return (
-            (0, w),
-            (0, h),
-        )  # Return full image bounds instead of None to maintain backwards compatibility
+        return None
 
     # Find the content bounding box by projecting the mask onto rows and
     # columns. cv2.reduce is used instead of np.sum for performance.
@@ -1116,10 +1110,7 @@ def unletterbox(
             "Crop would not reduce either dimension by %.0f%%; skipping.",
             min_reduction * 100,
         )
-        return (
-            (0, w),
-            (0, h),
-        )  # Return full image bounds instead of None to maintain backwards compatibility
+        return None
     # Reject if the remaining content region is too small to be useful.
     if width < min_side_length or height < min_side_length:
         LOGGER.debug(
@@ -1156,7 +1147,7 @@ def unletterbox_crop(
         min_reduction: The minimum fraction (0–1) of the original width
             or height that must be removed for the crop to be worthwhile.
             If the crop removes less than this from both dimensions,
-            the original image is returned. Defaults to 0.02 (2%).
+            ``None`` is returned. Defaults to 0.02 (2%).
     Returns:
         The cropped image or None if the image is mostly blank space.
     """
