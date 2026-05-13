@@ -16,6 +16,10 @@
 
 `perception` provides optional extras for additional functionality:
 
+- `approximate-deduplication` – FAISS-based approximate-nearest-neighbor
+  deduplication and graph community/clique detection (used by
+  `perception.approximate_deduplication` and
+  `perception.local_descriptor_deduplication`)
 - `benchmarking` – tools for benchmarking perceptual hashes
 - `matching` – async matching utilities
 - `pdq` – Facebook's PDQ hash support

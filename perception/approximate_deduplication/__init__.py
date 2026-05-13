@@ -3,7 +3,14 @@ import math
 import os.path as op
 import typing
 
-import faiss
+try:
+    import faiss
+except ImportError as exc:  # pragma: no cover - exercised only without extra installed
+    raise ImportError(
+        "perception.approximate_deduplication requires the "
+        "'approximate-deduplication' extra. Install it with "
+        "`pip install perception[approximate-deduplication]`."
+    ) from exc
 import numpy as np
 import tqdm
 import typing_extensions

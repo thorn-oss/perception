@@ -26,9 +26,21 @@ class GraphBackend(ABC):
     ) -> list[list[int]]: ...
 
 
+_EXTRA_INSTALL_HINT = (
+    "perception.approximate_deduplication requires the "
+    "'approximate-deduplication' extra. Install it with "
+    "`pip install perception[approximate-deduplication]`."
+)
+
+
 class NetworkitGraphBackend(GraphBackend):
     def __init__(self):
-        import networkit as nk
+        try:
+            import networkit as nk
+        except (
+            ImportError
+        ) as exc:  # pragma: no cover - exercised only without extra installed
+            raise ImportError(_EXTRA_INSTALL_HINT) from exc
 
         self.nk = nk
 
@@ -83,7 +95,12 @@ class NetworkitGraphBackend(GraphBackend):
 
 class NetworkxGraphBackend(GraphBackend):
     def __init__(self):
-        import networkx as nx
+        try:
+            import networkx as nx
+        except (
+            ImportError
+        ) as exc:  # pragma: no cover - exercised only without extra installed
+            raise ImportError(_EXTRA_INSTALL_HINT) from exc
 
         self.nx = nx
 

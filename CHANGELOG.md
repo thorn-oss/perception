@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-13
+This release moves heavyweight approximate-deduplication dependencies behind an optional extra so they are not installed for users who only need core hashing functionality.
+
+### Breaking changes
+- `faiss-cpu`, `networkit`, and `networkx` are no longer core dependencies. Users of `perception.approximate_deduplication` or `perception.local_descriptor_deduplication` must now install the new `approximate-deduplication` extra: `pip install perception[approximate-deduplication]`. Importing those modules without the extra raises an `ImportError` with installation instructions.
+- `pandas` is no longer a core dependency. It is pulled in automatically by the `approximate-deduplication` and `benchmarking` extras (the only modules that use it). Code that imports `perception.benchmarking`, `perception.approximate_deduplication`, `perception.local_descriptor_deduplication`, or `perception.testing` should install the appropriate extra.
+
 ## [0.4.0] - 2020-10-17
 This release switches from using false positive rates in benchmarking to reporting precision, which is more intuitive.
 

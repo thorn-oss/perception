@@ -2345,15 +2345,9 @@ wheels = [
 name = "perception"
 source = { editable = "." }
 dependencies = [
-    { name = "faiss-cpu" },
-    { name = "networkit", marker = "sys_platform != 'darwin'" },
-    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "opencv-contrib-python-headless" },
-    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pillow" },
     { name = "pywavelets", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pywavelets", version = "1.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2365,10 +2359,20 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+approximate-deduplication = [
+    { name = "faiss-cpu" },
+    { name = "networkit", marker = "sys_platform != 'darwin'" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
 benchmarking = [
     { name = "albumentations" },
     { name = "ffmpeg-python" },
     { name = "matplotlib" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "tabulate" },
@@ -2386,9 +2390,15 @@ dev = [
     { name = "albumentations" },
     { name = "black" },
     { name = "coverage" },
+    { name = "faiss-cpu" },
     { name = "ipython", version = "8.39.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "ipython", version = "9.13.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "mypy" },
+    { name = "networkit", marker = "sys_platform != 'darwin'" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas-stubs", version = "2.3.3.260113", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas-stubs", version = "3.0.0.260204", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pre-commit" },
@@ -2404,14 +2414,15 @@ dev = [
 requires-dist = [
     { name = "aiohttp", marker = "extra == 'matching'" },
     { name = "albumentations", marker = "extra == 'benchmarking'", specifier = ">=2.0.8,<3.0.0" },
-    { name = "faiss-cpu", specifier = ">=1.8.0,<2.0.0" },
+    { name = "faiss-cpu", marker = "extra == 'approximate-deduplication'", specifier = ">=1.8.0,<2.0.0" },
     { name = "ffmpeg-python", marker = "extra == 'benchmarking'" },
     { name = "matplotlib", marker = "extra == 'benchmarking'" },
-    { name = "networkit", marker = "sys_platform != 'darwin'", specifier = ">=11.1,<12.0.0" },
-    { name = "networkx", marker = "sys_platform == 'darwin'", specifier = ">=3.0,<4.0" },
+    { name = "networkit", marker = "sys_platform != 'darwin' and extra == 'approximate-deduplication'", specifier = ">=11.1,<12.0.0" },
+    { name = "networkx", marker = "sys_platform == 'darwin' and extra == 'approximate-deduplication'", specifier = ">=3.0,<4.0" },
     { name = "numpy", specifier = ">=1.26.4,<3.0.0" },
     { name = "opencv-contrib-python-headless", specifier = ">=4.10.0,<5.0.0" },
-    { name = "pandas" },
+    { name = "pandas", marker = "extra == 'approximate-deduplication'" },
+    { name = "pandas", marker = "extra == 'benchmarking'" },
     { name = "pdqhash", marker = "extra == 'pdq'", specifier = ">=0.2.7,<0.3.0" },
     { name = "pillow" },
     { name = "python-json-logger", marker = "extra == 'matching'" },
@@ -2423,15 +2434,19 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.67.1,<5.0.0" },
     { name = "validators", specifier = ">=0.22.0,<1.0.0" },
 ]
-provides-extras = ["benchmarking", "matching", "pdq"]
+provides-extras = ["approximate-deduplication", "benchmarking", "matching", "pdq"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "albumentations", specifier = ">=2.0.8,<3.0.0" },
     { name = "black", specifier = ">=26,<27" },
     { name = "coverage" },
+    { name = "faiss-cpu", specifier = ">=1.8.0,<2.0.0" },
     { name = "ipython" },
     { name = "mypy" },
+    { name = "networkit", marker = "sys_platform != 'darwin'", specifier = ">=11.1,<12.0.0" },
+    { name = "networkx", marker = "sys_platform == 'darwin'", specifier = ">=3.0,<4.0" },
+    { name = "pandas" },
     { name = "pandas-stubs" },
     { name = "pre-commit" },
     { name = "pytest" },

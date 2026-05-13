@@ -2,7 +2,14 @@ import time
 import typing
 import warnings
 
-import faiss
+try:
+    import faiss
+except ImportError as exc:  # pragma: no cover - exercised only without extra installed
+    raise ImportError(
+        "perception.approximate_deduplication requires the "
+        "'approximate-deduplication' extra. Install it with "
+        "`pip install perception[approximate-deduplication]`."
+    ) from exc
 import numpy as np
 import pandas as pd
 import typing_extensions
