@@ -9,23 +9,27 @@ requires-python = ">=3.10,<4.0"
 dependencies = [
   "numpy>=1.26.4,<3.0.0",
   "opencv-contrib-python-headless>=4.10.0,<5.0.0",
-  "faiss-cpu>=1.8.0,<2.0.0",
-  "networkit>=11.1,<12.0.0; sys_platform != 'darwin'",
-  "networkx>=3.0,<4.0; sys_platform == 'darwin'",
-  "pandas",
   "Pillow",
   "pywavelets>=1.5.0,<2.0.0",
   "validators>=0.22.0,<1.0.0",
   "rich>=13.7.0,<14.0.0",
   "scipy",
   "tqdm>=4.67.1,<5.0.0",
+  "typing_extensions>=4.0,<5.0",
 ]
 
 
 [project.optional-dependencies]
+approximate-deduplication = [
+  "faiss-cpu>=1.8.0,<2.0.0",
+  "networkit>=11.1,<12.0.0; sys_platform != 'darwin'",
+  "networkx>=3.0,<4.0; sys_platform == 'darwin'",
+  "pandas",
+]
 benchmarking = [
   "matplotlib",
   "albumentations>=2.0.8,<3.0.0",
+  "pandas",
   "tabulate",
   "scikit-learn",
   "ffmpeg-python",
@@ -36,10 +40,14 @@ pdq = ["pdqhash>=0.2.7,<0.3.0"]
 [dependency-groups]
 dev = [
   "albumentations>=2.0.8,<3.0.0",
-  "black>=26,<27",
+  "black==26.3.1",
   "coverage",
+  "faiss-cpu>=1.8.0,<2.0.0",
   "ipython",
   "mypy",
+  "networkit>=11.1,<12.0.0; sys_platform != 'darwin'",
+  "networkx>=3.0,<4.0; sys_platform == 'darwin'",
+  "pandas",
   "pandas-stubs",
   "pre-commit",
   "pytest",

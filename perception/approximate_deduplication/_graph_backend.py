@@ -2,6 +2,8 @@ import sys
 import typing
 from abc import ABC, abstractmethod
 
+from perception._optional import import_optional
+
 
 class GraphBackend(ABC):
     @abstractmethod
@@ -28,9 +30,7 @@ class GraphBackend(ABC):
 
 class NetworkitGraphBackend(GraphBackend):
     def __init__(self):
-        import networkit as nk
-
-        self.nk = nk
+        self.nk = import_optional("networkit", extra="approximate-deduplication")
 
     def build_graph(
         self, node_count: int, edges: typing.Iterable[tuple[int, int]]
@@ -83,9 +83,7 @@ class NetworkitGraphBackend(GraphBackend):
 
 class NetworkxGraphBackend(GraphBackend):
     def __init__(self):
-        import networkx as nx
-
-        self.nx = nx
+        self.nx = import_optional("networkx", extra="approximate-deduplication")
 
     def build_graph(
         self, node_count: int, edges: typing.Iterable[tuple[int, int]]

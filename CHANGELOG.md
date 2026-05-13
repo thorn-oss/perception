@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-13
+This release moves heavyweight dependencies behind optional extras so they are not installed for users who only need core hashing functionality, and standardizes the error users see when an extra is missing.
+
+### Breaking changes
+- `faiss-cpu`, `networkit`, and `networkx` are no longer core dependencies. They are pulled in by the new `approximate-deduplication` extra (`pip install perception[approximate-deduplication]`), which is required to use `perception.approximate_deduplication` or `perception.local_descriptor_deduplication`.
+- `pandas` is no longer a core dependency. It is pulled in by the `approximate-deduplication` and `benchmarking` extras (the only modules that use it). Code that imports `perception.benchmarking`, `perception.approximate_deduplication`, `perception.local_descriptor_deduplication`, or `perception.testing` should install the appropriate extra.
+
+### Enhancements
+- All optional-dependency import sites — across the `approximate-deduplication`, `benchmarking`, `matching`, and `pdq` extras — now raise a uniform, actionable `ImportError` pointing at the correct `pip install perception[<extra>]` command when the relevant extra is not installed. This is implemented via a single helper, `perception._optional.import_optional`.
+- `typing_extensions` is now an explicit core dependency (it was previously transitive via `faiss-cpu` / `pandas`).
+
 ## [0.4.0] - 2020-10-17
 This release switches from using false positive rates in benchmarking to reporting precision, which is more intuitive.
 

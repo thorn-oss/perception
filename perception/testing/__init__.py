@@ -6,11 +6,13 @@ from importlib import resources
 
 import cv2
 import numpy as np
-import pandas as pd
 import pytest
 from PIL import Image
 
 from .. import hashers, tools
+from .._optional import import_optional
+
+pd = import_optional("pandas", extra="benchmarking")
 
 SIZES = {"float32": 32, "uint8": 8, "bool": 1}
 

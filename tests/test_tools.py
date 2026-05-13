@@ -106,7 +106,14 @@ def test_compute_euclidean_pairwise_duplicates():
     # Use grouped files.
     counts = np.array([3, 3, 2, 2])
     expected = np.array(
-        [[2 / 3, 2 / 3], [0, 0], [0, 0], [1 / 3, 1 / 2], [0, 0], [0, 0]]
+        [
+            [2 / 3, 2 / 3],
+            [0, 0],
+            [0, 0],
+            [1 / 3, 1 / 2],
+            [0, 0],
+            [0, 0],
+        ]
     )
     actual = tools.extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype("int32"),
@@ -278,8 +285,10 @@ def test_ffmpeg_video():
             diff = np.abs(frame1.astype("int32") - frame2.astype("int32")).flatten()
             assert index1 == index2, f"Index mismatch for {filename}"
             np.testing.assert_allclose(
-                timestamp1, timestamp2
-            ), f"Timestamp mismatch for {filename}"
+                timestamp1,
+                timestamp2,
+                err_msg=f"Timestamp mismatch for {filename}",
+            )
             assert np.percentile(diff, 75) < 25, f"Frame mismatch for {filename}"
 
 

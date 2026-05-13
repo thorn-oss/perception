@@ -1,9 +1,11 @@
 import os
 
 import cv2
-import ffmpeg
 
+from .._optional import import_optional
 from ..hashers.tools import read_video
+
+ffmpeg = import_optional("ffmpeg", extra="benchmarking")
 
 
 def probe(filepath):

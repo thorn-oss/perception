@@ -4,13 +4,15 @@ import json
 import logging
 import typing
 
-import aiohttp.web
 import numpy as np
-from pythonjsonlogger import jsonlogger
 
 import perception.hashers.tools as pht
+from perception._optional import import_optional
 
 from .index import ApproximateNearestNeighbors
+
+aiohttp_web = import_optional("aiohttp.web", extra="matching")
+jsonlogger = import_optional("pythonjsonlogger.jsonlogger", extra="matching")
 
 
 def is_similarity_valid(data, index: ApproximateNearestNeighbors):
@@ -54,13 +56,13 @@ async def similarity(request):
     try:
         request_data = await request.json()
     except json.JSONDecodeError:
-        return aiohttp.web.json_response({"reason": "Malformed JSON"}, status=400)
+        return aiohttp_web.json_response({"reason": "Malformed JSON"}, status=400)
 
     index = request.app["index"]
     try:
         assert is_similarity_valid(request_data, index)
     except Exception:
-        return aiohttp.web.json_response({"reason": "Invalid JSON request"}, status=400)
+        return aiohttp_web.json_response({"reason": "Invalid JSON request"}, status=400)
 
     async with request.app["query_semaphore"]:
         matches = await asyncio.get_event_loop().run_in_executor(
@@ -78,7 +80,7 @@ async def similarity(request):
         )
         matches = json.loads(json.dumps({"queries": matches}))
 
-    return aiohttp.web.json_response(matches)
+    return aiohttp_web.json_response(matches)
 
 
 def get_logger(name, log_level):
@@ -133,7 +135,7 @@ async def serve(
     """
     logger = get_logger(name="serve", log_level=log_level)
     logger.info("Initializing web service")
-    app = aiohttp.web.Application()
+    app = aiohttp_web.Application()
     app.router.add_post("/v1/similarity", similarity, name="similarity")
 
     # Store globals in the application object
@@ -144,8 +146,8 @@ async def serve(
     app["index"] = index
     app["query_semaphore"] = asyncio.Semaphore(concurrency)
     logger.info("Entering web service listener loop.")
-    runner = aiohttp.web.AppRunner(app, logger=logger)
+    runner = aiohttp_web.AppRunner(app, logger=logger)
     await runner.setup()
-    site = aiohttp.web.TCPSite(runner, host, port)
+    site = aiohttp_web.TCPSite(runner, host, port)
     await site.start()
     return site

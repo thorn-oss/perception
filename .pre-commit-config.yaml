@@ -24,3 +24,17 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
+        # Limit to package sources; `[tool.mypy] exclude` is ignored when
+        # pre-commit passes file paths as arguments.
+        files: ^perception/
+        # mirrors-mypy runs in an isolated env, so re-list any deps mypy
+        # needs to follow imports / type-check our code. Keep in sync
+        # with the dev dependency group in pyproject.toml.
+        additional_dependencies:
+          - numpy>=1.26.4,<3.0.0
+          - pandas
+          - pandas-stubs
+          - scipy
+          - typing_extensions>=4.0,<5.0
+          - types-pillow
+          - types-tqdm

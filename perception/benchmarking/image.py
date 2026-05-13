@@ -2,16 +2,23 @@ import logging
 import os
 import uuid
 import warnings
+from typing import TYPE_CHECKING
 
 import cv2
-import albumentations
-import pandas as pd
 from tqdm import tqdm
 
+from .._optional import import_optional
 from ..hashers import tools
 from ..hashers.hasher import ImageHasher
 from ..tools import deduplicate, flatten
 from .common import BenchmarkDataset, BenchmarkHashes, BenchmarkTransforms
+
+if TYPE_CHECKING:
+    import albumentations
+    import pandas as pd
+else:
+    albumentations = import_optional("albumentations", extra="benchmarking")
+    pd = import_optional("pandas", extra="benchmarking")
 
 log = logging.getLogger(__name__)
 

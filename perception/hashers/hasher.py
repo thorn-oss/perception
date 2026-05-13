@@ -287,7 +287,6 @@ class ImageHasher(Hasher):
 
 
 class VideoHasher(Hasher):
-
     #: The frame rate at which videos are read
     frames_per_second: float = 1
 

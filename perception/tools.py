@@ -136,8 +136,8 @@ def deduplicate_hashes(
             previous_hash_id = None
             counts_idx = 0
             files_ = (
-                []  # make type check happy
-            )  # We're going to re-build the IDs with deduplicated files.
+                []
+            )  # make type check happy  # We're going to re-build the IDs with deduplicated files.
             for hash_id, _ in hashes:
                 if hash_id != previous_hash_id:
                     files_.append(hash_id)
@@ -188,7 +188,7 @@ def deduplicate(
         hash_dicts = hasher.compute_parallel(
             filepaths=files,
             progress=progress,
-            progress_desc=f"Computing hashes for hash {hasher_idx+1} of {len(hashers)}.",
+            progress_desc=f"Computing hashes for hash {hasher_idx + 1} of {len(hashers)}.",
             isometric=isometric,
         )
         hash_list = sorted(hash_dicts, key=lambda h: h["filepath"])

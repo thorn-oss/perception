@@ -3,12 +3,15 @@ import math
 import os.path as op
 import typing
 
-import faiss
 import numpy as np
 import tqdm
 import typing_extensions
 
-from ._graph_backend import get_graph_backend
+from perception._optional import import_optional
+
+faiss = import_optional("faiss", extra="approximate-deduplication")
+
+from ._graph_backend import get_graph_backend  # noqa: E402  (must follow faiss check)
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_PCT_PROBE = 0

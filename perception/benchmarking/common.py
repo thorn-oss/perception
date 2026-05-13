@@ -7,14 +7,21 @@ import uuid
 import warnings
 import zipfile
 from abc import ABC
+from typing import TYPE_CHECKING
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import tqdm
 from scipy import spatial, stats
 
+from .._optional import import_optional
 from ..hashers.tools import compute_md5, string_to_vector
+
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
+    import pandas as pd
+else:
+    plt = import_optional("matplotlib.pyplot", extra="benchmarking")
+    pd = import_optional("pandas", extra="benchmarking")
 
 try:
     from . import extensions  # type: ignore

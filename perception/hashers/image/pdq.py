@@ -1,6 +1,7 @@
-import pdqhash
-
+from ..._optional import import_optional
 from ..hasher import ImageHasher
+
+pdqhash = import_optional("pdqhash", extra="pdq")
 
 
 class PDQHash(ImageHasher):
