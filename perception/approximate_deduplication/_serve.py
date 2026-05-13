@@ -9,7 +9,7 @@ import numpy as np
 import perception.hashers.tools as pht
 from perception._optional import import_optional
 
-from .index import ApproximateNearestNeighbors
+from ._index import ApproximateNearestNeighbors
 
 aiohttp_web = import_optional("aiohttp.web", extra="matching")
 jsonlogger = import_optional("pythonjsonlogger.jsonlogger", extra="matching")

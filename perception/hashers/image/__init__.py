@@ -1,8 +1,8 @@
-from .average import AverageHash
-from .dhash import DHash
-from .opencv import BlockMean, ColorMoment, MarrHildreth
-from .phash import PHash, PHashF, PHashU8
-from .wavelet import WaveletHash
+from ._average import AverageHash
+from ._dhash import DHash
+from ._opencv import BlockMean, ColorMoment, MarrHildreth
+from ._phash import PHash, PHashF, PHashU8
+from ._wavelet import WaveletHash
 
 __all__ = [
     "AverageHash",

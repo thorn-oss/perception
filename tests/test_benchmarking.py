@@ -209,7 +209,7 @@ def test_euclidean_extension():
     X_trans = np.random.uniform(low=0, high=255, size=(10, 144)).astype("int32")
     mask = np.array([True, False] * 5 * 5).reshape(10, 5)
 
-    distances, indexes = benchmarking.common.extensions.compute_euclidean_metrics(
+    distances, indexes = benchmarking.common._extensions.compute_euclidean_metrics(
         X_noop, X_trans, mask
     )
     distances_py, indexes_py = compute_euclidean_metrics_py(X_noop, X_trans, mask)

@@ -24,14 +24,14 @@ else:
     pd = import_optional("pandas", extra="benchmarking")
 
 try:
-    from . import extensions  # type: ignore
+    from . import _extensions  # type: ignore
 except ImportError:
     warnings.warn(
         "C extensions were not built. Some metrics will be computed more slowly. "
         "Please install from wheels or set up a compiler prior to installation "
         "from source to use extensions."
     )
-    extensions = None
+    _extensions = None
 
 log = logging.getLogger(__name__)
 
@@ -382,7 +382,7 @@ class BenchmarkHashes(Filterable):
                 if (
                     distance_metric != "euclidean"
                     or "int" not in dtype
-                    or extensions is None
+                    or _extensions is None
                 ):
                     distance_matrix = spatial.distance.cdist(
                         XA=X_trans, XB=X_noop, metric=distance_metric
@@ -401,7 +401,7 @@ class BenchmarkHashes(Filterable):
                         distance_matrix_incorrect_image.argmin(axis=1)
                     ]
                 else:
-                    distances, indexes = extensions.compute_euclidean_metrics(
+                    distances, indexes = _extensions.compute_euclidean_metrics(
                         X_noop.astype("int32"), X_trans.astype("int32"), mask
                     )
                     distance_to_correct_image = distances[:, 1]

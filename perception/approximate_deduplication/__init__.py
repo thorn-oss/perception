@@ -97,7 +97,7 @@ def compute_euclidean_pairwise_duplicates_approx(
     faiss_cache_path: str | None = None,
     show_progress: bool = False,
 ):
-    """Provides the same result as perception.extensions.compute_pairwise_duplicates_simple
+    """Provides the same result as perception._extensions.compute_pairwise_duplicates_simple
     but uses an approximate search instead of an exhaustive search, which can dramatically reduce
     processing time.
 

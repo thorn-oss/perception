@@ -29,7 +29,7 @@ The below example does the following:
     import numpy as np
 
     from perception import benchmarking, hashers
-    from perception.hashers.image.pdq import PDQHash
+    from perception.hashers import PDQHash
 
     urllib.request.urlretrieve(
         "https://thorn-perception.s3.amazonaws.com/thorn-perceptual-benchmark-v0.zip",

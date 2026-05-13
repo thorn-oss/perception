@@ -5,7 +5,7 @@ import numpy as np
 import scipy.special
 
 from ..hasher import ImageHasher, VideoHasher
-from ..image.phash import PHashF
+from ..image._phash import PHashF
 
 
 class TMKL2(VideoHasher):

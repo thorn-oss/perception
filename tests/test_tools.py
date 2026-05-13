@@ -115,7 +115,7 @@ def test_compute_euclidean_pairwise_duplicates():
             [0, 0],
         ]
     )
-    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+    actual = tools._extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype("int32"),
         threshold=1,
         counts=counts.astype("uint32"),
@@ -125,7 +125,7 @@ def test_compute_euclidean_pairwise_duplicates():
 
     # Use without computing overlap.
     expected = np.array([[2, 2], [0, 0], [0, 0], [1, 1], [0, 0], [0, 0]])
-    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+    actual = tools._extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype("int32"),
         threshold=1,
         counts=counts.astype("uint32"),
@@ -144,7 +144,7 @@ def test_compute_euclidean_pairwise_duplicates():
         ]
     )
     expected = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [1, 1], [0, 0]])
-    actual = tools.extensions.compute_euclidean_pairwise_duplicates(
+    actual = tools._extensions.compute_euclidean_pairwise_duplicates(
         X=X.astype("int32"), threshold=1, compute_overlap=True
     )
     assert (expected == actual).all()

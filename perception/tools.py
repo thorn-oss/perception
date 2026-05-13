@@ -10,17 +10,17 @@ from scipy import spatial
 from tqdm import tqdm
 
 from . import hashers as perception_hashers
-from .utils import flatten
+from ._utils import flatten
 
 try:
-    from . import extensions  # type: ignore
+    from . import _extensions  # type: ignore
 except ImportError:
     warnings.warn(
         "C extensions were not built. Some metrics will be computed more slowly. "
         "Please install from wheels or set up a compiler prior to installation "
         "from source to use extensions."
     )
-    extensions = None
+    _extensions = None
 
 
 def _multiple_hashes_for_ids(hashes: list[tuple[str, str | np.ndarray]]):
@@ -102,7 +102,7 @@ def deduplicate_hashes(
     n_hashes = len(vectors)
     start_idx = 0
     end_idx = None
-    if distance_metric != "euclidean" or "int" not in hash_dtype or extensions is None:
+    if distance_metric != "euclidean" or "int" not in hash_dtype or _extensions is None:
         iterator = range(n_hashes)
         if progress is not None:
             iterator = progress(iterator, total=n_hashes, desc="Deduplicating.")  # type: ignore[operator]
@@ -150,7 +150,7 @@ def deduplicate_hashes(
             counts = None  # type: ignore
         pairs = [
             (files[idx1], files[idx2])
-            for idx1, idx2 in extensions.compute_euclidean_pairwise_duplicates_simple(
+            for idx1, idx2 in _extensions.compute_euclidean_pairwise_duplicates_simple(
                 vectors.astype("int32"), threshold=threshold, counts=counts
             )
         ]

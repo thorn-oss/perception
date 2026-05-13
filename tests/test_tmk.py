@@ -7,7 +7,7 @@ import platform
 import numpy as np
 import pytest
 
-from perception.hashers.video import tmk
+from perception.hashers.video import _tmk as tmk
 
 TEST_FILES = Path("perception") / "testing" / "videos"
 

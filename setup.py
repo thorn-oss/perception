@@ -5,7 +5,7 @@ from setuptools import setup
 compiler_directives = {"language_level": 3, "embedsignature": True}
 
 ext_modules = cythonize(
-    "perception/**/extensions.pyx",
+    "perception/**/_extensions.pyx",
     compiler_directives=compiler_directives,
 )
 
