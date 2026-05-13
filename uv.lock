@@ -2355,6 +2355,7 @@ dependencies = [
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "tqdm" },
+    { name = "typing-extensions" },
     { name = "validators" },
 ]
 
@@ -2432,6 +2433,7 @@ requires-dist = [
     { name = "scipy" },
     { name = "tabulate", marker = "extra == 'benchmarking'" },
     { name = "tqdm", specifier = ">=4.67.1,<5.0.0" },
+    { name = "typing-extensions", specifier = ">=4.0,<5.0" },
     { name = "validators", specifier = ">=0.22.0,<1.0.0" },
 ]
 provides-extras = ["approximate-deduplication", "benchmarking", "matching", "pdq"]
@@ -2439,7 +2441,7 @@ provides-extras = ["approximate-deduplication", "benchmarking", "matching", "pdq
 [package.metadata.requires-dev]
 dev = [
     { name = "albumentations", specifier = ">=2.0.8,<3.0.0" },
-    { name = "black", specifier = ">=26,<27" },
+    { name = "black", specifier = "==26.3.1" },
     { name = "coverage" },
     { name = "faiss-cpu", specifier = ">=1.8.0,<2.0.0" },
     { name = "ipython" },

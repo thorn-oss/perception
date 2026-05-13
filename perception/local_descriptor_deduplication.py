@@ -2,16 +2,22 @@ import concurrent.futures
 import logging
 import typing
 from abc import ABC
+from typing import TYPE_CHECKING
 from warnings import warn
 
 import cv2
 import numpy as np
-import pandas as pd
 import tqdm
 import typing_extensions
 
 import perception.approximate_deduplication as ad
 import perception.hashers.tools as pht
+from perception._optional import import_optional
+
+if TYPE_CHECKING:
+    import pandas as pd
+else:
+    pd = import_optional("pandas", extra="approximate-deduplication")
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MAX_FEATURES = 256
@@ -157,7 +163,7 @@ class LocalHasher(ABC):
             descriptorB["descriptors"].astype("float32"), 2
         )
         good_A2B, good_B2A = map(
-            lambda distances: (distances[:, 0] < distances[:, 1] * self.ratio),
+            lambda distances: distances[:, 0] < distances[:, 1] * self.ratio,
             [distances_A2B, distances_B2A],
         )
         match = min(

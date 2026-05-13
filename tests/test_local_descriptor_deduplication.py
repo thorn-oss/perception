@@ -64,8 +64,10 @@ def test_deduplication(hasher):
     perfect = (
         clustered.groupby("cluster")
         .apply(
-            lambda g: g["guid"].nunique() == 1
-            and g["transform_name"].nunique() == n_transforms
+            lambda g: (
+                g["guid"].nunique() == 1
+                and g["transform_name"].nunique() == n_transforms
+            )
         )
         .sum()
     )

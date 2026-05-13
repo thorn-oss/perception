@@ -1,20 +1,20 @@
 import time
 import typing
 import warnings
+from typing import TYPE_CHECKING
 
-try:
-    import faiss
-except ImportError as exc:  # pragma: no cover - exercised only without extra installed
-    raise ImportError(
-        "perception.approximate_deduplication requires the "
-        "'approximate-deduplication' extra. Install it with "
-        "`pip install perception[approximate-deduplication]`."
-    ) from exc
 import numpy as np
-import pandas as pd
 import typing_extensions
 
 import perception.hashers.tools as pht
+from perception._optional import import_optional
+
+if TYPE_CHECKING:
+    import pandas as pd
+else:
+    pd = import_optional("pandas", extra="approximate-deduplication")
+
+faiss = import_optional("faiss", extra="approximate-deduplication")
 
 
 class QueryInput(typing_extensions.TypedDict):

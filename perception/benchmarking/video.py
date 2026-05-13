@@ -3,12 +3,14 @@ import os
 import typing
 import uuid
 
-import pandas as pd
 import tqdm
 
+from .._optional import import_optional
 from ..hashers import VideoHasher, tools
 from ..tools import flatten
 from .common import BenchmarkDataset, BenchmarkHashes, BenchmarkTransforms
+
+pd = import_optional("pandas", extra="benchmarking")
 
 
 def _process_row(row, hashers, framerates):

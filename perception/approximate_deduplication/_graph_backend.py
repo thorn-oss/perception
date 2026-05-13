@@ -2,6 +2,8 @@ import sys
 import typing
 from abc import ABC, abstractmethod
 
+from perception._optional import import_optional
+
 
 class GraphBackend(ABC):
     @abstractmethod
@@ -26,23 +28,9 @@ class GraphBackend(ABC):
     ) -> list[list[int]]: ...
 
 
-_EXTRA_INSTALL_HINT = (
-    "perception.approximate_deduplication requires the "
-    "'approximate-deduplication' extra. Install it with "
-    "`pip install perception[approximate-deduplication]`."
-)
-
-
 class NetworkitGraphBackend(GraphBackend):
     def __init__(self):
-        try:
-            import networkit as nk
-        except (
-            ImportError
-        ) as exc:  # pragma: no cover - exercised only without extra installed
-            raise ImportError(_EXTRA_INSTALL_HINT) from exc
-
-        self.nk = nk
+        self.nk = import_optional("networkit", extra="approximate-deduplication")
 
     def build_graph(
         self, node_count: int, edges: typing.Iterable[tuple[int, int]]
@@ -95,14 +83,7 @@ class NetworkitGraphBackend(GraphBackend):
 
 class NetworkxGraphBackend(GraphBackend):
     def __init__(self):
-        try:
-            import networkx as nx
-        except (
-            ImportError
-        ) as exc:  # pragma: no cover - exercised only without extra installed
-            raise ImportError(_EXTRA_INSTALL_HINT) from exc
-
-        self.nx = nx
+        self.nx = import_optional("networkx", extra="approximate-deduplication")
 
     def build_graph(
         self, node_count: int, edges: typing.Iterable[tuple[int, int]]
