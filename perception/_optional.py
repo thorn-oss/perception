@@ -25,8 +25,17 @@ def import_optional(package: str, *, extra: str) -> Any:
     try:
         return importlib.import_module(package)
     except (
-        ImportError
+        ModuleNotFoundError
     ) as exc:  # pragma: no cover - exercised only without extra installed
+        # Only convert to the friendly "install the extra" hint when the
+        # missing module is the optional package itself (or a submodule of
+        # it). If the optional package is installed but one of its own
+        # imports failed, re-raise the original error so the real cause is
+        # not hidden.
+        missing = exc.name or ""
+        top_level = package.split(".", 1)[0]
+        if missing != top_level and not missing.startswith(top_level + "."):
+            raise
         raise ImportError(
             f"`{package}` is required for this functionality. Install the "
             f"'{extra}' extra with `pip install perception[{extra}]`."
