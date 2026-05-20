@@ -100,7 +100,7 @@ jobs:
           pattern: package-*
           merge-multiple: true
       - name: Load PyPI Token
-        uses: 1password/load-secrets-action@7ce42673ba9ed69053d678faeba29ea36bd25755 # v4.0.0
+        uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           # Export loaded secrets as environment variables
           export-env: true
