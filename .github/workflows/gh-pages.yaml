@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: deployment
-        uses: sphinx-notes/pages@e9c8f79f285fb41a150ba6e08a3c2a29635e7ee1 # 3.5
+        uses: sphinx-notes/pages@6e3e0108e79636a0908b1c2c5899e0d3dfad0bc1 # 3.6
         with:
           checkout: false
           documentation_path: docs
