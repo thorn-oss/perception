@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1] - 2026-05-26
 
 ### Enhancements
-- Added ARM64 Linux (`ubuntu-arm-latest`) to the CI test matrix and the release wheel-build matrix.
+- Added ARM64 Linux (`ubuntu-24.04-arm`) to the CI test matrix and the release wheel-build matrix.
+
+### Bug fixes
+- TMK hashing now works on ARM64. The previous "not supported" warning was removed; the parity test uses cosine similarity and score-level comparison to account for minor cross-architecture differences in video decoding.
 
 ## [0.9.0] - 2026-05-13
 This release moves heavyweight dependencies behind optional extras so they are not installed for users who only need core hashing functionality, and standardizes the error users see when an extra is missing.
