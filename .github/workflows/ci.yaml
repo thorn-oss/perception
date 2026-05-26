@@ -26,7 +26,7 @@ jobs:
           cache-dependency-glob: |
             pyproject.toml
             uv.lock
-          cache-suffix: ${{ runner.os }}-${{ matrix.python-version }}
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
       - name: Setup FFMPEG on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
