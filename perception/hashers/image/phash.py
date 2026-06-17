@@ -19,13 +19,21 @@ class PHash(ImageHasher):
             image to before computing the DCT.
         exclude_first_term: WHether to exclude the first term of the DCT
         freq_shift: The number of DCT low frequency elements to skip.
+        box_filter: Whether to apply a mean filter before resizing, as described
+            in Zauner (2010). To use this algorithm as described by Zauner (2010),
+            set highfreq_factor=4, hash_size=8, and box_filter=True.
     """
 
     distance_metric = "hamming"
     dtype = "bool"
 
     def __init__(
-        self, hash_size=8, highfreq_factor=4, exclude_first_term=False, freq_shift=0
+        self,
+        hash_size=8,
+        highfreq_factor=4,
+        exclude_first_term=False,
+        freq_shift=0,
+        box_filter=False,
     ):
         assert hash_size >= 2, "Hash size must be greater than or equal to 2"
         assert (
@@ -36,12 +44,16 @@ class PHash(ImageHasher):
         self.exclude_first_term = exclude_first_term
         self.hash_length = hash_size * hash_size
         self.freq_shift = freq_shift
+        self.box_filter = box_filter
         if exclude_first_term:
             self.hash_length -= 1
 
     def _compute_dct(self, image):
         img_size = self.hash_size * self.highfreq_factor
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        if self.box_filter:
+            kernel_size = round(img_size * 7 / 32)
+            image = cv2.boxFilter(image, ddepth=-1, ksize=(kernel_size, kernel_size))
         image = cv2.resize(
             image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA
         )
