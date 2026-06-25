@@ -230,6 +230,21 @@ def test_unletterbox_color():
     assert x2 == 25 + image.shape[1]
 
 
+def test_get_isometric_dct_transforms_rectangular_with_frequency_offset():
+    dct = np.arange(1, 7).reshape(2, 3)
+
+    transforms = hashers.tools.get_isometric_dct_transforms(dct, frequency_offset=1)
+
+    np.testing.assert_array_equal(transforms["r0"], dct)
+    np.testing.assert_array_equal(transforms["fv"], [[-1, -2, -3], [4, 5, 6]])
+    np.testing.assert_array_equal(transforms["fh"], [[-1, 2, -3], [-4, 5, -6]])
+    np.testing.assert_array_equal(transforms["r180"], [[1, -2, 3], [-4, 5, -6]])
+    np.testing.assert_array_equal(transforms["r90"], [[-1, -4], [2, 5], [-3, -6]])
+    np.testing.assert_array_equal(transforms["r90fv"], [[1, 4], [2, 5], [3, 6]])
+    np.testing.assert_array_equal(transforms["r90fh"], [[1, -4], [-2, 5], [3, -6]])
+    np.testing.assert_array_equal(transforms["r270"], [[-1, 4], [-2, 5], [-3, 6]])
+
+
 def test_unletterbox_aspect_ratio():
     """Test the value of .1 in unletterbox()."""
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])

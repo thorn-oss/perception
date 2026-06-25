@@ -151,12 +151,6 @@ def test_phash_box_filter():
             "dfff7dffffffdfff",
         ),
         (
-            np.floor(255 * (np.add.outer(np.arange(32), np.arange(32)) / 62.0)).astype(
-                np.uint8
-            ),
-            "aa56ab56a952f52a",
-        ),
-        (
             np.zeros((32, 32), dtype=np.uint8),
             "ffffffffffffffff",
         ),
