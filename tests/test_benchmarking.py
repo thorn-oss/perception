@@ -154,8 +154,12 @@ def test_video_benchmark_dataset():
     # The black padding adds four hashes (two on either side).
     assert len(blackpad) == len(noop) + 4
 
-    # A black frame should yield all zeros for PHash
-    assert phash_framewise_hasher.string_to_vector(blackpad.iloc[0].hash).sum() == 0
+    # A black frame should yield all ones for PHash because Zauner's median
+    # threshold assigns ties to 1.
+    assert (
+        phash_framewise_hasher.string_to_vector(blackpad.iloc[0].hash).sum()
+        == phash_framewise_hasher.hash_length
+    )
 
     # The slideshow hashes should be the same as the noop
     # hashes for every other hash.

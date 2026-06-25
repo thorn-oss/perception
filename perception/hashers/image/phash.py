@@ -17,11 +17,11 @@ class PHash(ImageHasher):
             will be hash_size * hash_size).
         highfreq_factor: The multiple of the hash size to resize the input
             image to before computing the DCT.
-        exclude_first_term: WHether to exclude the first term of the DCT
+        exclude_first_term: Whether to exclude the first term of the DCT
         freq_shift: The number of DCT low frequency elements to skip.
         box_filter: Whether to apply a mean filter before resizing, as described
             in Zauner (2010). To use this algorithm as described by Zauner (2010),
-            set highfreq_factor=4, hash_size=8, and box_filter=True.
+            set highfreq_factor=4, hash_size=8, freq_shift=1, and box_filter=True.
     """
 
     distance_metric = "hamming"
@@ -35,10 +35,18 @@ class PHash(ImageHasher):
         freq_shift=0,
         box_filter=False,
     ):
-        assert hash_size >= 2, "Hash size must be greater than or equal to 2"
-        assert (
-            freq_shift <= highfreq_factor * hash_size - hash_size
-        ), "Frequency shift is too large for this hash size / highfreq_factor combination."
+
+        if hash_size < 2:
+            raise ValueError("Hash size must be greater than or equal to 2")
+
+        if freq_shift < 0:
+            raise ValueError("Frequency shift must be greater than or equal to 0.")
+
+        if freq_shift > highfreq_factor * hash_size - hash_size:
+            raise ValueError(
+                "Frequency shift is too large for this hash size / highfreq_factor combination."
+            )
+
         self.hash_size = hash_size
         self.highfreq_factor = highfreq_factor
         self.exclude_first_term = exclude_first_term
@@ -57,7 +65,7 @@ class PHash(ImageHasher):
         image = cv2.resize(
             image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA
         )
-        dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=0), axis=1)
+        dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=1), axis=0)
         return dct[
             self.freq_shift : self.hash_size + self.freq_shift,
             self.freq_shift : self.hash_size + self.freq_shift,
@@ -67,7 +75,7 @@ class PHash(ImageHasher):
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]
-        return dct > np.median(dct)
+        return dct >= np.median(dct)
 
     def _compute(self, image):
         dct = self._compute_dct(image)
@@ -77,7 +85,7 @@ class PHash(ImageHasher):
         return {
             transform_name: self._dct_to_hash(dct)
             for transform_name, dct in tools.get_isometric_dct_transforms(
-                self._compute_dct(image)
+                self._compute_dct(image), frequency_offset=self.freq_shift
             ).items()
         }
 
