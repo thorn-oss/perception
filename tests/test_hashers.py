@@ -1,6 +1,7 @@
 import os
 import string
 
+import cv2
 import numpy as np
 import pytest
 
@@ -8,6 +9,19 @@ from perception import hashers, testing
 from perception.hashers.image.pdq import PDQHash
 
 TEST_IMAGES = [os.path.join("tests", "images", f"image{n}.jpg") for n in range(1, 11)]
+
+
+def _phash_paper_reference(image):
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    image = cv2.boxFilter(image, ddepth=-1, ksize=(7, 7))
+    image = cv2.resize(image, dsize=(32, 32), interpolation=cv2.INTER_AREA)
+
+    rows = np.arange(32)[:, np.newaxis]
+    cols = np.arange(32)[np.newaxis, :]
+    dct_matrix = np.sqrt(2 / 32) * np.cos(((2 * cols + 1) * rows * np.pi) / 64)
+    dct = dct_matrix @ image @ dct_matrix.T
+    block = dct[1:9, 1:9].ravel()
+    return np.packbits(block >= np.median(block)).tobytes().hex()
 
 
 # The PDQ hash isometric computation is inexact. See
@@ -168,7 +182,9 @@ def test_phash_zauner_reference_array():
     ).astype(np.uint8)
     image = np.repeat(image[..., np.newaxis], 3, axis=2)
 
-    assert hasher.compute(image, hash_format="hex") == "7df08335398011ff"
+    expected_hash = "7df08335398011ff"
+    assert _phash_paper_reference(image) == expected_hash
+    assert hasher.compute(image, hash_format="hex") == expected_hash
 
 
 def test_phash_rejects_negative_frequency_shift():
