@@ -1,6 +1,7 @@
 import os
 import string
 
+import numpy as np
 import pytest
 
 from perception import hashers, testing
@@ -102,6 +103,18 @@ def test_synchronized_hashing():
             filepath=filepath, hashers=video_hashers
         )
         assert hashes1 == hashes2
+
+
+def test_phash_box_filter():
+    h_default = hashers.PHash(box_filter=False)
+    h_filtered = hashers.PHash(box_filter=True)
+
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+
+    dct_default = h_default._compute_dct(image)
+    dct_filtered = h_filtered._compute_dct(image)
+
+    assert not np.array_equal(dct_default, dct_filtered)
 
 
 def test_hex_b64_conversion():
