@@ -117,6 +117,53 @@ def test_phash_box_filter():
     assert not np.array_equal(dct_default, dct_filtered)
 
 
+@pytest.mark.parametrize(
+    "image,expected_hash",
+    [
+        (
+            np.tile(np.round(np.linspace(0, 255, 32)).astype(np.uint8), (32, 1)),
+            "8000000000000000",
+        ),
+        (
+            np.tile(np.round(np.linspace(0, 255, 32)).astype(np.uint8), (32, 1)).T,
+            "8000000000000000",
+        ),
+        (
+            np.pad(
+                np.full((16, 16), 255, dtype=np.uint8),
+                pad_width=8,
+                mode="constant",
+            ),
+            "8200200000008200",
+        ),
+        (
+            np.floor(255 * (np.add.outer(np.arange(32), np.arange(32)) / 62.0)).astype(
+                np.uint8
+            ),
+            "aa56ab56a952d52a",
+        ),
+    ],
+)
+def test_phash_reference_arrays(image, expected_hash):
+    image = np.repeat(image[..., np.newaxis], 3, axis=2)
+
+    assert hashers.PHash().compute(image, hash_format="hex") == expected_hash
+
+
+@pytest.mark.parametrize("box_filter", [False, True])
+def test_phash_isometric_with_frequency_shift(box_filter):
+    hasher = hashers.PHash(freq_shift=1, box_filter=box_filter)
+    image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
+    transforms = hashers.tools.get_isometric_transforms(image)
+    expected_hashes = {
+        name: hasher.compute(value) for name, value in transforms.items()
+    }
+
+    actual_hashes = hasher.compute_isometric(image)
+
+    assert actual_hashes == expected_hashes
+
+
 def test_hex_b64_conversion():
     b64_string = """
     CFFRABrAaRKCDQigEBIGwAhNBdIISgVZBxQYAgP4fwYNUR0oBgYCPwwIDSqTAmIH

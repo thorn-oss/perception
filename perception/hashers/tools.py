@@ -327,25 +327,20 @@ def get_isometric_transforms(image: ImageInputType, require_color=True) -> dict:
     }
 
 
-def get_isometric_dct_transforms(dct: np.ndarray):
-    T1 = np.empty_like(dct)
-    T1[::2] = 1
-    T1[1::2] = -1
-
-    T2 = np.empty_like(dct)
-    T2[::2, ::2] = 1
-    T2[1::2, 1::2] = 1
-    T2[::2, 1::2] = -1
-    T2[1::2, ::2] = -1
+def get_isometric_dct_transforms(dct: np.ndarray, frequency_offset: int = 0):
+    frequencies = np.arange(frequency_offset, frequency_offset + dct.shape[0])
+    row_signs = np.where(frequencies % 2 == 0, 1, -1).reshape(-1, 1)
+    col_signs = row_signs.T
+    rotation_signs = row_signs * col_signs
     return {
         "r0": dct,
-        "fv": dct * T1,
-        "fh": dct * T1.T,
-        "r180": dct * T2,
-        "r90": dct.T * T1,
+        "fv": dct * row_signs,
+        "fh": dct * col_signs,
+        "r180": dct * rotation_signs,
+        "r90": dct.T * row_signs,
         "r90fv": dct.T,
-        "r90fh": dct.T * T2,
-        "r270": dct.T * T1.T,
+        "r90fh": dct.T * rotation_signs,
+        "r270": dct.T * col_signs,
     }
 
 
