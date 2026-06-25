@@ -245,6 +245,13 @@ def test_get_isometric_dct_transforms_rectangular_with_frequency_offset():
     np.testing.assert_array_equal(transforms["r270"], [[-1, 4], [-2, 5], [-3, 6]])
 
 
+def test_get_isometric_dct_transforms_rejects_negative_frequency_offset():
+    dct = np.arange(1, 5).reshape(2, 2)
+
+    with pytest.raises(ValueError):
+        hashers.tools.get_isometric_dct_transforms(dct, frequency_offset=-1)
+
+
 def test_unletterbox_aspect_ratio():
     """Test the value of .1 in unletterbox()."""
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])

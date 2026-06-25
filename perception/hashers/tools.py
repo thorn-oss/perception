@@ -328,6 +328,9 @@ def get_isometric_transforms(image: ImageInputType, require_color=True) -> dict:
 
 
 def get_isometric_dct_transforms(dct: np.ndarray, frequency_offset: int = 0):
+    if frequency_offset < 0:
+        raise ValueError("Frequency offset must be greater than or equal to 0.")
+
     row_frequencies = np.arange(frequency_offset, frequency_offset + dct.shape[0])
     col_frequencies = np.arange(frequency_offset, frequency_offset + dct.shape[1])
     row_signs = np.where(row_frequencies % 2 == 0, 1, -1).reshape(-1, 1)
