@@ -39,6 +39,9 @@ class PHash(ImageHasher):
         if hash_size < 2:
             raise ValueError("Hash size must be greater than or equal to 2")
 
+        if freq_shift < 0:
+            raise ValueError("Frequency shift must be greater than or equal to 0.")
+
         if freq_shift > highfreq_factor * hash_size - hash_size:
             raise ValueError(
                 "Frequency shift is too large for this hash size / highfreq_factor combination."
@@ -62,7 +65,7 @@ class PHash(ImageHasher):
         image = cv2.resize(
             image, dsize=(img_size, img_size), interpolation=cv2.INTER_AREA
         )
-        dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=0), axis=1)
+        dct = scipy.fftpack.dct(scipy.fftpack.dct(image, axis=1), axis=0)
         return dct[
             self.freq_shift : self.hash_size + self.freq_shift,
             self.freq_shift : self.hash_size + self.freq_shift,
@@ -72,7 +75,7 @@ class PHash(ImageHasher):
         dct = dct.flatten()
         if self.exclude_first_term:
             dct = dct[1:]
-        return dct > np.median(dct)
+        return dct >= np.median(dct)
 
     def _compute(self, image):
         dct = self._compute_dct(image)

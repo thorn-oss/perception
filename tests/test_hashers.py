@@ -122,11 +122,11 @@ def test_phash_box_filter():
     [
         (
             np.tile(np.round(np.linspace(0, 255, 32)).astype(np.uint8), (32, 1)),
-            "8000000000000000",
+            "aaffffffffffffff",
         ),
         (
             np.tile(np.round(np.linspace(0, 255, 32)).astype(np.uint8), (32, 1)).T,
-            "8000000000000000",
+            "ff7fff7fff7fff7f",
         ),
         (
             np.pad(
@@ -134,13 +134,17 @@ def test_phash_box_filter():
                 pad_width=8,
                 mode="constant",
             ),
-            "8200200000008200",
+            "dfff7dffffffdfff",
         ),
         (
             np.floor(255 * (np.add.outer(np.arange(32), np.arange(32)) / 62.0)).astype(
                 np.uint8
             ),
-            "aa56ab56a952d52a",
+            "aa56ab56a952f52a",
+        ),
+        (
+            np.zeros((32, 32), dtype=np.uint8),
+            "ffffffffffffffff",
         ),
     ],
 )
@@ -148,6 +152,28 @@ def test_phash_reference_arrays(image, expected_hash):
     image = np.repeat(image[..., np.newaxis], 3, axis=2)
 
     assert hashers.PHash().compute(image, hash_format="hex") == expected_hash
+
+
+def test_phash_zauner_reference_array():
+    hasher = hashers.PHash(
+        hash_size=8,
+        highfreq_factor=4,
+        freq_shift=1,
+        box_filter=True,
+    )
+    image = np.fromfunction(
+        lambda row, col: (17 * row + 31 * col + (row * col) % 251) % 256,
+        (48, 48),
+        dtype=int,
+    ).astype(np.uint8)
+    image = np.repeat(image[..., np.newaxis], 3, axis=2)
+
+    assert hasher.compute(image, hash_format="hex") == "7df08335398011ff"
+
+
+def test_phash_rejects_negative_frequency_shift():
+    with pytest.raises(ValueError, match="greater than or equal to 0"):
+        hashers.PHash(freq_shift=-1)
 
 
 @pytest.mark.parametrize("box_filter", [False, True])
