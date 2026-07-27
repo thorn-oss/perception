@@ -295,10 +295,9 @@ def load_and_preprocess(filepath, max_size=DEFAULT_MAX_SIZE, grayscale=True):
         LOGGER.warning("Failed to load image %s", filepath)
         return None
     res = pht.unletterbox(image)
-    if res is None:
-        return None
-    (x1, x2), (y1, y2) = res
-    image = np.ascontiguousarray(image[y1:y2, x1:x2])
+    if res is not None:
+        (x1, x2), (y1, y2) = res
+        image = np.ascontiguousarray(image[y1:y2, x1:x2])
     if grayscale:
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
