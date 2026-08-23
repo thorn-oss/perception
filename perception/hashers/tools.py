@@ -373,7 +373,12 @@ def read(filepath_or_buffer: ImageInputType, timeout=None) -> np.ndarray:
             raise FileNotFoundError(
                 "Could not find image at path: " + filepath_or_buffer
             )
-        decoded_image = cv2.imread(filepath_or_buffer)
+        # cv2.imread uses the C runtime path API and fails on
+        # non-Latin Windows paths (#17). np.fromfile is Python-side.
+        # Empty files must stay None so the ValueError below still fires
+        # (imdecode raises on a zero-length buffer).
+        buf = np.fromfile(filepath_or_buffer, dtype=np.uint8)
+        decoded_image = cv2.imdecode(buf, cv2.IMREAD_COLOR) if buf.size else None
     else:
         raise RuntimeError(
             "Unhandled filepath_or_buffer type: " + str(type(filepath_or_buffer))
