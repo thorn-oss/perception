@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Bug fixes
+
+- TMKL2 returns None when frame features cannot reshape to `(1, 1, N, hash_length)` instead of raising ValueError (#43).
+
 ## [0.9.1] - 2026-05-26
 
 ### Enhancements

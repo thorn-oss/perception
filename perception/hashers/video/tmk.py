@@ -70,14 +70,19 @@ class TMKL2(VideoHasher):
 
     def hash_from_final_state(self, state):
         timestamps = np.array(state["timestamps"])
-        features = np.array(state["features"]).reshape(
-            (
-                1,
-                1,
-                timestamps.shape[0],
-                self.frame_hasher.hash_length,
-            )
-        )
+        features = np.asarray(state["features"])
+        n_frames = int(timestamps.shape[0])
+        hash_length = self.frame_hasher.hash_length
+        # Hard-coded (1, 1, N, hash_length) raises when size != N * 255 (#43).
+        # Do not invent a shorter last axis. Same hole: return None.
+        if (
+            n_frames == 0
+            or features.size == 0
+            or features.dtype == object
+            or features.size != n_frames * hash_length
+        ):
+            return None
+        features = features.reshape((1, 1, n_frames, hash_length))
         x = self.ms_normed * timestamps
         yw1 = np.sin(x) * self.a
         yw2 = np.cos(x) * self.a
