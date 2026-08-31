@@ -213,12 +213,7 @@ def test_unletterbox_color():
     padded[50 : 50 + image.shape[0], 25 : 25 + image.shape[1]] = image
     # Should not unletterbox since not black.
     results = hashers.tools.unletterbox(padded, only_remove_black=True)
-    assert results is not None
-    (x1, x2), (y1, y2) = results
-    assert y1 == 0
-    assert y2 == padded.shape[0]
-    assert x1 == 0
-    assert x2 == padded.shape[1]
+    assert results is None
 
     # Should  unletterbox color:
     results = hashers.tools.unletterbox(padded, only_remove_black=False)
@@ -281,12 +276,7 @@ def test_unletterbox_noblackbars():
     image = hashers.tools.read(testing.DEFAULT_TEST_IMAGES[0])
 
     results = hashers.tools.unletterbox(image)
-    assert results is not None
-    (x1, x2), (y1, y2) = results
-    assert x1 == 0
-    assert y1 == 0
-    assert x2 == image.shape[1]
-    assert y2 == image.shape[0]
+    assert results is None
 
 
 def test_ffmpeg_video():
