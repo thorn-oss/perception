@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import io
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -287,6 +288,32 @@ def test_unletterbox_noblackbars():
     assert y1 == 0
     assert x2 == image.shape[1]
     assert y2 == image.shape[0]
+
+
+@pytest.mark.parametrize("frames_per_second", [None, "keyframes", 2.3])
+def test_ffmpeg_output_sync(monkeypatch, frames_per_second):
+    monkeypatch.setattr(
+        hashers.tools, "get_video_properties", lambda _: (2, 1, 30, "h264", 0)
+    )
+    popen = MagicMock()
+    process = popen.return_value.__enter__.return_value
+    process.stdout = io.BytesIO(bytes(6))
+    process.communicate.return_value = (b"", b"")
+    process.returncode = 0
+    monkeypatch.setattr(hashers.tools.subprocess, "Popen", popen)
+
+    frames = list(
+        hashers.tools.read_video_to_generator_ffmpeg(
+            "video.mp4", frames_per_second=frames_per_second
+        )
+    )
+
+    assert len(frames) == 1
+    args = popen.call_args.args[0]
+    assert "-vsync" not in args
+    output_sync = args.index("-fps_mode")
+    assert output_sync > args.index("-i") + 1
+    assert args[output_sync + 1] == "passthrough"
 
 
 def test_ffmpeg_video():
