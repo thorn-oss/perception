@@ -13,7 +13,9 @@ dependencies = [
   "pywavelets>=1.5.0,<2.0.0",
   "validators>=0.22.0,<1.0.0",
   "rich>=13.7.0,<14.0.0",
-  "scipy",
+  "scipy; python_version < '3.15'",
+  # SciPy 1.17 lacks Python 3.15 wheels.
+  "scipy>=1.18.1; python_version >= '3.15'",
   "tqdm>=4.67.1,<5.0.0",
   "typing_extensions>=4.0,<5.0",
 ]
