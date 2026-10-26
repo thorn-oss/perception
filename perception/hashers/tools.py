@@ -540,10 +540,7 @@ def read_video_to_generator_ffmpeg(
         width, height = map(lambda d: int(round(scale * d)), [raw_width, raw_height])
         # If there is no average frame rate, the offset tends to be unreliable.
         offset = max(start_time, start_time_offset) if avg_frame_rate is not None else 0
-        cmd = (
-            f"{get_ffmpeg()} -hide_banner -an -vsync 0 -loglevel fatal "
-            f"-itsoffset -{offset}"
-        )
+        cmd = f"{get_ffmpeg()} -hide_banner -an -loglevel fatal -itsoffset -{offset}"
         filters = []
         if draw_timestamps:
             pattern = "%{pts}-%{frame_num}"
@@ -586,7 +583,7 @@ def read_video_to_generator_ffmpeg(
         cmd += f" -i '{filepath}'"
         if filters:
             cmd += f" -vf '{','.join(filters)}'"
-        cmd += " -pix_fmt rgb24 -f image2pipe -vcodec rawvideo -"
+        cmd += " -fps_mode passthrough -pix_fmt rgb24 -f image2pipe -vcodec rawvideo -"
         LOGGER.debug("running ffmpeg with: %s", cmd)
         framebytes = width * height * channels
         bufsize = framebytes * int(os.environ.get("PERCEPTION_FFMPEG_BUFSIZE", "5"))
