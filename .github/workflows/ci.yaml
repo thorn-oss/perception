@@ -31,11 +31,11 @@ jobs:
             pyproject.toml
             uv.lock
           cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
-      - name: Setup FFMPEG on Ubuntu
+      - name: Setup Dependencies on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg libopenblas-dev
       - name: Setup FFMPEG on Windows
         if: startsWith(matrix.os, 'windows')
         run: choco install ffmpeg --yes --no-progress
