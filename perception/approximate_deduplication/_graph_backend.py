@@ -132,6 +132,9 @@ class NetworkxGraphBackend(GraphBackend):
 
 
 def get_graph_backend() -> GraphBackend:
-    if sys.platform == "linux" and platform.machine() == "x86_64":
+    machine = platform.machine()
+    if sys.platform == "linux" and machine in {"x86_64", "aarch64"}:
+        return NetworkitGraphBackend()
+    if sys.platform == "win32" and machine == "AMD64" and sys.version_info < (3, 15):
         return NetworkitGraphBackend()
     return NetworkxGraphBackend()

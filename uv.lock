@@ -10,7 +10,9 @@ resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "(python_full_version < '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 
 [manifest]
@@ -1572,18 +1574,52 @@ wheels = [
 
 [[package]]
 name = "networkit"
-version = "11.2.1"
+version = "11.2"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+]
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },
     { name = "tabulate" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/91/70896ebe40b64646e6fc1b3a91842fab97debfbea76188066e010b80bd7b/networkit-11.2.1.tar.gz", hash = "sha256:3e4766c8e32e83f676fe61358af1bd195ecd3ab996fda803a9a1a7a9af40b725", size = 7330479, upload-time = "2026-01-09T11:11:22.551Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/9b/9237fe5e53bd88e5f797d12fe80c4d0154c5202634873b0a4b042f7d3970/networkit-11.2.tar.gz", hash = "sha256:6dad0625bd795591ad46820a69c927b749c9ac34368b8100dbfb818d2d20b08d", size = 7043208, upload-time = "2025-11-05T13:20:05.146Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/ca/04d84d2922c11074100feff2d1ab354b00b17611f9a0e8456fcdcd87209a/networkit-11.2.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d37ce01bc2f11446acd06dea609c95b51cd2cc5c809194298f85fcb618c22811", size = 11016654, upload-time = "2026-01-09T11:09:37.947Z" },
-    { url = "https://files.pythonhosted.org/packages/ad/eb/1442c1dc936e3fded65092d1e7b108448cb72764dbd849ffa3bfcc83e903/networkit-11.2.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:986113605c472eaf09a453b062a465a2966772be9864244d75baac95a90c6212", size = 10952954, upload-time = "2026-01-09T11:10:13.209Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/66/73cd49833c0b1f410d09751d535133aeae249b9e58e697a7d5d8558833d4/networkit-11.2.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:7586fb2038609c6335d8061ca586a70572c310c018dbd93150761d39b7741ddb", size = 10947041, upload-time = "2026-01-09T11:10:52.82Z" },
+    { url = "https://files.pythonhosted.org/packages/03/fd/06b2b648e100b6ec1afa0a73e7faa024b42c6078441391b2bf9067e251d4/networkit-11.2-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9a588b966623e078102e2f9e0f4634f76a410a23d2a061645c66b971dd24b9ef", size = 11048698, upload-time = "2025-11-05T14:04:50.813Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/1d/a46b62f32e769fb7704cdc9d09937eea0ec8f9127b6c1ba1f609d3567f87/networkit-11.2-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cb2b997f27148f301b2a12517d8ca606b7e86088279e1282fc24f651691c97c9", size = 10963273, upload-time = "2025-11-05T14:04:53.663Z" },
+    { url = "https://files.pythonhosted.org/packages/05/14/978d59e4153c4213ea4e9112f72e7c4ca90d887f8b5b7eb2ec4e32b4c699/networkit-11.2-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cb35ab1368f86c4b764fe70a94d5d3b2d30eee70618c9832e5ddbb19db5fdb59", size = 10957307, upload-time = "2025-11-05T14:04:57.102Z" },
+]
+
+[[package]]
+name = "networkit"
+version = "11.2.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux'",
+]
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+    { name = "tabulate" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fa/2c/9d8629d1f5c1f22a2392e021271a38702c77bff5a169bb73e0c2cb99d0b0/networkit-11.2.2.tar.gz", hash = "sha256:94e3c64d7ef704a7e86a3d4a53f5c9baa7c880bc0f2d48e974878ccc40d52092", size = 8125843, upload-time = "2026-09-14T11:59:41.965Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/86/e3b9547c07e3024e2ace6b28b4f6628b7dad8e94bc78a1e19aa4a33cdac9/networkit-11.2.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:f4561aad91ca514d3865a7bd5ef8622d7615b93e9e02d7353c4e9dd6df967147", size = 11512310, upload-time = "2026-09-15T08:09:52.995Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/34/d4b0ab16e43635b37caab927f5b30b50aa80f15f0f4a3776d30af3e6011b/networkit-11.2.2-cp311-cp311-win_amd64.whl", hash = "sha256:c4e7ce2f65bf765be3a647f70807011bdca24913456d01186de8065910090ad3", size = 30069114, upload-time = "2026-09-15T08:10:02.79Z" },
+    { url = "https://files.pythonhosted.org/packages/49/fe/7578e0e2480ba43c178ed785dbdf743d372f5ec06fd9290eef3b83f7e36f/networkit-11.2.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b0d227fa913d595c5b2616f86e1de93345de98dd2dc3bb1f3d7476e89881247f", size = 11433007, upload-time = "2026-09-15T08:10:12.964Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/b4/420d04c9ecf205f210810854503c01d34a49121359ba3a9014f37ae8b8cb/networkit-11.2.2-cp312-cp312-win_amd64.whl", hash = "sha256:3a7097e37f4277c8cab13969c68ac48fbcf3b945c33cf1cea9323c8ee3f01f5a", size = 30062174, upload-time = "2026-09-15T08:10:25.208Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/52/fdaa9baa615cfa7e8aded3f4c5b5c7f21bfb25c4cdc4dd085732605829a1/networkit-11.2.2-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0f9bd1e5b4e0baa40242bedc1a143dad12e6a009d36ec61ec369af5f00eb5ced", size = 11418086, upload-time = "2026-09-15T08:10:36.108Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/ce/1a064cd1fc7eb8f532b36c500af46ea9a17de21f10f7de55f5679cbf9a7e/networkit-11.2.2-cp313-cp313-win_amd64.whl", hash = "sha256:582a1aaf77303c2f4609d819495abf360f5bbf53844267efa1922185a4a641b4", size = 30052237, upload-time = "2026-09-15T08:10:47.61Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/9f/cedf240dc259641eb57ddcaceb6834b79ba07122851f7ce5880292dbf183/networkit-11.2.2-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:98b5d53f025717640ec5a5c344c85192baa10cf96eb0aa2cc6b4fbc10ee19369", size = 11178461, upload-time = "2026-09-14T11:59:26.174Z" },
+    { url = "https://files.pythonhosted.org/packages/40/81/f8fdc1db2f606c7c87aa4703db9631f277a454d24be7ce363148f4e8f952/networkit-11.2.2-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:164e7caf9f48d76642e99585ae57eb920b118d00a92856c4a8a83fba2c3418a4", size = 11517385, upload-time = "2026-09-14T11:59:29.902Z" },
+    { url = "https://files.pythonhosted.org/packages/23/45/f88f089ebc74e3fd650acb50409acb0afc4a78201a80febab331a76ba49f/networkit-11.2.2-cp314-cp314-win_amd64.whl", hash = "sha256:fff3c5b4380a42eb1ece54bffd3019ddb3bf4d7a2dd267e44e7886fa4f7e588c", size = 30547139, upload-time = "2026-09-14T11:59:33.141Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/ce/c6b6b1791e2e29ff239075ce7426adec8314052dc700ca84ea0366d6281d/networkit-11.2.2-cp315-cp315-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b3737c56e83b8654da4bd396eb80a5ddad0cabd21ea45ba9fd208dea2f6a9d06", size = 11178243, upload-time = "2026-09-14T11:59:37.649Z" },
+    { url = "https://files.pythonhosted.org/packages/19/b1/80816306decdd2ac7c0ab8b5358534ac7a81cf72b47ee3ca18d58c223462/networkit-11.2.2-cp315-cp315-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0ea715243feeaa365e82043d63cfa0f21bf661a76857062dbe9b2d2c5e196844", size = 11518978, upload-time = "2026-09-14T11:59:39.82Z" },
 ]
 
 [[package]]
@@ -1866,8 +1902,9 @@ dependencies = [
 [package.optional-dependencies]
 approximate-deduplication = [
     { name = "faiss-cpu" },
-    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "networkx", marker = "platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "networkit", version = "11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "networkit", version = "11.2.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "networkx", marker = "(python_full_version >= '3.15' and sys_platform == 'win32') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (platform_machine != 'AMD64' and sys_platform == 'win32') or (sys_platform != 'linux' and sys_platform != 'win32')" },
     { name = "pandas" },
 ]
 benchmarking = [
@@ -1894,7 +1931,8 @@ dev = [
     { name = "faiss-cpu" },
     { name = "ipython" },
     { name = "mypy" },
-    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "networkit", version = "11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "networkit", version = "11.2.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "networkx" },
     { name = "pandas" },
     { name = "pandas-stubs" },
@@ -1914,8 +1952,9 @@ requires-dist = [
     { name = "faiss-cpu", marker = "extra == 'approximate-deduplication'", specifier = ">=1.14.3,<2.0.0" },
     { name = "ffmpeg-python", marker = "extra == 'benchmarking'" },
     { name = "matplotlib", marker = "extra == 'benchmarking'" },
-    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication'", specifier = ">=11.1,<12.0.0" },
-    { name = "networkx", marker = "(platform_machine != 'x86_64' and extra == 'approximate-deduplication') or (sys_platform != 'linux' and extra == 'approximate-deduplication')", specifier = ">=3.0,<4.0" },
+    { name = "networkit", marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'approximate-deduplication') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication')", specifier = ">=11.2.2,<12.0.0" },
+    { name = "networkit", marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'approximate-deduplication'", specifier = "==11.2" },
+    { name = "networkx", marker = "(python_full_version >= '3.15' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication') or (platform_machine != 'AMD64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'approximate-deduplication')", specifier = ">=3.0,<4.0" },
     { name = "numpy", specifier = ">=1.26.4,<3.0.0" },
     { name = "opencv-contrib-python-headless", specifier = ">=4.10.0,<5.0.0" },
     { name = "pandas", marker = "extra == 'approximate-deduplication'" },
@@ -1942,7 +1981,8 @@ dev = [
     { name = "faiss-cpu", specifier = ">=1.14.3,<2.0.0" },
     { name = "ipython" },
     { name = "mypy" },
-    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", specifier = ">=11.1,<12.0.0" },
+    { name = "networkit", marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'", specifier = "==11.2" },
+    { name = "networkit", marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'linux')", specifier = ">=11.2.2,<12.0.0" },
     { name = "networkx", specifier = ">=3.0,<4.0" },
     { name = "pandas" },
     { name = "pandas-stubs" },
