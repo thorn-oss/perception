@@ -24,6 +24,9 @@
 - `matching` – async matching utilities
 - `pdq` – Facebook's PDQ hash support
 
+Graph clustering uses Networkit on Linux x86-64 and the NetworkX adapter on
+other systems, including Windows, macOS, and Linux ARM.
+
 **Note for `benchmarking` extra users:** The `benchmarking` extra depends on
 `albumentations`, which in turn requires `opencv-python-headless`. However,
 `perception` already depends on `opencv-contrib-python-headless` (needed for

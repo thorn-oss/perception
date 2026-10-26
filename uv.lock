@@ -3,10 +3,10 @@ revision = 3
 requires-python = ">=3.11, <4.0"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -1582,11 +1582,8 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/99/91/70896ebe40b64646e6fc1b3a91842fab97debfbea76188066e010b80bd7b/networkit-11.2.1.tar.gz", hash = "sha256:3e4766c8e32e83f676fe61358af1bd195ecd3ab996fda803a9a1a7a9af40b725", size = 7330479, upload-time = "2026-01-09T11:11:22.551Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/ca/04d84d2922c11074100feff2d1ab354b00b17611f9a0e8456fcdcd87209a/networkit-11.2.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d37ce01bc2f11446acd06dea609c95b51cd2cc5c809194298f85fcb618c22811", size = 11016654, upload-time = "2026-01-09T11:09:37.947Z" },
-    { url = "https://files.pythonhosted.org/packages/29/34/f295d702572f91da6d15a126319450c6b0678fe4f29de4e16b34077b45f0/networkit-11.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:09e130d586ed0f28b589218444ccb109ae3fda4b03d678ae888d00bcec9f212e", size = 30002895, upload-time = "2026-01-09T11:09:57.508Z" },
     { url = "https://files.pythonhosted.org/packages/ad/eb/1442c1dc936e3fded65092d1e7b108448cb72764dbd849ffa3bfcc83e903/networkit-11.2.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:986113605c472eaf09a453b062a465a2966772be9864244d75baac95a90c6212", size = 10952954, upload-time = "2026-01-09T11:10:13.209Z" },
-    { url = "https://files.pythonhosted.org/packages/3f/2b/5658c2bd38e5056a0b7219193768182671fc5647ca20134ae560b42b8400/networkit-11.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:7ac666766bffc5428b3992f09c01619a1661d37634ab91ae523776ec0c412698", size = 29897203, upload-time = "2026-01-09T11:10:38.273Z" },
     { url = "https://files.pythonhosted.org/packages/a0/66/73cd49833c0b1f410d09751d535133aeae249b9e58e697a7d5d8558833d4/networkit-11.2.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:7586fb2038609c6335d8061ca586a70572c310c018dbd93150761d39b7741ddb", size = 10947041, upload-time = "2026-01-09T11:10:52.82Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/cc/545bb57126753d10ac4dd069667304c2b17fd896334995e11589758f796e/networkit-11.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:3bb19d0745686f5d1db8baf6f2540237841f004d278a0b03653e37fd3b0865a8", size = 29888472, upload-time = "2026-01-09T11:11:16.204Z" },
 ]
 
 [[package]]
@@ -1869,8 +1866,8 @@ dependencies = [
 [package.optional-dependencies]
 approximate-deduplication = [
     { name = "faiss-cpu" },
-    { name = "networkit", marker = "sys_platform != 'darwin'" },
-    { name = "networkx", marker = "sys_platform == 'darwin'" },
+    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "networkx", marker = "platform_machine != 'x86_64' or sys_platform != 'linux'" },
     { name = "pandas" },
 ]
 benchmarking = [
@@ -1897,8 +1894,8 @@ dev = [
     { name = "faiss-cpu" },
     { name = "ipython" },
     { name = "mypy" },
-    { name = "networkit", marker = "sys_platform != 'darwin'" },
-    { name = "networkx", marker = "sys_platform == 'darwin'" },
+    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "networkx" },
     { name = "pandas" },
     { name = "pandas-stubs" },
     { name = "pre-commit" },
@@ -1917,8 +1914,8 @@ requires-dist = [
     { name = "faiss-cpu", marker = "extra == 'approximate-deduplication'", specifier = ">=1.14.3,<2.0.0" },
     { name = "ffmpeg-python", marker = "extra == 'benchmarking'" },
     { name = "matplotlib", marker = "extra == 'benchmarking'" },
-    { name = "networkit", marker = "sys_platform != 'darwin' and extra == 'approximate-deduplication'", specifier = ">=11.1,<12.0.0" },
-    { name = "networkx", marker = "sys_platform == 'darwin' and extra == 'approximate-deduplication'", specifier = ">=3.0,<4.0" },
+    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication'", specifier = ">=11.1,<12.0.0" },
+    { name = "networkx", marker = "(platform_machine != 'x86_64' and extra == 'approximate-deduplication') or (sys_platform != 'linux' and extra == 'approximate-deduplication')", specifier = ">=3.0,<4.0" },
     { name = "numpy", specifier = ">=1.26.4,<3.0.0" },
     { name = "opencv-contrib-python-headless", specifier = ">=4.10.0,<5.0.0" },
     { name = "pandas", marker = "extra == 'approximate-deduplication'" },
@@ -1945,8 +1942,8 @@ dev = [
     { name = "faiss-cpu", specifier = ">=1.14.3,<2.0.0" },
     { name = "ipython" },
     { name = "mypy" },
-    { name = "networkit", marker = "sys_platform != 'darwin'", specifier = ">=11.1,<12.0.0" },
-    { name = "networkx", marker = "sys_platform == 'darwin'", specifier = ">=3.0,<4.0" },
+    { name = "networkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", specifier = ">=11.1,<12.0.0" },
+    { name = "networkx", specifier = ">=3.0,<4.0" },
     { name = "pandas" },
     { name = "pandas-stubs" },
     { name = "pre-commit" },
