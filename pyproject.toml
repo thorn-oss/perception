@@ -35,7 +35,9 @@ benchmarking = [
   "albumentations>=2.0.8,<3.0.0",
   "pandas",
   "tabulate",
-  "scikit-learn",
+  "scikit-learn; python_version < '3.15'",
+  # Avoid older scikit-learn source builds and their isolated SciPy dependency.
+  "scikit-learn>=1.9.1; python_version >= '3.15'",
   "ffmpeg-python",
 ]
 matching = ["aiohttp", "python-json-logger"]
