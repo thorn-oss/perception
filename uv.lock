@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <4.0"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -310,11 +310,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.4.22"
+version = "2026.10.18"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/25/ee/6caf7a40c36a1220410afe15a1cc64993a1f864871f698c0f93acb72842a/certifi-2026.4.22.tar.gz", hash = "sha256:8d455352a37b71bf76a79caa83a3d6c25afee4a385d632127b6afb3963f1c580", size = 137077, upload-time = "2026-04-22T11:26:11.191Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/eb/a2aa1ac3ea30dd3f30ca57f40232138b6b0040719316ecb85daf61167771/certifi-2026.10.18.tar.gz", hash = "sha256:b9995d97b64d0431a5af837d8ca8cd6238104d1f319f04bd93ea43124d6c861e", size = 135227, upload-time = "2026-10-18T16:21:07.655Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/30/7cd8fdcdfbc5b869528b079bfb76dcdf6056b1a2097a662e5e8c04f42965/certifi-2026.4.22-py3-none-any.whl", hash = "sha256:3cb2210c8f88ba2318d29b0388d1023c8492ff72ecdde4ebdaddbb13a31b1c4a", size = 135707, upload-time = "2026-04-22T11:26:09.372Z" },
+    { url = "https://files.pythonhosted.org/packages/08/ba/95dd616042484f7c83a06974388b37b837732740ee70bc5dc715b5fcd55a/certifi-2026.10.18-py3-none-any.whl", hash = "sha256:73191c47aaa79da394e8fee2dbc2ec827432cab56311122c9e47abf79e390f62", size = 134093, upload-time = "2026-10-18T16:21:06.276Z" },
 ]
 
 [[package]]
@@ -1637,9 +1637,9 @@ resolution-markers = [
 ]
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine == 'x86_64') or (python_full_version < '3.12' and sys_platform == 'win32') or (python_full_version >= '3.15' and sys_platform == 'win32')" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15') or (python_full_version >= '3.12' and sys_platform != 'win32') or (platform_machine != 'x86_64' and sys_platform != 'win32')" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15') or (python_full_version >= '3.15' and sys_platform != 'win32') or (platform_machine != 'x86_64' and sys_platform != 'win32')" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine == 'x86_64') or (python_full_version < '3.12' and sys_platform == 'win32') or (python_full_version >= '3.15' and sys_platform == 'win32')" },
-    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15') or (python_full_version >= '3.12' and sys_platform != 'win32') or (platform_machine != 'x86_64' and sys_platform != 'win32')" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15') or (python_full_version >= '3.15' and sys_platform != 'win32') or (platform_machine != 'x86_64' and sys_platform != 'win32')" },
     { name = "tabulate" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fa/2c/9d8629d1f5c1f22a2392e021271a38702c77bff5a169bb73e0c2cb99d0b0/networkit-11.2.2.tar.gz", hash = "sha256:94e3c64d7ef704a7e86a3d4a53f5c9baa7c880bc0f2d48e974878ccc40d52092", size = 8125843, upload-time = "2026-09-14T11:59:41.965Z" }
@@ -2038,7 +2038,7 @@ approximate-deduplication = [
     { name = "faiss-cpu" },
     { name = "networkit", version = "11.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux'" },
     { name = "networkit", version = "11.2.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
-    { name = "networkx", marker = "(python_full_version >= '3.15' and sys_platform == 'win32') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (platform_machine != 'AMD64' and sys_platform == 'win32') or (sys_platform != 'linux' and sys_platform != 'win32')" },
+    { name = "networkx", marker = "(python_full_version >= '3.15' and platform_machine == 'AMD64') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64') or (platform_machine == 'AMD64' and sys_platform == 'linux') or (platform_machine == 'aarch64' and sys_platform == 'win32') or (platform_machine == 'x86_64' and sys_platform == 'win32') or (sys_platform != 'linux' and sys_platform != 'win32')" },
     { name = "pandas" },
 ]
 benchmarking = [
@@ -2088,7 +2088,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'benchmarking'", specifier = ">=3.11.2" },
     { name = "networkit", marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'approximate-deduplication') or (python_full_version < '3.15' and platform_machine == 'AMD64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication')", specifier = ">=11.2.2,<12.0.0" },
     { name = "networkit", marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'approximate-deduplication'", specifier = "==11.2" },
-    { name = "networkx", marker = "(python_full_version >= '3.15' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux' and extra == 'approximate-deduplication') or (platform_machine != 'AMD64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'approximate-deduplication')", specifier = ">=3.0,<4.0" },
+    { name = "networkx", marker = "(python_full_version >= '3.15' and platform_machine == 'AMD64' and extra == 'approximate-deduplication') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'approximate-deduplication') or (platform_machine == 'AMD64' and sys_platform == 'linux' and extra == 'approximate-deduplication') or (platform_machine == 'aarch64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (platform_machine == 'x86_64' and sys_platform == 'win32' and extra == 'approximate-deduplication') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'approximate-deduplication')", specifier = ">=3.0,<4.0" },
     { name = "numpy", specifier = ">=1.26.4,<3.0.0" },
     { name = "opencv-contrib-python-headless", specifier = ">=4.10.0,<5.0.0" },
     { name = "pandas", marker = "extra == 'approximate-deduplication'" },
