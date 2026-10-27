@@ -407,7 +407,7 @@ class BenchmarkHashes(Filterable):
                     distance_to_correct_image = distances[:, 1]
                     distance_to_incorrect_image = distances[:, 0]
                     distance_to_closest_image = distances.min(axis=1)
-                    closest_incorrect_guid = [noop_guids[idx] for idx in indexes[:, 0]]
+                    closest_incorrect_guid = noop_guids[indexes[:, 0]]
             else:
                 assert (
                     custom_distance_metrics is not None

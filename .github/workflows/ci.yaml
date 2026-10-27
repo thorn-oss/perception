@@ -11,8 +11,12 @@ jobs:
   test:
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
         os: ["ubuntu-latest", "ubuntu-24.04-arm", "windows-latest", "macos-latest"]
+        exclude:
+          # faiss-cpu has no Windows wheel for Python 3.15.
+          - python-version: "3.15"
+            os: "windows-latest"
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
@@ -27,11 +31,11 @@ jobs:
             pyproject.toml
             uv.lock
           cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
-      - name: Setup FFMPEG on Ubuntu
+      - name: Setup Dependencies on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg libopenblas-dev
       - name: Setup FFMPEG on Windows
         if: startsWith(matrix.os, 'windows')
         run: choco install ffmpeg --yes --no-progress
@@ -46,7 +50,13 @@ jobs:
           ffmpeg -version
           ffprobe -version
       - name: Setup Project
-        run: uv sync --all-extras --frozen
+        run: >-
+          uv sync --all-extras --frozen
+          --no-build-package numpy
+          --no-build-package scipy
+          --no-build-package matplotlib
+          --no-build-package scikit-learn
+          --no-build-package networkit
       - name: Run checks
         run: |
           uv lock --check

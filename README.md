@@ -24,6 +24,17 @@
 - `matching` – async matching utilities
 - `pdq` – Facebook's PDQ hash support
 
+Graph clustering uses Networkit on Linux x86-64 and ARM64 (`aarch64`), and on
+Windows x64 through Python 3.14. Linux ARM64 uses Networkit 11.2 on Python
+3.11–3.13 and 11.2.2 or newer on Python 3.14–3.15 to match published wheels.
+Other systems use the NetworkX adapter. This includes macOS, where Networkit
+11.2.2 wheels require macOS 26, and Windows Python 3.15, which lacks a
+Networkit wheel.
+
+CI requires prebuilt wheels for NumPy, SciPy, Matplotlib, scikit-learn, and
+Networkit so missing platform support fails immediately instead of triggering
+source builds.
+
 **Note for `benchmarking` extra users:** The `benchmarking` extra depends on
 `albumentations`, which in turn requires `opencv-python-headless`. However,
 `perception` already depends on `opencv-contrib-python-headless` (needed for

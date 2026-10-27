@@ -1,3 +1,4 @@
+import platform
 import sys
 import typing
 from abc import ABC, abstractmethod
@@ -131,6 +132,9 @@ class NetworkxGraphBackend(GraphBackend):
 
 
 def get_graph_backend() -> GraphBackend:
-    if sys.platform == "darwin":
-        return NetworkxGraphBackend()
-    return NetworkitGraphBackend()
+    machine = platform.machine()
+    if sys.platform == "linux" and machine in {"x86_64", "aarch64"}:
+        return NetworkitGraphBackend()
+    if sys.platform == "win32" and machine == "AMD64" and sys.version_info < (3, 15):
+        return NetworkitGraphBackend()
+    return NetworkxGraphBackend()
