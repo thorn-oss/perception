@@ -31,7 +31,9 @@ approximate-deduplication = [
   "pandas",
 ]
 benchmarking = [
-  "matplotlib",
+  "matplotlib; sys_platform != 'darwin' or python_version < '3.15'",
+  # Avoid the Matplotlib 3.10 source build's unresolved AGG symbols on macOS 3.15.
+  "matplotlib>=3.11.2; sys_platform == 'darwin' and python_version >= '3.15'",
   "albumentations>=2.0.8,<3.0.0",
   "pandas",
   "tabulate",
