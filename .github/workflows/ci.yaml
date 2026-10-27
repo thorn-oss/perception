@@ -50,7 +50,13 @@ jobs:
           ffmpeg -version
           ffprobe -version
       - name: Setup Project
-        run: uv sync --all-extras --frozen
+        run: >-
+          uv sync --all-extras --frozen
+          --no-build-package numpy
+          --no-build-package scipy
+          --no-build-package matplotlib
+          --no-build-package scikit-learn
+          --no-build-package networkit
       - name: Run checks
         run: |
           uv lock --check

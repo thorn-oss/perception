@@ -31,15 +31,11 @@ approximate-deduplication = [
   "pandas",
 ]
 benchmarking = [
-  "matplotlib; sys_platform != 'darwin' or python_version < '3.15'",
-  # Avoid the Matplotlib 3.10 source build's unresolved AGG symbols on macOS 3.15.
-  "matplotlib>=3.11.2; sys_platform == 'darwin' and python_version >= '3.15'",
+  "matplotlib>=3.11.2",
   "albumentations>=2.0.8,<3.0.0",
   "pandas",
   "tabulate",
-  "scikit-learn; python_version < '3.15'",
-  # Avoid older scikit-learn source builds and their isolated SciPy dependency.
-  "scikit-learn>=1.9.1; python_version >= '3.15'",
+  "scikit-learn>=1.9.1",
   "ffmpeg-python",
 ]
 matching = ["aiohttp", "python-json-logger"]
