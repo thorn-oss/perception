@@ -141,10 +141,10 @@ class Hasher(ABC):
 
         # We can use a with statement to ensure threads are cleaned up promptly
         records = []
-        if isinstance(self, VideoHasher):
-            executor_class = concurrent.futures.ProcessPoolExecutor
-        else:
-            executor_class = concurrent.futures.ThreadPoolExecutor
+        # ProcessPoolExecutor re-imports the caller's script under spawn
+        # (Windows / macOS). That re-enters compute_parallel and forks
+        # recursively (#45). Threads do not relaunch the parent script.
+        executor_class = concurrent.futures.ThreadPoolExecutor
         with executor_class(max_workers=max_workers) as executor:
             # Start the load operations and mark each future with its filepath
             compute: typing.Callable = (
